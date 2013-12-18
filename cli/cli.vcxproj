@@ -115,7 +115,7 @@
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug-PCRE|Win32'">temp\$(Configuration)_$(PlatformName)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">temp\$(Configuration)_$(PlatformName)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug-PCRE|x64'">temp\$(Configuration)_$(PlatformName)\</IntDir>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cppcheck</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">seccheck</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug-PCRE|Win32'">cppcheck</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cppcheck</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug-PCRE|x64'">cppcheck</TargetName>

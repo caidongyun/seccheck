@@ -57,6 +57,7 @@
     <ClCompile Include="checksizeof.cpp" />
     <ClCompile Include="checkstl.cpp" />
     <ClCompile Include="checkuninitvar.cpp" />
+    <ClCompile Include="checkunsafefunctions.cpp" />
     <ClCompile Include="checkunusedfunctions.cpp" />
     <ClCompile Include="checkunusedvar.cpp" />
     <ClCompile Include="cppcheck.cpp" />
@@ -125,6 +126,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C183DB5B-AD6C-423D-80CA-1F9549555A1A}</ProjectGuid>
     <RootNamespace>cppcheck_lib</RootNamespace>
+    <ProjectName>seccheck</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -203,7 +205,7 @@
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug-PCRE|Win32'">temp\$(Configuration)_$(PlatformName)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">temp\$(Configuration)_$(PlatformName)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug-PCRE|x64'">temp\$(Configuration)_$(PlatformName)\</IntDir>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cppcheck-core</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">seccheck-core</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug-PCRE|Win32'">cppcheck-core</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cppcheck-core</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug-PCRE|x64'">cppcheck-core</TargetName>
