@@ -100,6 +100,7 @@
     <ClInclude Include="checksizeof.h" />
     <ClInclude Include="checkstl.h" />
     <ClInclude Include="checkuninitvar.h" />
+    <ClInclude Include="checkunsafefunctions.h" />
     <ClInclude Include="checkunusedfunctions.h" />
     <ClInclude Include="checkunusedvar.h" />
     <ClInclude Include="config.h" />

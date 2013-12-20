@@ -33,17 +33,12 @@ namespace {
 
 void CheckUnsafeFunctions::unsafeFunctions()
 {
-    if (!_settings->isEnabled("style"))
-        return;
-
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
 
     // Functions defined somewhere?
     for (unsigned int i = 0; i < symbolDatabase->functionScopes.size(); i++) {
         const Scope* scope = symbolDatabase->functionScopes[i];
-        _unsafeStandardFunctions.erase(scope->className);
-        _unsafePosixFunctions.erase(scope->className);
-        _unsafeC99Functions.erase(scope->className);
+        _unsafeFunctions.erase(scope->className);
     }
 
     for (unsigned int i = 0; i < symbolDatabase->functionScopes.size(); i++) {
@@ -52,25 +47,11 @@ void CheckUnsafeFunctions::unsafeFunctions()
             if (tok->isName() && tok->varId()==0 && (tok->next() && tok->next()->str() == "(") &&
                 (!Token::Match(tok->previous(), ".|::") || Token::simpleMatch(tok->tokAt(-2), "std ::"))) {
 
-                std::map<std::string,std::string>::const_iterator it = _unsafeStandardFunctions.find(tok->str());
-                if (it != _unsafeStandardFunctions.end()) {
+                std::map<std::string,std::string>::const_iterator it = _unsafeFunctions.find(tok->str());
+                if (it != _unsafeFunctions.end()) {
                     // If checking an old code base it might be uninteresting to update unsafe functions.
                     reportError(tok, Severity::style, "unsafeFunctions"+it->first, it->second);
                 } else {
-                    if (_settings->standards.posix) {
-                        it = _unsafePosixFunctions.find(tok->str());
-                        if (it != _unsafePosixFunctions.end()) {
-                            // If checking an old code base it might be uninteresting to update unsafe functions.
-                            reportError(tok, Severity::style, "unsafeFunctions"+it->first, it->second);
-                        }
-                    }
-                    if (_settings->standards.c >= Standards::C99) {
-                        // alloca : this function is unsafe in C but not in C++ (#4382)
-                        it = _unsafeC99Functions.find(tok->str());
-                        if (it != _unsafeC99Functions.end() && !(tok->str() == "alloca" && _tokenizer->isCPP())) {
-                            reportError(tok, Severity::style, "unsafeFunctions"+it->first, it->second);
-                        }
-                    }
                 }
             }
         }
