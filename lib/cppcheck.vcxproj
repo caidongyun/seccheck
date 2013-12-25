@@ -45,6 +45,7 @@
     <ClCompile Include="checkbufferoverrun.cpp" />
     <ClCompile Include="checkclass.cpp" />
     <ClCompile Include="checkexceptionsafety.cpp" />
+    <ClCompile Include="checkfloatarithmetic.cpp" />
     <ClCompile Include="checkinternal.cpp" />
     <ClCompile Include="checkio.cpp" />
     <ClCompile Include="checkleakautovar.cpp" />
@@ -88,6 +89,7 @@
     <ClInclude Include="checkbufferoverrun.h" />
     <ClInclude Include="checkclass.h" />
     <ClInclude Include="checkexceptionsafety.h" />
+    <ClInclude Include="checkfloatarithmetic.h" />
     <ClInclude Include="checkinternal.h" />
     <ClInclude Include="checkio.h" />
     <ClInclude Include="checkleakautovar.h" />
