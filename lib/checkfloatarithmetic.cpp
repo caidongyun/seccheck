@@ -34,17 +34,31 @@ namespace {
 /** Is given variable an float variable */
 static bool isFloat(const Variable *var)
 {
-    return (var && Token::Match(var->nameToken()->previous(), "float|double|long double %var% !!["));
+	if (var == 0)
+	{
+		return false;
+	}
+
+	const std::string FLOAT_DEFINE = "float|double|long double";
+	return FLOAT_DEFINE.find(var->nameToken()->previous()->str()) != std::string::npos;
 }
 
 void CheckFloatArithmetic::floatEqualsError(const Token *tok)
 {
 	reportError(tok, Severity::warning,
                 "FloatEqualsError",
-                "Compare two float variables is improper.\n");
+                "Compare two float variables is improper.\n"
+				"Should avoid compare two float variables directly. "
+				"Maybe you can compare with an epsilon value."
+				"Please see: http://stackoverflow.com/questions/17333/most-effective-way-for-float-and-double-comparison ");
 }
 
-inline bool isFloatComparison(const Token* tok)
+static bool isFloatVariable(const Token* tok)
+{
+	return (tok->type() == Token::eVariable) && isFloat(tok->variable());
+}
+
+static bool isFloatComparison(const Token* tok)
 {
 	Token* prev = tok->previous();
 	Token* next = tok->next();
@@ -52,7 +66,39 @@ inline bool isFloatComparison(const Token* tok)
 		return false;
 	}
 
+	if (isFloatVariable(prev))
+	{
+		if (next->type() == Token::eNumber)
+		{
+			// Compare variable to constant value
+			return true;
+		}
+		else if (isFloatVariable(next))
+		{
+			// Both token are floating variables 
+			return true;
+		}
 
+		return false;
+	}
+
+	if (isFloatVariable(next))
+	{
+		if (prev->type() == Token::eNumber)
+		{
+			// Compare variable to constant value
+			return true;
+		}
+		else if (isFloatVariable(prev))
+		{
+			// Both token are floating variables 
+			return true;
+		}
+
+		return false;
+	}
+	
+	return false;
 }
 
 void CheckFloatArithmetic::improperArithmetic()
@@ -75,27 +121,10 @@ void CheckFloatArithmetic::improperArithmetic()
 				continue;
 			}
 
-			if (tok->previous()->type() == Token::eVariable) {
+			if (isFloatComparison(tok))
+			{
+				floatEqualsError(tok);
 			}
-            if (Token::Match(tok, "[;{}] %var% == %var% [;+]")) {
-
-                const Variable *var1(tok->next()->variable());
-                const Variable *var2(tok->tokAt(3)->variable());
-
-                if (isFloat(var1) && isFloat(var2))
-                    floatEqualsError(tok->next());
-
-				/*
-                else if (isint(var1) && isaddr(var2) && !tok->tokAt(3)->isPointerCompare()) {
-                    // assigning address => warning
-                    // some trivial addition => warning
-                    if (Token::Match(tok->tokAt(4), "+ %any% !!;"))
-                        continue;
-
-                    assignmentAddressToIntegerError(tok->next());
-                }
-				*/
-            }
         }
     }
 }
