@@ -121,6 +121,11 @@ void CheckFloatArithmetic::improperArithmetic()
 				continue;
 			}
 
+			if (tok->str() != "==")
+			{
+				continue;
+			}
+
 			if (isFloatComparison(tok))
 			{
 				floatEqualsError(tok);
