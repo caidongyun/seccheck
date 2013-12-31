@@ -224,7 +224,7 @@
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release-PCRE|Win32'">temp\$(Configuration)_$(PlatformName)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">temp\$(Configuration)_$(PlatformName)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release-PCRE|x64'">temp\$(Configuration)_$(PlatformName)\</IntDir>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cppcheck-core</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">seccheck-core</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release-PCRE|Win32'">cppcheck-core</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cppcheck-core</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release-PCRE|x64'">cppcheck-core</TargetName>

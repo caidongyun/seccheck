@@ -22,6 +22,9 @@
 
 #include "checkfloatarithmetic.h"
 #include "symboldatabase.h"
+#include <unordered_set>
+
+using namespace std;
 
 //---------------------------------------------------------------------------
 
@@ -31,6 +34,25 @@ namespace {
     CheckFloatArithmetic instance;
 }
 
+class FloatDefine
+{
+public:
+	FloatDefine()
+	{
+		floatDef.insert("float");
+		floatDef.insert("double");
+		floatDef.insert("long double");
+	}
+
+	bool isFloat(const string& varDef) const
+	{
+		return floatDef.find(varDef) != floatDef.end();
+	}
+
+private:
+	unordered_set<string> floatDef;
+};
+
 /** Is given variable an float variable */
 static bool isFloat(const Variable *var)
 {
@@ -39,8 +61,9 @@ static bool isFloat(const Variable *var)
 		return false;
 	}
 
-	const std::string FLOAT_DEFINE = "float|double|long double";
-	return FLOAT_DEFINE.find(var->nameToken()->previous()->str()) != std::string::npos;
+	static FloatDefine fd;
+	const string& varDef = var->nameToken()->previous()->str();
+	return fd.isFloat(varDef);
 }
 
 void CheckFloatArithmetic::floatEqualsError(const Token *tok)
