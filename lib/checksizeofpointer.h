@@ -17,8 +17,8 @@
  */
 
 //---------------------------------------------------------------------------
-#ifndef checkFloatArithmeticH
-#define checkFloatArithmeticH
+#ifndef checkSizeOfPointerH
+#define checkSizeOfPointerH
 //---------------------------------------------------------------------------
 
 #include "config.h"
@@ -31,50 +31,50 @@
 /// @{
 
 /**
- * @brief Check improper float comparisons
+ * @brief Using unsafe functions that are always insecure to use.
  */
 
-class CPPCHECKLIB CheckFloatArithmetic : public Check {
+class CPPCHECKLIB CheckSizeOfPointer : public Check {
 public:
-    /** This constructor is used when registering the CheckFloatArithmetic */
-    CheckFloatArithmetic() : Check(myName()) {
+    /** This constructor is used when registering the CheckSizeOfPointer */
+    CheckSizeOfPointer() : Check(myName()) {
     }
 
     /** This constructor is used when running checks. */
-    CheckFloatArithmetic(const Tokenizer *tokenizer, const Settings *settings, ErrorLogger *errorLogger)
+    CheckSizeOfPointer(const Tokenizer *tokenizer, const Settings *settings, ErrorLogger *errorLogger)
         : Check(myName(), tokenizer, settings, errorLogger) {
     }
 
     void runSimplifiedChecks(const Tokenizer *tokenizer, const Settings *settings, ErrorLogger *errorLogger) {
-        CheckFloatArithmetic c(tokenizer, settings, errorLogger);
+        CheckSizeOfPointer c(tokenizer, settings, errorLogger);
         c.improperArithmetic();
     }
 
-    /** Check for improper floating arithmetic
+    /** Check for sizeof(*ptr) 
 	* See CERT C++ Secure Coding Standard:
-	* FLP00-CPP. Understand the limitations of floating-point numbers
+	* EXP01-CPP. Do not take the size of a pointer to determine the size of the pointed-to type
 	*/
-    void improperArithmetic();
+    void findSizeofPointer();
 
 private:
 	void floatEqualsError(const Token *tok);
 
     void getErrorMessages(ErrorLogger *errorLogger, const Settings *settings) const {
-        CheckFloatArithmetic c(0, settings, errorLogger);
+        CheckSizeOfPointer c(0, settings, errorLogger);
 
 		c.floatEqualsError(0);
     }
 
     static std::string myName() {
-        return "Improper floating arithmetic (CERT FLP00-CPP)";
+        return "size of Pointer (CERT EXP01-CPP)";
     }
 
 	std::string classInfo() const {
-        return "Check if there is improper floating arithmetic issues:\n"
-               "* float variable equals\n"
-               "* and others\n";
+        return "Check if there is sizeof pointer statement:\n"
+               "* double *d_array;\n"
+               "* sizeof (d_array)\n";
     }
 };
 /// @}
 //---------------------------------------------------------------------------
-#endif // checkFloatArithmeticH
+#endif // checkSizeOfPointerH
