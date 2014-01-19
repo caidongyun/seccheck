@@ -24,7 +24,8 @@ def wget(filepath):
     if filepath.find('/') >= 0:
         filename = filename[filename.rfind('/') + 1:]
     for d in DEBIAN:
-        subprocess.call(['nice', 'wget', d + filepath])
+        subprocess.call(
+            ['nice', 'wget', '--tries=10', '--timeout=300', d + filepath])
         if os.path.isfile(filename):
             return True
         print('Sleep for 10 seconds..')
@@ -158,6 +159,7 @@ def scanarchive(filepath):
          '../cppcheck-O2',
          '-D__GCC__',
          '--enable=style',
+         '--error-exitcode=0',
          '--suppressions-list=../suppressions.txt',
          '.'],
         stdout=subprocess.PIPE,
@@ -165,7 +167,11 @@ def scanarchive(filepath):
     comm = p.communicate()
 
     results = open('results.txt', 'at')
-    results.write(comm[1] + '\n')
+    if p.returncode == 0:
+        results.write(comm[1])
+    elif comm[0].find('cppcheck: error: could not find or open any of the paths given.') < 0:
+        results.write('Exit code is not zero! Crash?\n')
+    results.write('\n')
     results.close()
 
 FOLDER = None

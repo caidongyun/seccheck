@@ -199,10 +199,13 @@ bool TokenList::createTokens(std::istream &code, const std::string& file0)
         if (ch == Preprocessor::macroChar) {
             while (code.peek() == Preprocessor::macroChar)
                 code.get();
-            ch = ' ';
+            if (!CurrentToken.empty()) {
+                addtoken(CurrentToken.c_str(), lineno, FileIndex, true);
+                _back->isExpandedMacro(expandedMacro);
+            }
+            CurrentToken.clear();
             expandedMacro = true;
-        } else if (ch == '\n') {
-            expandedMacro = false;
+            continue;
         }
 
         // char/string..
@@ -317,8 +320,10 @@ bool TokenList::createTokens(std::istream &code, const std::string& file0)
             }
 
             addtoken(CurrentToken.c_str(), lineno, FileIndex, true);
-            if (!CurrentToken.empty())
+            if (!CurrentToken.empty()) {
                 _back->isExpandedMacro(expandedMacro);
+                expandedMacro = false;
+            }
 
             CurrentToken.clear();
 
@@ -339,6 +344,7 @@ bool TokenList::createTokens(std::istream &code, const std::string& file0)
             addtoken(CurrentToken.c_str(), lineno, FileIndex);
             _back->isExpandedMacro(expandedMacro);
             CurrentToken.clear();
+            expandedMacro = false;
             continue;
         }
 
@@ -363,8 +369,8 @@ static bool iscast(const Token *tok)
         return false;
 
     for (const Token *tok2 = tok->next(); tok2; tok2 = tok2->next()) {
-        if (!Token::Match(tok2, "%var%|*"))
-            return Token::Match(tok2, ") %any%") && (!tok2->next()->isOp() && tok2->next()->str() != "[");
+        if (!Token::Match(tok2, "%var%|*|&|::"))
+            return Token::Match(tok2, ") %any%") && (!tok2->next()->isOp() && !Token::Match(tok2->next(), "[[])]"));
     }
 
     return false;
@@ -421,19 +427,25 @@ static void compileTerm(Token *& tok, std::stack<Token*> &op)
     } else if (tok->str() == "return") {
         compileUnaryOp(tok, compileExpression, op);
     } else if (tok->isName()) {
+        const bool templatefunc = Token::Match(tok, "%var% <") && Token::simpleMatch(tok->linkAt(1), "> (");
         if (Token::Match(tok->next(), "++|--")) {  // post increment / decrement
             tok = tok->next();
             tok->astOperand1(tok->previous());
             op.push(tok);
             tok = tok->next();
-        } else if (!Token::Match(tok->next(), "(|[")) {
+        } else if (tok->next() && tok->next()->str() == "<" && tok->next()->link() && !templatefunc) {
+            op.push(tok);
+            tok = tok->next()->link()->next();
+            compileTerm(tok,op);
+        } else if (!Token::Match(tok->next(), "(|[") && !templatefunc) {
             op.push(tok);
             tok = tok->next();
         } else {
             Token *name = tok;
-            tok = tok->tokAt(2);
+            Token *par  = templatefunc ? tok->linkAt(1)->next() : tok->next();
+            tok = par->next();
             if (Token::Match(tok, ")|]")) {
-                name->next()->astOperand1(name);
+                par->astOperand1(name);
                 tok = tok->next();
             } else {
                 Token *prev = name;
@@ -452,18 +464,26 @@ static void compileTerm(Token *& tok, std::stack<Token*> &op)
                         tok = tok->next();
                 }
             }
-            op.push(name->next());
+            op.push(par);
         }
     } else if (Token::Match(tok, "++|--")) {
-        if (!op.empty() && op.top()->isOp()) {
+        bool pre = false;
+        if (tok->next() && tok->next()->isName())
+            pre = true;
+        else if (!op.empty() && !op.top()->isOp())
+            pre = false;
+        else
+            pre = true;
+
+        if (pre) {
+            // pre increment/decrement
+            compileUnaryOp(tok, compileDot, op);
+        } else {
             // post increment/decrement
             tok->astOperand1(op.top());
             op.pop();
             op.push(tok);
             tok = tok->next();
-        } else {
-            // pre increment/decrement
-            compileUnaryOp(tok, compileDot, op);
         }
     } else if (tok->str() == "(") {
         if (iscast(tok)) {
@@ -667,7 +687,7 @@ static void compileExpression(Token *&tok, std::stack<Token*> &op)
 void TokenList::createAst()
 {
     for (Token *tok = _front; tok; tok = tok ? tok->next() : NULL) {
-        if (tok->str() == "return" || !tok->previous() || Token::Match(tok, "%var% (|[|.|=") || Token::Match(tok->previous(), "[;{}] %cop%")) {
+        if (tok->str() == "return" || !tok->previous() || Token::Match(tok, "%var% %op%|(|[|.|=|::") || Token::Match(tok->previous(), "[;{}] %cop%|(")) {
             std::stack<Token *> operands;
             compileExpression(tok, operands);
         }

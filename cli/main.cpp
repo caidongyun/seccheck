@@ -20,15 +20,24 @@
 /**
  *
  * @mainpage Cppcheck
- * @version 1.62.99
+ * @version 1.63.99
  *
  * @section overview_sec Overview
  * Cppcheck is a simple tool for static analysis of C/C++ code.
  *
- * The method used is to first tokenize the source code and then analyse the token list.
- * In the token list, the tokens are stored in plain text.
+ * When you write a checker you have access to:
+ *  - %Token list = the tokenized code
+ *  - Syntax tree = Syntax tree of each expression
+ *  - SymbolDatabase = Information about all types/variables/functions/etc
+ *    in the current translation unit
+ *  - Library = Information about functions
  *
- * The checks are written in C++. The checks are addons that can be easily added/removed.
+ * Use --debug on the command line to see debug output for the token list
+ * and the syntax tree. If both --debug and --verbose is used, the symbol
+ * database is also written.
+ *
+ * The checks are written in C++. The checks are addons that can be
+ * easily added/removed.
  *
  * @section writing_checks_sec Writing a check
  * Below is a simple example of a check that detect division with zero:
@@ -45,8 +54,9 @@ void CheckOther::checkZeroDivision()
  @endcode
  *
  * The function Token::Match is often used in the checks. Through it
- * you can match tokens against patterns.
- *
+ * you can match tokens against patterns. It is currently not possible
+ * to write match expressions that uses the syntax tree, the symbol database,
+ * nor the library. Only the token list is used.
  *
  * @section checkclass_sec Creating a new check class from scratch
  * %Check classes inherit from the Check class. The Check class specifies the interface that you must use.
@@ -84,6 +94,10 @@ void CheckOther::checkZeroDivision()
 
 #include "cppcheckexecutor.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 /**
  * Main function of cppcheck
  *
@@ -94,6 +108,11 @@ void CheckOther::checkZeroDivision()
 int main(int argc, char* argv[])
 {
     CppCheckExecutor exec;
+#ifdef _WIN32
+    char exename[1024] = {0};
+    GetModuleFileNameA(NULL, exename, sizeof(exename)/sizeof(exename[0])-1);
+    argv[0] = exename;
+#endif
     return exec.check(argc, argv);
 }
 

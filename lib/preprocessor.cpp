@@ -584,7 +584,7 @@ std::string Preprocessor::removeComments(const std::string &str, const std::stri
                 }
             }
         } else if ((i==0 || std::isspace(str[i-1])) && str.compare(i,5,"__asm",0,5) == 0) {
-            while (i < str.size() && !std::isspace(str[i]))
+            while (i < str.size() && (std::isalpha(str[i]) || str[i]=='_'))
                 code << str[i++];
             while (i < str.size() && std::isspace(str[i]))
                 code << str[i++];
@@ -3151,12 +3151,51 @@ std::string Preprocessor::expandMacros(const std::string &code, std::string file
                             chr = !chr;
                         else if (str || chr)
                             continue;
-                        else if (std::isalnum(macrocode[i]) || macrocode[i] == '_') {
+                        else if (macrocode[i] == '.') { // 5. / .5
+                            if ((i > 0U && std::isdigit(macrocode[i-1])) ||
+                                (i+1 < macrocode.size() && std::isdigit(macrocode[i+1]))) {
+                                if (i > 0U && !std::isdigit(macrocode[i-1])) {
+                                    macrocode.insert(i, 1U, macroChar);
+                                    i++;
+                                }
+                                i++;
+                                if (i<macrocode.size() && std::isdigit(macrocode[i]))
+                                    i++;
+                                if (i+1U < macrocode.size() &&
+                                    (macrocode[i] == 'e' || macrocode[i] == 'E') &&
+                                    (macrocode[i+1] == '+' || macrocode[i+1] == '-')) {
+                                    i+=2;
+                                }
+                            }
+                        } else if (std::isalnum(macrocode[i]) || macrocode[i] == '_') {
                             if ((i > 0U)                        &&
                                 (!std::isalnum(macrocode[i-1])) &&
                                 (macrocode[i-1] != '_')         &&
                                 (macrocode[i-1] != macroChar)) {
                                 macrocode.insert(i, 1U, macroChar);
+                            }
+
+                            // 1e-7 / 1e+7
+                            if (i+3U < macrocode.size()     &&
+                                (std::isdigit(macrocode[i]) || macrocode[i]=='.')  &&
+                                (macrocode[i+1] == 'e' || macrocode[i+1] == 'E')   &&
+                                (macrocode[i+2] == '-' || macrocode[i+2] == '+')   &&
+                                std::isdigit(macrocode[i+3])) {
+                                i += 3U;
+                            }
+
+                            // 1.f / 1.e7
+                            if (i+2U < macrocode.size()    &&
+                                std::isdigit(macrocode[i]) &&
+                                macrocode[i+1] == '.'      &&
+                                std::isalpha(macrocode[i+2])) {
+                                i += 2U;
+                                if (i+2U < macrocode.size() &&
+                                    (macrocode[i+0] == 'e' || macrocode[i+0] == 'E')   &&
+                                    (macrocode[i+1] == '-' || macrocode[i+1] == '+')   &&
+                                    std::isdigit(macrocode[i+2])) {
+                                    i += 2U;
+                                }
                             }
                         }
                     }

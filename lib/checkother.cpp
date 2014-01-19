@@ -33,6 +33,23 @@ namespace {
     CheckOther instance;
 }
 
+static bool isConstExpression(const Token *tok, const std::set<std::string> &constFunctions)
+{
+    if (!tok)
+        return true;
+    if (tok->isName() && tok->next()->str() == "(") {
+        if (!tok->function() && !Token::Match(tok->previous(), ".|::") && constFunctions.find(tok->str()) == constFunctions.end())
+            return false;
+        else if (tok->function() && !tok->function()->isConst)
+            return false;
+    }
+    if (Token::Match(tok, "++|--"))
+        return false;
+    // bailout when we see ({..})
+    if (tok->str() == "{")
+        return false;
+    return isConstExpression(tok->astOperand1(),constFunctions) && isConstExpression(tok->astOperand2(),constFunctions);
+}
 
 static bool isSameExpression(const Token *tok1, const Token *tok2, const std::set<std::string> &constFunctions)
 {
@@ -50,6 +67,9 @@ static bool isSameExpression(const Token *tok1, const Token *tok2, const std::se
         else if (tok1->function() && !tok1->function()->isConst)
             return false;
     }
+    if ((Token::Match(tok1, "%var% <") && tok1->next()->link()) ||
+        (Token::Match(tok2, "%var% <") && tok2->next()->link()))
+        return false;
     if (Token::Match(tok1, "++|--"))
         return false;
     if (tok1->str() == "(" && tok1->previous() && !tok1->previous()->isName()) { // cast => assert that the casts are equal
@@ -162,50 +182,21 @@ void CheckOther::clarifyCalculation()
     for (std::size_t i = 0; i < functions; ++i) {
         const Scope * scope = symbolDatabase->functionScopes[i];
         for (const Token* tok = scope->classStart->next(); tok != scope->classEnd; tok = tok->next()) {
-            if (tok->str() == "?") {
-                // condition
-                const Token *cond = tok->previous();
-                if (cond->isName() || cond->isNumber())
-                    cond = cond->previous();
-                else if (cond->str() == ")")
-                    cond = cond->link()->previous();
-                else
-                    continue;
+            // ? operator where lhs is arithmetical expression
+            if (tok->str() != "?" || !tok->astOperand1() || !tok->astOperand1()->isArithmeticalOp() || !tok->astOperand1()->isCalculation())
+                continue;
 
-                if (cond && cond->str() == "!")
-                    cond = cond->previous();
-
-                if (!cond)
-                    continue;
-
-                // calculation
-                if (!cond->isArithmeticalOp())
-                    continue;
-
-                const std::string &op = cond->str();
-                cond = cond->previous();
-
-                // skip previous multiplications..
-                while (cond && cond->previous()) {
-                    if ((cond->isName() || cond->isNumber()) && cond->previous()->str() == "*")
-                        cond = cond->tokAt(-2);
-                    else if (cond->str() == ")")
-                        cond = cond->link()->previous();
-                    else
-                        break;
-                }
-
-                if (!cond)
-                    continue;
-
-                // first multiplication operand
-                if (cond->str() == ")") {
-                    clarifyCalculationError(cond, op);
-                } else if (cond->isName() || cond->isNumber()) {
-                    if (Token::Match(cond->previous(),"return|=|+|-|,|(") || cond->strAt(-1) == op)
-                        clarifyCalculationError(cond, op);
-                }
+            // Is code clarified by parentheses already?
+            const Token *tok2 = tok->astOperand1();
+            for (; tok2; tok2 = tok2->next()) {
+                if (tok2->str() == "(")
+                    tok2 = tok2->link();
+                else if (tok2->str() == ")" || tok2->str() == "?")
+                    break;
             }
+
+            if (tok2 && tok2->str() == "?")
+                clarifyCalculationError(tok, tok->astOperand1()->str());
         }
     }
 }
@@ -577,40 +568,6 @@ void CheckOther::checkPipeParameterSizeError(const Token *tok, const std::string
                 "wrongPipeParameterSize", "Buffer '" + strVarName + "' must have size of 2 integers if used as parameter of pipe().\n"
                 "The pipe()/pipe2() system command takes an argument, which is an array of exactly two integers.\n"
                 "The variable '" + strVarName + "' is an array of size " + strDim + ", which does not match.");
-}
-
-//-----------------------------------------------------------------------------
-// check usleep(), which is allowed to be called with in a range of [0,999999]
-//
-// Reference:
-// - http://man7.org/linux/man-pages/man3/usleep.3.html
-//-----------------------------------------------------------------------------
-void CheckOther::checkSleepTimeInterval()
-{
-    if (!_settings->standards.posix)
-        return;
-
-    const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
-    const std::size_t functions = symbolDatabase->functionScopes.size();
-    for (std::size_t i = 0; i < functions; ++i) {
-        const Scope * scope = symbolDatabase->functionScopes[i];
-        for (const Token* tok = scope->classStart->next(); tok != scope->classEnd; tok = tok->next()) {
-            if (Token::Match(tok, "usleep ( %num% )")) {
-                const Token * const numTok = tok->tokAt(2);
-                MathLib::bigint value = MathLib::toLongNumber(numTok->str());
-                if (value > 999999) { // less than 1 million
-                    checkSleepTimeError(numTok, numTok->str());
-                }
-            }
-        }
-    }
-}
-
-void CheckOther::checkSleepTimeError(const Token *tok, const std::string &strDim)
-{
-    reportError(tok, Severity::error,
-                "tooBigSleepTime", "The argument of usleep must be less than 1000000.\n"
-                "The argument of usleep must be less than 1000000, but " + strDim + " is provided.");
 }
 
 //---------------------------------------------------------------------------
@@ -1472,24 +1429,40 @@ void CheckOther::redundantConditionError(const Token *tok, const std::string &te
 //---------------------------------------------------------------------------
 void CheckOther::invalidFunctionUsage()
 {
-    // strtol and strtoul..
-    for (const Token *tok = _tokenizer->tokens(); tok; tok = tok->next()) {
-        if (!Token::Match(tok, "strtol|strtoul|strtoll|strtoull|wcstol|wcstoul|wcstoll|wcstoull ("))
-            continue;
+    const SymbolDatabase* symbolDatabase = _tokenizer->getSymbolDatabase();
+    const std::size_t functions = symbolDatabase->functionScopes.size();
+    for (std::size_t i = 0; i < functions; ++i) {
+        const Scope * scope = symbolDatabase->functionScopes[i];
+        for (const Token* tok = scope->classStart->next(); tok != scope->classEnd; tok = tok->next()) {
+            if (!Token::Match(tok, "%var% ( !!)"))
+                continue;
+            const std::string functionName = tok->str();
+            int argnr = 1;
+            const Token *argtok = tok->tokAt(2);
+            while (argtok && argtok->str() != ")") {
+                if (Token::Match(argtok,"%num% [,)]")) {
+                    if (MathLib::isInt(argtok->str()) &&
+                        !_settings->library.isargvalid(functionName, argnr, MathLib::toLongNumber(argtok->str())))
+                        invalidFunctionArgError(argtok,functionName,argnr,_settings->library.validarg(functionName,argnr));
+                } else {
+                    const Token *top = argtok;
+                    while (top->astParent() && top->astParent()->str() != "," && top->astParent() != tok->next())
+                        top = top->astParent();
+                    if (top->isComparisonOp() || Token::Match(top, "%oror%|&&")) {
+                        if (_settings->library.isboolargbad(functionName, argnr))
+                            invalidFunctionArgBoolError(top, functionName, argnr);
 
-        const std::string& funcname = tok->str();
-        tok = tok->tokAt(2);
-        // Locate the third parameter of the function call..
-        for (int i = 0; i < 2 && tok; i++)
-            tok = tok->nextArgument();
-
-        if (Token::Match(tok, "%num% )")) {
-            const MathLib::bigint radix = MathLib::toLongNumber(tok->str());
-            if (!(radix == 0 || (radix >= 2 && radix <= 36))) {
-                dangerousUsageStrtolError(tok, funcname);
+                        // Are the values 0 and 1 valid?
+                        else if (!_settings->library.isargvalid(functionName, argnr, 0))
+                            invalidFunctionArgError(top, functionName, argnr, _settings->library.validarg(functionName,argnr));
+                        else if (!_settings->library.isargvalid(functionName, argnr, 1))
+                            invalidFunctionArgError(top, functionName, argnr, _settings->library.validarg(functionName,argnr));
+                    }
+                }
+                argnr++;
+                argtok = argtok->nextArgument();
             }
-        } else
-            break;
+        }
     }
 
     // sprintf|snprintf overlapping data
@@ -1529,11 +1502,6 @@ void CheckOther::invalidFunctionUsage()
     }
 }
 
-void CheckOther::dangerousUsageStrtolError(const Token *tok, const std::string& funcname)
-{
-    reportError(tok, Severity::error, "dangerousUsageStrtol", "Invalid radix in call to " + funcname + "(). It must be 0 or 2-36.");
-}
-
 void CheckOther::sprintfOverlappingDataError(const Token *tok, const std::string &varname)
 {
     reportError(tok, Severity::error, "sprintfOverlappingData",
@@ -1543,6 +1511,26 @@ void CheckOther::sprintfOverlappingDataError(const Token *tok, const std::string
                 "documentation (http://www.gnu.org/software/libc/manual/html_mono/libc.html#Formatted-Output-Functions): "
                 "\"If copying takes place between objects that overlap as a result of a call "
                 "to sprintf() or snprintf(), the results are undefined.\"");
+}
+
+void CheckOther::invalidFunctionArgError(const Token *tok, const std::string &functionName, int argnr, const std::string &validstr)
+{
+    std::ostringstream errmsg;
+    errmsg << "Invalid " << functionName << "() argument nr " << argnr;
+    if (!tok)
+        ;
+    else if (tok->isNumber())
+        errmsg << ". The value is " << tok->str() << " but the valid values are '" << validstr << "'.";
+    else if (tok->isComparisonOp())
+        errmsg << ". The value is 0 or 1 (comparison result) but the valid values are '" << validstr << "'.";
+    reportError(tok, Severity::error, "invalidFunctionArg", errmsg.str());
+}
+
+void CheckOther::invalidFunctionArgBoolError(const Token *tok, const std::string &functionName, int argnr)
+{
+    std::ostringstream errmsg;
+    errmsg << "Invalid " << functionName << "() argument nr " << argnr << ". A non-boolean value is required.";
+    reportError(tok, Severity::error, "invalidFunctionArgBool", errmsg.str());
 }
 
 //---------------------------------------------------------------------------
@@ -1872,7 +1860,7 @@ void CheckOther::variableScopeError(const Token *tok, const std::string &varname
                 "The scope of the variable '" + varname + "' can be reduced.\n"
                 "The scope of the variable '" + varname + "' can be reduced. Warning: Be careful "
                 "when fixing this message, especially when there are inner loops. Here is an "
-                "example where cppcheck will write that the scope for 'i' can be reduced:\n"
+                "example where seccheck will write that the scope for 'i' can be reduced:\n"
                 "void f(int x)\n"
                 "{\n"
                 "    int i = 0;\n"
@@ -2167,6 +2155,18 @@ void CheckOther::checkZeroDivision()
                     continue;
             }
             zerodivError(tok);
+        } else if (Token::Match(tok, "[/%]") && tok->astOperand2() && !tok->astOperand2()->values.empty()) {
+            // Value flow..
+            const std::list<ValueFlow::Value> &values = tok->astOperand2()->values;
+            std::list<ValueFlow::Value>::const_iterator it;
+            for (it = values.begin(); it != values.end(); ++it) {
+                if (it->intvalue == 0) {
+                    if (it->condition == NULL)
+                        zerodivError(tok);
+                    else if (_settings->isEnabled("warning"))
+                        zerodivcondError(it->condition,tok);
+                }
+            }
         }
     }
 }
@@ -2181,6 +2181,11 @@ void CheckOther::checkZeroDivisionOrUselessCondition()
 {
     if (!_settings->isEnabled("warning"))
         return;
+
+    // Use experimental checking instead based on value flow analysis
+    if (_settings->valueFlow)
+        return;
+
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
     const std::size_t numberOfFunctions = symbolDatabase->functionScopes.size();
     for (std::size_t functionIndex = 0; functionIndex < numberOfFunctions; ++functionIndex) {
@@ -2302,6 +2307,24 @@ void CheckOther::checkZeroDivisionOrUselessCondition()
     }
 }
 
+// TODO: this utility function should probably be moved to some common file
+static std::string astStringify(const Token *top)
+{
+    const Token *start = top;
+    while (start->astOperand1() && start->astOperand2())
+        start = start->astOperand1();
+    const Token *end = top;
+    while (end->astOperand1() && end->astOperand2())
+        end = end->astOperand2();
+    std::string str;
+    for (const Token *tok = start; tok && tok != end; tok = tok->next()) {
+        str += tok->str();
+        if (Token::Match(tok, "%var%|%num% %var%|%num%"))
+            str += " ";
+    }
+    return str + end->str();
+}
+
 void CheckOther::zerodivcondError(const Token *tokcond, const Token *tokdiv)
 {
     std::list<const Token *> callstack;
@@ -2312,9 +2335,13 @@ void CheckOther::zerodivcondError(const Token *tokcond, const Token *tokdiv)
         callstack.push_back(tokdiv);
     }
     std::string condition;
-    if (Token::Match(tokcond, "%num% <|<=")) {
+    if (!tokcond) {
+        // getErrorMessages
+    } else if (Token::Match(tokcond, "%num% <|<=")) {
         condition = tokcond->strAt(2) + ((tokcond->strAt(1) == "<") ? ">" : ">=") + tokcond->str();
-    } else if (tokcond) {
+    } else if (tokcond->isComparisonOp()) {
+        condition = astStringify(tokcond);
+    } else {
         if (tokcond->str() == "!")
             condition = tokcond->next()->str() + "==0";
         else
@@ -2416,24 +2443,6 @@ void CheckOther::mathfunctionCallError(const Token *tok, const unsigned int numP
     } else
         reportError(tok, Severity::error, "wrongmathcall", "Passing value '#' to #() leads to undefined result.");
 }
-
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-void CheckOther::checkCCTypeFunctions()
-{
-    for (const Token *tok = _tokenizer->tokens(); tok; tok = tok->next()) {
-        if (tok->varId() == 0 &&
-            Token::Match(tok, "isalnum|isalpha|iscntrl|isdigit|isgraph|islower|isprint|ispunct|isspace|isupper|isxdigit ( %num% ,|)") &&
-            MathLib::isNegative(tok->strAt(2))) {
-            cctypefunctionCallError(tok, tok->str(), tok->strAt(2));
-        }
-    }
-}
-void CheckOther::cctypefunctionCallError(const Token *tok, const std::string &functionName, const std::string &value)
-{
-    reportError(tok, Severity::error, "wrongcctypecall", "Passing value " + value + " to " + functionName + "() causes undefined behavior which may lead to a crash.");
-}
-
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 void CheckOther::checkMisusedScopedObject()
@@ -2893,7 +2902,7 @@ static bool astIsFloat(const Token *tok)
         return true;
 
     // TODO: check function calls, struct members, arrays, etc also
-    return tok->variable() && Token::Match(tok->variable()->typeStartToken(), "float|double");
+    return !tok->variable() || Token::findmatch(tok->variable()->typeStartToken(), "float|double", tok->variable()->typeEndToken()->next(), 0);
 }
 
 //---------------------------------------------------------------------------
@@ -2929,8 +2938,20 @@ void CheckOther::checkDuplicateExpression()
                     continue;
                 if (isSameExpression(tok->astOperand1(), tok->astOperand2(), constStandardFunctions))
                     duplicateExpressionError(tok, tok, tok->str());
-                else if (tok->astOperand1() && tok->astOperand2() && tok->str() == tok->astOperand1()->str() && isSameExpression(tok->astOperand2(), tok->astOperand1()->astOperand2(), constStandardFunctions))
+                else if (tok->astOperand2() && tok->str() == tok->astOperand1()->str() && isSameExpression(tok->astOperand2(), tok->astOperand1()->astOperand2(), constStandardFunctions))
                     duplicateExpressionError(tok->astOperand2(), tok->astOperand2(), tok->str());
+                else if (tok->astOperand2()) {
+                    const Token *ast1 = tok->astOperand1();
+                    while (ast1 && tok->str() == ast1->str()) {
+                        if (isSameExpression(ast1->astOperand1(), tok->astOperand2(), constStandardFunctions))
+                            duplicateExpressionError(ast1->astOperand1(), tok->astOperand2(), tok->str());
+                        else if (isSameExpression(ast1->astOperand2(), tok->astOperand2(), constStandardFunctions))
+                            duplicateExpressionError(ast1->astOperand2(), tok->astOperand2(), tok->str());
+                        if (!isConstExpression(ast1->astOperand2(), constStandardFunctions))
+                            break;
+                        ast1 = ast1->astOperand1();
+                    }
+                }
             }
         }
     }

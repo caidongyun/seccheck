@@ -753,6 +753,31 @@ void CheckNullPointer::nullPointerByDeRefAndChec()
 {
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
 
+    if (_settings->valueFlow) {
+        for (const Token *tok = _tokenizer->tokens(); tok; tok = tok->next()) {
+            if (!tok->isName() || tok->values.empty())
+                continue;
+
+            const Variable *var = tok->variable();
+            if (!var || !var->isPointer())
+                continue;
+
+            bool unknown = false;
+            if (!isPointerDeRef(tok,unknown))
+                continue;
+
+            for (std::list<ValueFlow::Value>::const_iterator it = tok->values.begin(); it != tok->values.end(); ++it) {
+                if (it->intvalue != 0)
+                    continue;
+                if (it->condition == NULL)
+                    nullPointerError(tok);
+                else if (_settings->isEnabled("warning"))
+                    nullPointerError(tok, tok->str(), it->condition, false);
+            }
+        }
+        return;
+    }
+
     // Dereferencing a pointer and then checking if it's NULL..
     // This check will first scan for the check. And then scan backwards
     // from the check, searching for dereferencing.
@@ -761,7 +786,7 @@ void CheckNullPointer::nullPointerByDeRefAndChec()
         // - logical operators
         const Token* tok = i->classDef;
         if ((i->type == Scope::eIf || i->type == Scope::eElseIf || i->type == Scope::eWhile) &&
-            tok && Token::Match(tok, "else| %var% ( !| %var% )|%oror%|&&") && !tok->next()->isExpandedMacro()) {
+            tok && Token::Match(tok, "else| %var% ( !| %var% )|%oror%|&&") && !tok->tokAt(tok->str()=="else"?1:0)->isExpandedMacro()) {
 
             if (tok->str() == "else")
                 tok = tok->next();

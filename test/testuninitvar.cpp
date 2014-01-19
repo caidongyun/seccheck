@@ -79,7 +79,7 @@ private:
         Tokenizer tokenizer(&settings, this);
         std::istringstream istr(code);
         tokenizer.tokenize(istr, filename);
-        tokenizer.simplifyTokenList();
+        tokenizer.simplifyTokenList2();
 
         // Check code..
         CheckUninitVar check(&tokenizer, &settings, this);
@@ -353,6 +353,16 @@ private:
                        "    char *z = x;\n"
                        "    memset(z, 0, sizeof(x));\n"
                        "    memcpy(y, x, sizeof(x));\n"
+                       "}");
+        ASSERT_EQUALS("", errout.str());
+
+        // #5255
+        checkUninitVar("struct Element {\n"
+                       "    static void abcd() {}\n"
+                       "};\n"
+                       "void a() {\n"
+                       "    Element *e;\n"
+                       "    e->abcd();\n"
                        "}");
         ASSERT_EQUALS("", errout.str());
 
@@ -2061,7 +2071,7 @@ private:
         tokenizer.tokenize(istr, fname);
 
         const std::string str1(tokenizer.tokens()->stringifyList(0,true));
-        tokenizer.simplifyTokenList();
+        tokenizer.simplifyTokenList2();
         const std::string str2(tokenizer.tokens()->stringifyList(0,true));
         if (verify && str1 != str2)
             warn(("Unsimplified code in test case. It looks like this test "
@@ -2307,6 +2317,16 @@ private:
                         "    return x;\n"
                         "}");
         ASSERT_EQUALS("[test.cpp:5]: (error) Uninitialized variable: x\n", errout.str());
+
+        // try/catch : don't warn about exception variable
+        checkUninitVar2("void f() {\n"
+                        "    try {\n"
+                        "    } catch (CException* e) {\n"
+                        "        trace();\n"
+                        "        e->Delete();\n"
+                        "    }\n"
+                        "}");
+        ASSERT_EQUALS("", errout.str());
 
         // exit
         checkUninitVar2("void f() {\n"
@@ -3065,6 +3085,24 @@ private:
                         "}");
         ASSERT_EQUALS("[test.cpp:4]: (error) Uninitialized variable: x\n", errout.str());
 
+        checkUninitVar2("void f() {\n"
+                        "    for (int x = x; x < 10; x++) {}\n"
+                        "}");
+        ASSERT_EQUALS("[test.cpp:2]: (error) Uninitialized variable: x\n", errout.str());
+
+        checkUninitVar2("void f() {\n"
+                        "    for (Element *ptr3 = ptr3->Next(); ptr3; ptr3 = ptr3->Next()) {}\n"
+                        "}");
+        ASSERT_EQUALS("[test.cpp:2]: (error) Uninitialized variable: ptr3\n", errout.str());
+
+        checkUninitVar2("class Element {\n"
+                        "    static void f() { }\n"
+                        "};\n"
+                        "void test() {\n"
+                        "    Element *element; element->f();\n"
+                        "}");
+        ASSERT_EQUALS("", errout.str());
+
         checkUninitVar2("void f() {\n" // #4911 - bad simplification => don't crash
                         "    int a;\n"
                         "    do { } a=do_something(); while (a);\n"
@@ -3301,6 +3339,18 @@ private:
         checkUninitVar2("void f() {\n"
                         "    char *s = malloc(100);\n"
                         "    *s = x;\n"
+                        "}\n");
+        ASSERT_EQUALS("", errout.str());
+
+        checkUninitVar2("void f() {\n"
+                        "    char *p = malloc(100);\n"
+                        "    p || assert_failed();\n"
+                        "}\n");
+        ASSERT_EQUALS("", errout.str());
+
+        checkUninitVar2("void f() {\n"
+                        "    char *p = malloc(100);\n"
+                        "    x = p;\n"
                         "}\n");
         ASSERT_EQUALS("", errout.str());
 

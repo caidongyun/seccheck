@@ -21,10 +21,12 @@
 #define tokenH
 //---------------------------------------------------------------------------
 
+#include <list>
 #include <string>
 #include <vector>
 #include <ostream>
 #include "config.h"
+#include "valueflow.h"
 
 class Scope;
 class Function;
@@ -147,15 +149,15 @@ public:
      * - "!!else" No tokens or any token that is not "else".
      * - "someRandomText" If token contains "someRandomText".
      *
-     * multi-compare patterns such as "int|void|char" can contain %or%, %oror% and %op%
-     * but it is not recommended to put such an %cmd% as the first pattern.
+     * multi-compare patterns such as "int|void|char" can contain %%or%, %%oror% and %%op%
+     * but it is not recommended to put such an %%cmd% as the first pattern.
      *
-     * It's possible to use multi-compare patterns with all the other %cmds%,
-     * except for %varid%, and normal names, but the %cmds% should be put as
+     * It's possible to use multi-compare patterns with all the other %%cmds%,
+     * except for %%varid%, and normal names, but the %%cmds% should be put as
      * the first patterns in the list, then the normal names.
      * For example: "%var%|%num%|)" means yes to a variable, a number or ')'.
      *
-     * @todo Make it possible to use the %cmds% and the normal names in the
+     * @todo Make it possible to use the %%cmds% and the normal names in the
      * multicompare list without an order.
      *
      * The patterns can be also combined to compare to multiple tokens at once
@@ -167,7 +169,7 @@ public:
      * @param tok List of tokens to be compared to the pattern
      * @param pattern The pattern against which the tokens are compared,
      * e.g. "const" or ") const|volatile| {".
-     * @param varid if %varid% is given in the pattern the Token::varId
+     * @param varid if %%varid% is given in the pattern the Token::varId
      * will be matched against this argument
      * @return true if given token matches with given pattern
      *         false if given token does not match with given pattern
@@ -177,7 +179,7 @@ public:
     /**
      * Return length of C-string.
      *
-     * Should be called for %str% tokens only.
+     * Should be called for %%str%% tokens only.
      *
      * @param tok token with C-string
      **/
@@ -186,7 +188,7 @@ public:
     /**
      * Return char of C-string at index (possible escaped "\\n")
      *
-     * Should be called for %str% tokens only.
+     * Should be called for %%str%% tokens only.
      *
      * @param tok token with C-string
      * @param index position of character
@@ -575,6 +577,9 @@ public:
         _originalName = name;
     }
 
+    /** Values of token */
+    std::list<ValueFlow::Value> values;
+
 private:
     void next(Token *nextToken) {
         _next = nextToken;
@@ -671,6 +676,15 @@ public:
             ret = ret->_astParent;
         return ret;
     }
+
+    /**
+     * Is current token a calculation? Only true for operands.
+     * For '*' and '&' tokens it is looked up if this is a
+     * dereference or address-of. A dereference or address-of is not
+     * counted as a calculation.
+     * @return returns true if current token is a calculation
+     */
+    bool isCalculation() const;
 
     void clearAst() {
         _astOperand1 = _astOperand2 = _astParent = NULL;

@@ -134,6 +134,12 @@
     <ClCompile Include="checkfloatarithmetic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="valueflow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="checkcomplexcopying.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="checkbufferoverrun.h">
@@ -266,6 +272,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="checkfloatarithmetic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="valueflow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="checkcomplexcopying.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -80,9 +80,10 @@ bool CppCheckExecutor::parseFromArgs(CppCheck *cppcheck, int argc, const char* c
             if (FileLister::isDirectory(path))
                 ++iter;
             else {
-                // If the include path is not found, warn user and remove the
-                // non-existing path from the list.
-                std::cout << "cppcheck: warning: Couldn't find path given by -I '" << path << '\'' << std::endl;
+                // If the include path is not found, warn user (unless --quiet
+                // was used) and remove the non-existing path from the list.
+                if (!settings._errorsOnly)
+                    std::cout << "seccheck: warning: Couldn't find path given by -I '" << path << '\'' << std::endl;
                 iter = settings._includePaths.erase(iter);
             }
         }
@@ -112,8 +113,8 @@ bool CppCheckExecutor::parseFromArgs(CppCheck *cppcheck, int argc, const char* c
                 ++i;
         }
         if (warn) {
-            std::cout << "cppcheck: filename exclusion does not apply to header (.h and .hpp) files." << std::endl;
-            std::cout << "cppcheck: Please use --suppress for ignoring results from the header files." << std::endl;
+            std::cout << "seccheck: filename exclusion does not apply to header (.h and .hpp) files." << std::endl;
+            std::cout << "seccheck: Please use --suppress for ignoring results from the header files." << std::endl;
         }
 
 #if defined(_WIN32)
@@ -130,14 +131,14 @@ bool CppCheckExecutor::parseFromArgs(CppCheck *cppcheck, int argc, const char* c
                 ++i;
         }
     } else {
-        std::cout << "cppcheck: error: could not find or open any of the paths given." << std::endl;
+        std::cout << "seccheck: error: could not find or open any of the paths given." << std::endl;
         return false;
     }
 
     if (!_files.empty()) {
         return true;
     } else {
-        std::cout << "cppcheck: error: no files to check - all paths ignored." << std::endl;
+        std::cout << "seccheck: error: no files to check - all paths ignored." << std::endl;
         return false;
     }
 }
@@ -151,9 +152,30 @@ int CppCheckExecutor::check(int argc, const char* const argv[])
     Settings& settings = cppCheck.settings();
     _settings = &settings;
 
-    settings.library.load(argv[0], "std");
-
     if (!parseFromArgs(&cppCheck, argc, argv)) {
+        return EXIT_FAILURE;
+    }
+
+    bool std = settings.library.load(argv[0], "std.cfg");
+    bool posix = true;
+    if (settings.standards.posix)
+        posix = settings.library.load(argv[0], "posix.cfg");
+
+    if (!std || !posix) {
+        const std::list<ErrorLogger::ErrorMessage::FileLocation> callstack;
+        const std::string msg("Failed to load " + std::string(!std ? "std.cfg" : "posix.cfg") + ". Your Cppcheck installation is broken, please re-install.");
+#ifdef CFGDIR
+        const std::string details("The Cppcheck binary was compiled with CFGDIR set to \"" +
+                                  std::string(CFGDIR) + "\" and will therefore search for "
+                                  "std.cfg in that path.");
+#else
+        const std::string cfgfolder(Path::fromNativeSeparators(Path::getPathFromFilename(argv[0])) + "cfg");
+        const std::string details("The Cppcheck binary was compiled without CFGDIR set. Either the "
+                                  "std.cfg should be available in " + cfgfolder + " or the CFGDIR "
+                                  "should be configured.");
+#endif
+        ErrorLogger::ErrorMessage errmsg(callstack, Severity::information, msg+" "+details, "failedToLoadCfg", false);
+        reportErr(errmsg);
         return EXIT_FAILURE;
     }
 
@@ -176,7 +198,8 @@ int CppCheckExecutor::check(int argc, const char* const argv[])
         std::size_t processedsize = 0;
         unsigned int c = 0;
         for (std::map<std::string, std::size_t>::const_iterator i = _files.begin(); i != _files.end(); ++i) {
-            if (!_settings->library.markupFile(i->first)) {
+            if (!_settings->library.markupFile(i->first)
+                || !_settings->library.processMarkupAfterCode(i->first)) {
                 returnValue += cppCheck.check(i->first);
                 processedsize += i->second;
                 if (!settings._errorsOnly)
@@ -188,7 +211,7 @@ int CppCheckExecutor::check(int argc, const char* const argv[])
         // second loop to parse all markup files which may not work until all
         // c/cpp files have been parsed and checked
         for (std::map<std::string, std::size_t>::const_iterator i = _files.begin(); i != _files.end(); ++i) {
-            if (_settings->library.markupFile(i->first)) {
+            if (_settings->library.markupFile(i->first) && _settings->library.processMarkupAfterCode(i->first)) {
                 returnValue += cppCheck.check(i->first);
                 processedsize += i->second;
                 if (!settings._errorsOnly)

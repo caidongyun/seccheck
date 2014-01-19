@@ -136,7 +136,7 @@ private:
         Tokenizer tokenizer(settings, this);
         std::istringstream istr(code);
         tokenizer.tokenize(istr, "test.cpp");
-        tokenizer.simplifyTokenList();
+        tokenizer.simplifyTokenList2();
 
         // Check for memory leaks..
         CheckMemoryLeakInFunction checkMemoryLeak(&tokenizer, settings, this);
@@ -204,6 +204,7 @@ private:
         TEST_CASE(mismatch4);
         TEST_CASE(mismatch5);
         TEST_CASE(mismatch6);
+        TEST_CASE(mismatch7); // opendir()/closedir() on non-POSIX
 
         TEST_CASE(mismatchSize);
 
@@ -377,7 +378,7 @@ private:
         std::istringstream istr(code);
         if (!tokenizer.tokenize(istr, "test.cpp"))
             return "";
-        tokenizer.simplifyTokenList();
+        tokenizer.simplifyTokenList2();
 
         const unsigned int varId(Token::findmatch(tokenizer.tokens(), varname)->varId());
 
@@ -1052,15 +1053,6 @@ private:
         ASSERT_EQUALS("[test.cpp:5]: (error) Memory leak: str\n", errout.str());
     }
 
-
-
-
-
-
-
-
-
-
     void ifelse6() {
         check("static char *f()\n"
               "{\n"
@@ -1501,6 +1493,33 @@ private:
               "        fclose ( f ) ; }\n"
               "}");
         ASSERT_EQUALS("", errout.str());
+    }
+
+    void mismatch7() {
+        Settings settings;
+        settings.standards.posix = false;
+        const char mycode1[]= "DIR *opendir(const char *name);\n"
+                              "void closedir(DIR *dir) {\n"
+                              "    free(dir);\n"
+                              "}\n"
+                              "\n"
+                              "void f(const char *dir) {\n"
+                              "  DIR *dirp;\n"
+                              "  if ((dirp = opendir(dir)) == NULL) return 0;\n"
+                              "  closedir(dirp);\n"
+                              "}\n";
+        check(mycode1, &settings);
+        ASSERT_EQUALS("", errout.str());
+        settings.standards.posix = true;
+        check(mycode1, &settings);
+        ASSERT_EQUALS("", errout.str());
+        const char mycode2[]= "void f(const char *dir) {\n"
+                              "  DIR *dirp;\n"
+                              "  if ((dirp = opendir(dir)) == NULL) return 0;\n"
+                              "  free(dirp);\n"
+                              "}\n";
+        check(mycode2, &settings);
+        ASSERT_EQUALS("[test.cpp:4]: (error) Mismatching allocation and deallocation: dirp\n", errout.str());
     }
 
     void mismatchSize() {
@@ -3981,7 +4000,7 @@ private:
         Tokenizer tokenizer(&settings, this);
         std::istringstream istr(code);
         tokenizer.tokenize(istr, "test.cpp");
-        tokenizer.simplifyTokenList();
+        tokenizer.simplifyTokenList2();
 
         // Check for memory leaks..
         CheckMemoryLeakInClass checkMemoryLeak(&tokenizer, &settings, this);
@@ -5091,7 +5110,7 @@ public:
     }
 
 private:
-    void check(const char code[], const char fname[] = 0) {
+    void check(const char code[], const char fname[] = 0, bool isCPP = true) {
         // Clear the error buffer..
         errout.str("");
 
@@ -5100,8 +5119,8 @@ private:
         // Tokenize..
         Tokenizer tokenizer(&settings, this);
         std::istringstream istr(code);
-        tokenizer.tokenize(istr, fname ? fname : "test.cpp");
-        tokenizer.simplifyTokenList();
+        tokenizer.tokenize(istr, fname ? fname : (isCPP ? "test.cpp" : "test.c"));
+        tokenizer.simplifyTokenList2();
 
         // Check for memory leaks..
         CheckMemoryLeakStructMember checkMemoryLeakStructMember(&tokenizer, &settings, this);
@@ -5147,6 +5166,7 @@ private:
         // Segmentation fault in CheckMemoryLeakStructMember
         TEST_CASE(trac5030);
 
+        TEST_CASE(varid); // #5201: Analysis confused by (variable).attribute notation
     }
 
     void err() {
@@ -5445,6 +5465,19 @@ private:
               "}");
         ASSERT_EQUALS("", errout.str());
     }
+
+    void varid() { // #5201
+        check("struct S {\n"
+              "  void *state_check_buff;\n"
+              "};\n"
+              "void f() {\n"
+              "  S s;\n"
+              "  (s).state_check_buff = (void* )malloc(1);\n"
+              "  if (s.state_check_buff == 0)\n"
+              "    return;\n"
+              "}", /*fname=*/0, /*isCPP=*/false);
+        ASSERT_EQUALS("[test.c:9]: (error) Memory leak: s.state_check_buff\n", errout.str());
+    }
 };
 
 
@@ -5467,11 +5500,21 @@ private:
         Settings settings;
         settings.standards.posix = true;
 
+        // Add some test allocation functions to the library.
+        // When not run as a unit test, these are read from
+        // an XML file (e.g. cfg/posix.cfg).
+        int id = 0;
+        while (!settings.library.ismemory(++id))
+            continue;
+        settings.library.setalloc("malloc", id);
+        settings.library.setalloc("calloc", id);
+        settings.library.setalloc("strdup", id);
+
         // Tokenize..
         Tokenizer tokenizer(&settings, this);
         std::istringstream istr(code);
         tokenizer.tokenize(istr, "test.cpp");
-        tokenizer.simplifyTokenList();
+        tokenizer.simplifyTokenList2();
 
         // Check for memory leaks..
         CheckMemoryLeakNoVar checkMemoryLeakNoVar(&tokenizer, &settings, this);
@@ -5482,7 +5525,7 @@ private:
         // pass allocated memory to function..
         TEST_CASE(functionParameter);
         // never use leakable resource
-        TEST_CASE(missingAssignement);
+        TEST_CASE(missingAssignment);
     }
 
     void functionParameter() {
@@ -5521,10 +5564,42 @@ private:
         TODO_ASSERT_EQUALS("[test.cpp:4]: (error) Allocation with strdup, mkstemp doesn't release it.\n", "", errout.str());
     }
 
-    void missingAssignement() {
+    void missingAssignment() {
         check("void x()\n"
               "{\n"
               "    malloc(10);\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:3]: (error) Return value of allocation function malloc is not used.\n", errout.str());
+
+        check("void x()\n"
+              "{\n"
+              "    calloc(10);\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:3]: (error) Return value of allocation function calloc is not used.\n", errout.str());
+
+        check("void x()\n"
+              "{\n"
+              "    strdup(\"Test\");\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:3]: (error) Return value of allocation function strdup is not used.\n", errout.str());
+
+        check("void x()\n"
+              "{\n"
+              "    (char*) malloc(10);\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:3]: (error) Return value of allocation function malloc is not used.\n", errout.str());
+
+        check("void x()\n"
+              "{\n"
+              "    char* ptr = malloc(10);\n"
+              "    foo(ptr);\n"
+              "    free(ptr);\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("void x()\n"
+              "{\n"
+              "    42,malloc(42);\n"
               "}");
         TODO_ASSERT_EQUALS("[test.cpp:3]: (error) Return value of allocation function malloc is not used.\n", "", errout.str());
 

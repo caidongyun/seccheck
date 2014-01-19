@@ -137,7 +137,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
             } else {
                 i++;
                 if (i >= argc || argv[i][0] == '-') {
-                    PrintMessage("cppcheck: No language given to '-x' option.");
+                    PrintMessage("seccheck: No language given to '-x' option.");
                     return false;
                 }
                 str = argv[i];
@@ -148,7 +148,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
             else if (str == "c++")
                 _settings->enforcedLang = Settings::CPP;
             else {
-                PrintMessage("cppcheck: Unknown language '" + str + "' enforced.");
+                PrintMessage("seccheck: Unknown language '" + str + "' enforced.");
                 return false;
             }
         }
@@ -164,7 +164,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
 
                 if (i >= argc || std::strncmp(argv[i], "-", 1) == 0 ||
                     std::strncmp(argv[i], "--", 2) == 0) {
-                    PrintMessage("cppcheck: No filename specified for the '--exitcode-suppressions' option.");
+                    PrintMessage("seccheck: No filename specified for the '--exitcode-suppressions' option.");
                     return false;
                 }
                 filename = argv[i];
@@ -176,7 +176,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
 
             std::ifstream f(filename.c_str());
             if (!f.is_open()) {
-                PrintMessage("cppcheck: Couldn't open the file: \"" + filename + "\".");
+                PrintMessage("seccheck: Couldn't open the file: \"" + filename + "\".");
                 return false;
             }
             const std::string errmsg(_settings->nofail.parseFile(f));
@@ -191,7 +191,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
             std::string filename = argv[i]+20;
             std::ifstream f(filename.c_str());
             if (!f.is_open()) {
-                std::string message("cppcheck: Couldn't open the file: \"");
+                std::string message("seccheck: Couldn't open the file: \"");
                 message += filename;
                 message += "\".";
                 if (std::count(filename.begin(), filename.end(), ',') > 0 ||
@@ -200,7 +200,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
                     // e.g. like this: --suppressions-list=a.txt,b.txt
                     // print more detailed error message to tell user how he can solve the problem
                     message += "\nIf you want to pass two files, you can do it e.g. like this:";
-                    message += "\n    cppcheck --suppressions-list=a.txt --suppressions-list=b.txt file.cpp";
+                    message += "\n    seccheck --suppressions-list=a.txt --suppressions-list=b.txt file.cpp";
                 }
 
                 PrintMessage(message);
@@ -219,13 +219,13 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
             ++i;
 
             if (i >= argc) {
-                PrintMessage("cppcheck: No file specified for the '--suppressions' option.");
+                PrintMessage("seccheck: No file specified for the '--suppressions' option.");
                 return false;
             }
 
             std::ifstream f(argv[i]);
             if (!f.is_open()) {
-                std::string message("cppcheck: Couldn't open the file: \"");
+                std::string message("seccheck: Couldn't open the file: \"");
                 message += std::string(argv[i]);
                 message += "\".";
                 PrintMessage(message);
@@ -273,7 +273,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
                     paths.erase(0, pos+1);
                 } while (pos != std::string::npos);
             } else {
-                PrintMessage("cppcheck: No paths specified for the '" + std::string(argv[i]) + "' option.");
+                PrintMessage("seccheck: No paths specified for the '" + std::string(argv[i]) + "' option.");
                 return false;
             }
         }
@@ -288,19 +288,23 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
 
             std::istringstream iss(numberString);
             if (!(iss >> _settings->_xml_version)) {
-                PrintMessage("cppcheck: argument to '--xml-version' is not a number.");
+                PrintMessage("seccheck: argument to '--xml-version' is not a number.");
                 return false;
             }
 
             if (_settings->_xml_version < 0 || _settings->_xml_version > 2) {
                 // We only have xml versions 1 and 2
-                PrintMessage("cppcheck: '--xml-version' can only be 1 or 2.");
+                PrintMessage("seccheck: '--xml-version' can only be 1 or 2.");
                 return false;
             }
 
             // Enable also XML if version is set
             _settings->_xml = true;
         }
+
+        // Enable experimental value flow analysis
+        else if (std::strcmp(argv[i], "--value-flow") == 0)
+            _settings->valueFlow = true;
 
         // Only print something when there are errors
         else if (std::strcmp(argv[i], "-q") == 0 || std::strcmp(argv[i], "--quiet") == 0)
@@ -310,7 +314,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
         else if (std::strncmp(argv[i], "--append=", 9) == 0) {
             const std::string filename = 9 + argv[i];
             if (!_settings->append(filename)) {
-                PrintMessage("cppcheck: Couldn't open the file: \"" + filename + "\".");
+                PrintMessage("seccheck: Couldn't open the file: \"" + filename + "\".");
                 return false;
             }
         }
@@ -345,7 +349,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
             std::istringstream iss(temp);
             if (!(iss >> _settings->_exitCode)) {
                 _settings->_exitCode = 0;
-                PrintMessage("cppcheck: Argument must be an integer. Try something like '--error-exitcode=1'.");
+                PrintMessage("seccheck: Argument must be an integer. Try something like '--error-exitcode=1'.");
                 return false;
             }
         }
@@ -358,7 +362,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
             if (std::strcmp(argv[i], "-D") == 0) {
                 ++i;
                 if (i >= argc || argv[i][0] == '-') {
-                    PrintMessage("cppcheck: argument to '-D' is missing.");
+                    PrintMessage("seccheck: argument to '-D' is missing.");
                     return false;
                 }
 
@@ -387,7 +391,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
             if (std::strcmp(argv[i], "-U") == 0) {
                 ++i;
                 if (i >= argc || argv[i][0] == '-') {
-                    PrintMessage("cppcheck: argument to '-U' is missing.");
+                    PrintMessage("seccheck: argument to '-U' is missing.");
                     return false;
                 }
 
@@ -409,7 +413,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
             if (std::strcmp(argv[i], "-I") == 0) {
                 ++i;
                 if (i >= argc || argv[i][0] == '-') {
-                    PrintMessage("cppcheck: argument to '-I' is missing.");
+                    PrintMessage("seccheck: argument to '-I' is missing.");
                     return false;
                 }
                 path = argv[i];
@@ -452,7 +456,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
             if (std::strcmp(argv[i], "-i") == 0) {
                 ++i;
                 if (i >= argc || argv[i][0] == '-') {
-                    PrintMessage("cppcheck: argument to '-i' is missing.");
+                    PrintMessage("seccheck: argument to '-i' is missing.");
                     return false;
                 }
                 path = argv[i];
@@ -480,7 +484,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
         // --library
         else if (std::strncmp(argv[i], "--library=", 10) == 0) {
             if (!_settings->library.load(argv[0], argv[i]+10)) {
-                PrintMessage("cppcheck: Failed to load library configuration file '" + std::string(argv[i]+10) + "'");
+                PrintMessage("seccheck: Failed to load library configuration file '" + std::string(argv[i]+10) + "'");
                 return false;
             }
         }
@@ -515,7 +519,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
                 ++i;
                 _settings->_outputFormat = argv[i];
             } else {
-                PrintMessage("cppcheck: argument to '--template' is missing.");
+                PrintMessage("seccheck: argument to '--template' is missing.");
                 return false;
             }
 
@@ -535,7 +539,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
             if (std::strcmp(argv[i], "-j") == 0) {
                 ++i;
                 if (i >= argc || argv[i][0] == '-') {
-                    PrintMessage("cppcheck: argument to '-j' is missing.");
+                    PrintMessage("seccheck: argument to '-j' is missing.");
                     return false;
                 }
 
@@ -548,14 +552,14 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
 
             std::istringstream iss(numberString);
             if (!(iss >> _settings->_jobs)) {
-                PrintMessage("cppcheck: argument to '-j' is not a number.");
+                PrintMessage("seccheck: argument to '-j' is not a number.");
                 return false;
             }
 
             if (_settings->_jobs > 10000) {
                 // This limit is here just to catch typos. If someone has
                 // need for more jobs, this value should be increased.
-                PrintMessage("cppcheck: argument for '-j' is allowed to be 10000 at max.");
+                PrintMessage("seccheck: argument for '-j' is allowed to be 10000 at max.");
                 return false;
             }
         }
@@ -593,8 +597,15 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
                 _settings->_showtime = SHOWTIME_SUMMARY;
             else if (showtimeMode == "top5")
                 _settings->_showtime = SHOWTIME_TOP5;
-            else
+            else if (showtimeMode.empty())
                 _settings->_showtime = SHOWTIME_NONE;
+            else {
+                std::string message("seccheck: error: unrecognized showtime mode: \"");
+                message += showtimeMode;
+                message +=  "\".";
+                PrintMessage(message);
+                return false;
+            }
         }
 
 #ifdef HAVE_RULES
@@ -659,7 +670,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
             else if (platform == "unix64")
                 _settings->platform(Settings::Unix64);
             else {
-                std::string message("cppcheck: error: unrecognized platform: \"");
+                std::string message("seccheck: error: unrecognized platform: \"");
                 message += platform;
                 message +=  "\".";
                 PrintMessage(message);
@@ -673,12 +684,12 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
 
             std::istringstream iss(14+argv[i]);
             if (!(iss >> _settings->_maxConfigs)) {
-                PrintMessage("cppcheck: argument to '--max-configs=' is not a number.");
+                PrintMessage("seccheck: argument to '--max-configs=' is not a number.");
                 return false;
             }
 
             if (_settings->_maxConfigs < 1) {
-                PrintMessage("cppcheck: argument to '--max-configs=' must be greater than 0.");
+                PrintMessage("seccheck: argument to '--max-configs=' must be greater than 0.");
                 return false;
             }
 
@@ -694,7 +705,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
         }
 
         else if (std::strncmp(argv[i], "-", 1) == 0 || std::strncmp(argv[i], "--", 2) == 0) {
-            std::string message("cppcheck: error: unrecognized command line option: \"");
+            std::string message("seccheck: error: unrecognized command line option: \"");
             message += argv[i];
             message +=  "\".";
             PrintMessage(message);
@@ -715,11 +726,11 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
         _settings->_maxConfigs = ~0U;
 
     if (_settings->isEnabled("unusedFunction") && _settings->_jobs > 1) {
-        PrintMessage("cppcheck: unusedFunction check can't be used with '-j' option, so it's disabled.");
+        PrintMessage("seccheck: unusedFunction check can't be used with '-j' option. Disabling unusedFunction check.");
     }
 
     if (_settings->inconclusive && _settings->_xml && _settings->_xml_version == 1U) {
-        PrintMessage("cppcheck: inconclusive messages will not be shown, because the old xml format is not compatible. It's recommended to use the new xml format (use --xml-version=2).");
+        PrintMessage("seccheck: inconclusive messages will not be shown, because the old xml format is not compatible. It's recommended to use the new xml format (use --xml-version=2).");
     }
 
     if (argc <= 1)
@@ -732,7 +743,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
 
     // Print error only if we have "real" command and expect files
     if (!_exitAfterPrint && _pathnames.empty()) {
-        PrintMessage("cppcheck: No C or C++ source files found.");
+        PrintMessage("seccheck: No C or C++ source files found.");
         return false;
     }
 
@@ -748,14 +759,14 @@ void CmdLineParser::PrintHelp()
     std::cout <<   "Cppcheck - A tool for static C/C++ code analysis\n"
               "\n"
               "Syntax:\n"
-              "    cppcheck [OPTIONS] [files or paths]\n"
+              "    seccheck [OPTIONS] [files or paths]\n"
               "\n"
               "If a directory is given instead of a filename, *.cpp, *.cxx, *.cc, *.c++, *.c,\n"
               "*.tpp, and *.txx files are checked recursively from the given directory.\n\n"
               "Options:\n"
               "    --append=<file>      This allows you to provide information about functions\n"
               "                         by providing an implementation for them.\n"
-              "    --check-config       Check cppcheck configuration. The normal code\n"
+              "    --check-config       Check seccheck configuration. The normal code\n"
               "                         analysis is disabled by this flag.\n"
               "    --check-library      Show information messages when library files have\n"
               "                         incomplete info.\n"
@@ -834,11 +845,11 @@ void CmdLineParser::PrintHelp()
               "                         must be carefully investigated before you know if it is\n"
               "                         good or bad.\n"
               "    --inline-suppr       Enable inline suppressions. Use them by placing one or\n"
-              "                         more comments, like: '// cppcheck-suppress warningId'\n"
+              "                         more comments, like: '// seccheck-suppress warningId'\n"
               "                         on the lines before the warning to suppress.\n"
               "    -j <jobs>            Start [jobs] threads to do the checking simultaneously.\n"
               "    --language=<language>, -x <language>\n"
-              "                         Forces cppcheck to check all files as the given\n"
+              "                         Forces seccheck to check all files as the given\n"
               "                         language. Valid values are: c, c++\n"
               "    --library=<cfg>\n"
               "                         Use library configuration.\n"
@@ -890,7 +901,7 @@ void CmdLineParser::PrintHelp()
               "                          * c++11\n"
               "                                 C++ code is C++11 compatible (default)\n"
               "                         More than one --std can be used:\n"
-              "                           'cppcheck --std=c99 --std=posix file.c'\n"
+              "                           'seccheck --std=c99 --std=posix file.c'\n"
               "    --suppress=<spec>    Suppress warnings that match <spec>. The format of\n"
               "                         <spec> is:\n"
               "                         [error id]:[filename]:[line]\n"
@@ -914,16 +925,16 @@ void CmdLineParser::PrintHelp()
               "Example usage:\n"
               "  # Recursively check the current folder. Print the progress on the screen and\n"
               "  # write errors to a file:\n"
-              "  cppcheck . 2> err.txt\n"
+              "  seccheck . 2> err.txt\n"
               "\n"
               "  # Recursively check ../myproject/ and don't print progress:\n"
-              "  cppcheck --quiet ../myproject/\n"
+              "  seccheck --quiet ../myproject/\n"
               "\n"
               "  # Check test.cpp, enable all checks:\n"
-              "  cppcheck --enable=all --inconclusive --std=posix test.cpp\n"
+              "  seccheck --enable=all --inconclusive --std=posix test.cpp\n"
               "\n"
               "  # Check f.cpp and search include files from inc1/ and inc2/:\n"
-              "  cppcheck -I inc1/ -I inc2/ f.cpp\n"
+              "  seccheck -I inc1/ -I inc2/ f.cpp\n"
               "\n"
               "For more information:\n"
               "    http://cppcheck.sourceforge.net/manual.pdf\n";

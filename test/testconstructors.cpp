@@ -46,7 +46,7 @@ private:
         Tokenizer tokenizer(&settings, this);
         std::istringstream istr(code);
         tokenizer.tokenize(istr, "test.cpp");
-        tokenizer.simplifyTokenList();
+        tokenizer.simplifyTokenList2();
 
         // Check class constructors..
         CheckClass checkClass(&tokenizer, &settings, this);
@@ -1920,6 +1920,14 @@ private:
               "public:\n"
               "    A() {\n"
               "        rtl::math::setNan(&d);\n"
+              "    }\n"
+              "};");
+        ASSERT_EQUALS("", errout.str());
+        check("class A {\n"
+              "    double d;\n"
+              "public:\n"
+              "    A() {\n"
+              "        ::rtl::math::setNan(&d);\n"
               "    }\n"
               "};");
         ASSERT_EQUALS("", errout.str());

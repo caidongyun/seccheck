@@ -40,6 +40,7 @@
     <ClCompile Include="testcharvar.cpp" />
     <ClCompile Include="testclass.cpp" />
     <ClCompile Include="testcmdlineparser.cpp" />
+    <ClCompile Include="testcomplexcopying.cpp" />
     <ClCompile Include="testconstructors.cpp" />
     <ClCompile Include="testcppcheck.cpp" />
     <ClCompile Include="testdivision.cpp" />
@@ -77,6 +78,7 @@
     <ClCompile Include="testunusedfunctions.cpp" />
     <ClCompile Include="testunusedprivfunc.cpp" />
     <ClCompile Include="testunusedvar.cpp" />
+    <ClCompile Include="testvalueflow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\cli\cmdlineparser.h" />

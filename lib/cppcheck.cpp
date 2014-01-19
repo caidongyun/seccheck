@@ -28,13 +28,14 @@
 #include <sstream>
 #include <stdexcept>
 #include "timer.h"
+#include "version.h"
 
 #ifdef HAVE_RULES
 #define PCRE_STATIC
 #include <pcre.h>
 #endif
 
-static const char Version[] = "1.63 dev";
+static const char Version[] = CPPCHECK_VERSION_STRING;
 static const char ExtraVersion[] = "";
 
 static TimerResults S_timerResults;
@@ -46,8 +47,7 @@ CppCheck::CppCheck(ErrorLogger &errorLogger, bool useGlobalSuppressions)
 
 CppCheck::~CppCheck()
 {
-    if (_settings._showtime != SHOWTIME_NONE)
-        S_timerResults.ShowResults();
+    S_timerResults.ShowResults(_settings._showtime);
 }
 
 const char * CppCheck::version()
@@ -305,7 +305,7 @@ void CppCheck::analyseFile(std::istream &fin, const std::string &filename)
     Tokenizer tokenizer(&_settings, this);
     std::istringstream istr(code);
     tokenizer.tokenize(istr, filename.c_str(), "");
-    tokenizer.simplifyTokenList();
+    tokenizer.simplifyTokenList2();
 
     // Analyse the tokens..
     std::set<std::string> data;
@@ -376,7 +376,7 @@ void CppCheck::checkFile(const std::string &code, const char FileName[])
             return;
 
         Timer timer3("Tokenizer::simplifyTokenList", _settings._showtime, &S_timerResults);
-        result = _tokenizer.simplifyTokenList();
+        result = _tokenizer.simplifyTokenList2();
         timer3.Stop();
         if (!result)
             return;

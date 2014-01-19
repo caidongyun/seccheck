@@ -263,7 +263,7 @@ unsigned int TemplateSimplifier::templateParameters(const Token *tok)
             return 0;
 
         // Function pointer or prototype..
-        while (tok && tok->str() == "(")
+        while (tok && (tok->str() == "(" || tok->str() == "["))
             tok = tok->link()->next();
         if (!tok)
             return 0;
@@ -620,7 +620,7 @@ bool TemplateSimplifier::instantiateMatch(const Token *instance, const std::stri
     if (patternAfter) {
         const Token *tok = instance;
         unsigned int indentlevel = 0;
-        for (tok = instance; tok && (tok->str() != ">" || indentlevel > 0); tok = tok->next()) {
+        for (tok = instance; tok && (tok->str() != ">" || indentlevel > 0) && (tok->str() != ">>" || indentlevel > 1); tok = tok->next()) {
             if (Token::Match(tok, "[<,] %var% <") && templateParameters(tok->tokAt(2)) > 0)
                 ++indentlevel;
             if (indentlevel > 0 && tok->str() == ">")

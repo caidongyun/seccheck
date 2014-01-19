@@ -17,7 +17,10 @@
  */
 
 #include "library.h"
+#include "token.h"
+#include "tokenlist.h"
 #include "testsuite.h"
+#include <tinyxml2.h>
 
 class TestLibrary : public TestFixture {
 public:
@@ -67,18 +70,12 @@ private:
         const char xmldata[] = "<?xml version=\"1.0\"?>\n"
                                "<def>\n"
                                "  <function name=\"foo\">\n"
-                               "    <arg nr=\"1\">\n"
-                               "        <not-uninit/>\n"
-                               "    </arg>\n"
-                               "    <arg nr=\"2\">\n"
-                               "        <not-null/>\n"
-                               "    </arg>\n"
-                               "    <arg nr=\"3\">\n"
-                               "        <formatstr/>\n"
-                               "    </arg>\n"
-                               "    <arg nr=\"4\">\n"
-                               "        <strz/>\n"
-                               "    </arg>\n"
+                               "    <arg nr=\"1\"><not-uninit/></arg>\n"
+                               "    <arg nr=\"2\"><not-null/></arg>\n"
+                               "    <arg nr=\"3\"><formatstr/></arg>\n"
+                               "    <arg nr=\"4\"><strz/></arg>\n"
+                               "    <arg nr=\"5\"><valid>1-</valid></arg>\n"
+                               "    <arg nr=\"6\"><not-bool/></arg>\n"
                                "  </function>\n"
                                "</def>";
         tinyxml2::XMLDocument doc;
@@ -90,6 +87,8 @@ private:
         ASSERT_EQUALS(true, library.argumentChecks["foo"][2].notnull);
         ASSERT_EQUALS(true, library.argumentChecks["foo"][3].formatstr);
         ASSERT_EQUALS(true, library.argumentChecks["foo"][4].strz);
+        ASSERT_EQUALS("1-", library.argumentChecks["foo"][5].valid);
+        ASSERT_EQUALS(true, library.argumentChecks["foo"][6].notbool);
     }
 
     void memory() {

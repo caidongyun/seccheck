@@ -514,6 +514,11 @@ private:
 
             if (Token::Match(tok.previous(), "[;{}] %var% [=[.]")) {
                 if (tok.next()->str() == ".") {
+                    if (Token::Match(&tok, "%var% . %var% (")) {
+                        const Function *function = tok.tokAt(2)->function();
+                        if (function && function->isStatic)
+                            return &tok;
+                    }
                     if (use_dead_pointer(checks, &tok)) {
                         return &tok;
                     }
@@ -1066,20 +1071,11 @@ void CheckUninitVar::checkScope(const Scope* scope)
         if ((_tokenizer->isCPP() && i->type() && !i->isPointer() && i->type()->needInitialization != Type::True) ||
             i->isStatic() || i->isExtern() || i->isConst() || i->isArray() || i->isReference())
             continue;
+        // don't warn for try/catch exception variable
+        if (Token::Match(i->typeStartToken()->tokAt(-2), "catch ("))
+            continue;
         if (i->nameToken()->strAt(1) == "(")
             continue;
-
-        bool forHead = false; // Don't check variables declared in header of a for loop
-        for (const Token* tok = i->typeStartToken(); tok; tok = tok->previous()) {
-            if (tok->str() == "(") {
-                forHead = true;
-                break;
-            } else if (Token::Match(tok, "[{};]"))
-                break;
-        }
-        if (forHead)
-            continue;
-
         bool stdtype = _tokenizer->isC();
         const Token* tok = i->typeStartToken();
         for (; tok && tok->str() != ";" && tok->str() != "<"; tok = tok->next()) {
@@ -1090,8 +1086,10 @@ void CheckUninitVar::checkScope(const Scope* scope)
             tok = tok->next();
         if (!tok)
             continue;
-        if (Token::findsimplematch(i->typeStartToken(), "=", tok))
+        if (Token::Match(i->nameToken(), "%var% =")) {
+            checkRhs(i->nameToken(), *i, false, "");
             continue;
+        }
         if (stdtype || i->isPointer()) {
             bool alloc = false;
             checkScopeForVariable(scope, tok, *i, NULL, NULL, &alloc, "");
@@ -1759,7 +1757,7 @@ bool CheckUninitVar::isVariableUsage(const Token *vartok, bool pointer, bool all
         }
     }
 
-    if (Token::Match(vartok->previous(), "= %var% ;|%cop%"))
+    if (!alloc && Token::Match(vartok->previous(), "= %var% ;|%cop%"))
         return true;
 
     if (Token::Match(vartok->previous(), "? %var%")) {
@@ -1795,6 +1793,11 @@ bool CheckUninitVar::isVariableUsage(const Token *vartok, bool pointer, bool all
             return true;
     }
 
+    if (pointer && Token::Match(vartok, "%var% . %var% (")) {
+        const Function *function = vartok->tokAt(2)->function();
+        return (!function || !function->isStatic);
+    }
+
     if (cpp && Token::Match(vartok->next(), "<<|>>")) {
         // Is this calculation done in rhs?
         const Token *tok = vartok;
@@ -1809,7 +1812,7 @@ bool CheckUninitVar::isVariableUsage(const Token *vartok, bool pointer, bool all
         return (var && var->typeStartToken()->isStandardType());
     }
 
-    if (vartok->next() && vartok->next()->isOp() && !vartok->next()->isAssignmentOp())
+    if (!alloc && vartok->next() && vartok->next()->isOp() && !vartok->next()->isAssignmentOp())
         return true;
 
     if (vartok->strAt(1) == "]")

@@ -194,6 +194,7 @@ private:
         TEST_CASE(symboldatabase29); // ticket #4442 (segmentation fault)
         TEST_CASE(symboldatabase30);
         TEST_CASE(symboldatabase31);
+        TEST_CASE(symboldatabase32);
         TEST_CASE(symboldatabase33); // ticket #4682 (false negatives)
         TEST_CASE(symboldatabase34); // ticket #4694 (segmentation fault)
         TEST_CASE(symboldatabase35); // ticket #4806 (segmentation fault)
@@ -203,6 +204,7 @@ private:
         TEST_CASE(symboldatabase39); // ticket #5120 (infinite recursion)
         TEST_CASE(symboldatabase40); // ticket #5153
         TEST_CASE(symboldatabase41); // ticket #5197 (unknown macro)
+        TEST_CASE(symboldatabase42); // only put variables in variable list
 
         TEST_CASE(isImplicitlyVirtual);
 
@@ -1020,7 +1022,7 @@ private:
         Tokenizer tokenizer(&settings, this);
         std::istringstream istr(code);
         tokenizer.tokenize(istr, "test.cpp");
-        tokenizer.simplifyTokenList();
+        tokenizer.simplifyTokenList2();
 
         // force symbol database creation
         tokenizer.getSymbolDatabase();
@@ -1672,6 +1674,14 @@ private:
         ASSERT(db && db->findScopeByName("X1") && db->findScopeByName("X1")->functionList.size() == 1 && !db->findScopeByName("X1")->functionList.front().hasBody);
     }
 
+    void symboldatabase42() { // only put variables in variable list
+        GET_SYMBOL_DB("void f() { extern int x(); }\n");
+        ASSERT(!!db);
+        const Scope * const fscope = db ? db->findScopeByName("f") : NULL;
+        ASSERT(!!fscope);
+        ASSERT_EQUALS(0U, fscope ? fscope->varlist.size() : ~0U);  // "x" is not a variable
+    }
+
     void isImplicitlyVirtual() {
         {
             GET_SYMBOL_DB("class Base {\n"
@@ -1751,6 +1761,19 @@ private:
                           "};");
             ASSERT(db && db->findScopeByName("Deri") && db->findScopeByName("Deri")->functionList.front().isImplicitlyVirtual(false)); // Default false, but we saw "virtual" -> true
         }
+        // #5289
+        {
+            GET_SYMBOL_DB("template<>\n"
+                          "class Bar<void, void> {\n"
+                          "};\n"
+                          "template<typename K, typename V, int KeySize>\n"
+                          "class Bar : private Bar<void, void> {\n"
+                          "   void foo() {\n"
+                          "   }\n"
+                          "};");
+            ASSERT(db && db->findScopeByName("Bar") && !db->findScopeByName("Bar")->functionList.front().isImplicitlyVirtual(false));
+        }
+
     }
 
     void garbage() {

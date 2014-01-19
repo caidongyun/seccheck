@@ -44,6 +44,7 @@
     <ClCompile Include="checkboost.cpp" />
     <ClCompile Include="checkbufferoverrun.cpp" />
     <ClCompile Include="checkclass.cpp" />
+    <ClCompile Include="checkcomplexcopying.cpp" />
     <ClCompile Include="checkexceptionsafety.cpp" />
     <ClCompile Include="checkfloatarithmetic.cpp" />
     <ClCompile Include="checkinternal.cpp" />
@@ -76,6 +77,7 @@
     <ClCompile Include="token.cpp" />
     <ClCompile Include="tokenize.cpp" />
     <ClCompile Include="tokenlist.cpp" />
+    <ClCompile Include="valueflow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\externals\tinyxml\tinyxml2.h" />
@@ -88,6 +90,7 @@
     <ClInclude Include="checkboost.h" />
     <ClInclude Include="checkbufferoverrun.h" />
     <ClInclude Include="checkclass.h" />
+    <ClInclude Include="checkcomplexcopying.h" />
     <ClInclude Include="checkexceptionsafety.h" />
     <ClInclude Include="checkfloatarithmetic.h" />
     <ClInclude Include="checkinternal.h" />
@@ -121,6 +124,7 @@
     <ClInclude Include="token.h" />
     <ClInclude Include="tokenize.h" />
     <ClInclude Include="tokenlist.h" />
+    <ClInclude Include="valueflow.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>

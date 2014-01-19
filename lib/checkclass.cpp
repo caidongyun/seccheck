@@ -468,7 +468,7 @@ void CheckClass::initializeVarList(const Function &func, std::list<const Functio
                         }
                     }
                 }
-            } else if (level == 0 && Token::Match(ftok, "%var% {") && ftok->str() != "const" && Token::Match(ftok->next()->link()->next(), ",|{|%type%")) {
+            } else if (level == 0 && Token::Match(ftok, "%var% {") && ftok->str() != "const" && Token::Match(ftok->next()->link()->next(), "%type%|,|{")) {
                 initVar(ftok->str(), scope, usage);
                 ftok = ftok->linkAt(1);
             } else if (level != 0 && Token::Match(ftok, "%var% =")) // assignment in the initializer: var(value = x)
@@ -550,6 +550,8 @@ void CheckClass::initializeVarList(const Function &func, std::list<const Functio
             ftok = ftok->tokAt(2);
 
         // Skip "classname :: "
+        if (Token::Match(ftok, ":: %var% "))
+            ftok = ftok->next();
         while (Token::Match(ftok, "%var% ::"))
             ftok = ftok->tokAt(2);
 
@@ -803,7 +805,7 @@ static bool checkFunctionUsage(const std::string& name, const Scope* scope)
         if (func->functionScope) {
             if (Token::Match(func->tokenDef, "%var% (")) {
                 for (const Token *ftok = func->tokenDef->tokAt(2); ftok && ftok->str() != ")"; ftok = ftok->next()) {
-                    if (Token::Match(ftok, "= %var% (") && ftok->strAt(1) == name)
+                    if (Token::Match(ftok, "= %var% [(,)]") && ftok->strAt(1) == name)
                         return true;
                     if (ftok->str() == "(")
                         ftok = ftok->link();

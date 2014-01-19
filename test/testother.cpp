@@ -18,10 +18,11 @@
 
 #include "preprocessor.h"
 #include "tokenize.h"
+#include "symboldatabase.h"
 #include "checkother.h"
 #include "testsuite.h"
 #include <sstream>
-#include <symboldatabase.h>
+#include <tinyxml2.h>
 
 extern std::ostringstream errout;
 
@@ -48,6 +49,8 @@ private:
         TEST_CASE(zeroDivCond); // division by zero / useless condition
 
         TEST_CASE(nanInArithmeticExpression);
+
+        TEST_CASE(invalidFunctionUsage1);
 
         TEST_CASE(sprintf1);        // Dangerous usage of sprintf
         TEST_CASE(sprintf2);
@@ -82,8 +85,6 @@ private:
         TEST_CASE(oldStylePointerCast);
         TEST_CASE(invalidPointerCast);
 
-        TEST_CASE(dangerousStrolUsage);
-
         TEST_CASE(passedByValue);
 
         TEST_CASE(mathfunctionCall_fmod);
@@ -93,7 +94,6 @@ private:
         TEST_CASE(mathfunctionCall_asin);
         TEST_CASE(mathfunctionCall_pow);
         TEST_CASE(mathfunctionCall_atan2);
-        TEST_CASE(cctypefunctionCall);
 
         TEST_CASE(switchRedundantAssignmentTest);
         TEST_CASE(switchRedundantOperationTest);
@@ -211,6 +211,16 @@ private:
         settings->experimental = experimental;
         settings->standards.posix = posix;
 
+        if (posix) {
+            const char cfg[] = "<?xml version=\"1.0\"?>\n"
+                               "<def>\n"
+                               "  <function name=\"usleep\"> <arg nr=\"1\"><valid>0-999999</valid></arg> </function>\n"
+                               "</def>";
+            tinyxml2::XMLDocument xmldoc;
+            xmldoc.Parse(cfg, sizeof(cfg));
+            settings->library.load(xmldoc);
+        }
+
         // Tokenize..
         Tokenizer tokenizer(settings, this);
         std::istringstream istr(code);
@@ -222,7 +232,7 @@ private:
 
         if (runSimpleChecks) {
             const std::string str1(tokenizer.tokens()->stringifyList(0,true));
-            tokenizer.simplifyTokenList();
+            tokenizer.simplifyTokenList2();
             const std::string str2(tokenizer.tokens()->stringifyList(0,true));
             if (str1 != str2)
                 warn(("Unsimplified code in test case\nstr1="+str1+"\nstr2="+str2).c_str());
@@ -558,7 +568,7 @@ private:
             Tokenizer tokenizer(&settings, this);
             std::istringstream istr(code);
             tokenizer.tokenize(istr,"test.cpp");
-            tokenizer.simplifyTokenList();
+            tokenizer.simplifyTokenList2();
 
             // Assert that the symboldatabase is inconsistent..
             const SymbolDatabase *symbolDatabase = tokenizer.getSymbolDatabase();
@@ -651,64 +661,88 @@ private:
 
     }
 
-    void sprintfUsage(const char code[]) {
+    void invalidFunctionUsage(const char code[]) {
         // Clear the error buffer..
         errout.str("");
 
+        const char cfg[] = "<?xml version=\"1.0\"?>\n"
+                           "<def>\n"
+                           "  <function name=\"memset\"> <arg nr=\"3\"><not-bool/></arg> </function>\n"
+                           "  <function name=\"strtol\"> <arg nr=\"3\"><valid>0,2-36</valid></arg> </function>\n"
+                           "</def>";
+        tinyxml2::XMLDocument xmldoc;
+        xmldoc.Parse(cfg, sizeof(cfg));
+
         Settings settings;
+        settings.library.load(xmldoc);
 
         // Tokenize..
         Tokenizer tokenizer(&settings, this);
         std::istringstream istr(code);
         tokenizer.tokenize(istr, "test.cpp");
 
-        //tokenizer.tokens()->printOut( "tokens" );
-
         // Check for redundant code..
         CheckOther checkOther(&tokenizer, &settings, this);
         checkOther.invalidFunctionUsage();
     }
 
+    void invalidFunctionUsage1() {
+        invalidFunctionUsage("int f() { memset(a,b,sizeof(a)!=12); }");
+        ASSERT_EQUALS("[test.cpp:1]: (error) Invalid memset() argument nr 3. A non-boolean value is required.\n", errout.str());
+
+        invalidFunctionUsage("int f() { memset(a,b,sizeof(a)!=0); }");
+        TODO_ASSERT_EQUALS("error", "", errout.str());
+
+        invalidFunctionUsage("int f() { strtol(a,b,sizeof(a)!=12); }");
+        ASSERT_EQUALS("[test.cpp:1]: (error) Invalid strtol() argument nr 3. The value is 0 or 1 (comparison result) but the valid values are '0,2-36'.\n", errout.str());
+
+        invalidFunctionUsage("int f() { strtol(a,b,1); }");
+        ASSERT_EQUALS("[test.cpp:1]: (error) Invalid strtol() argument nr 3. The value is 1 but the valid values are '0,2-36'.\n", errout.str());
+
+        invalidFunctionUsage("int f() { strtol(a,b,10); }");
+        ASSERT_EQUALS("", errout.str());
+    }
+
     void sprintf1() {
-        sprintfUsage("void foo()\n"
-                     "{\n"
-                     "    char buf[100];\n"
-                     "    sprintf(buf,\"%s\",buf);\n"
-                     "}");
+        invalidFunctionUsage("void foo()\n"
+                             "{\n"
+                             "    char buf[100];\n"
+                             "    sprintf(buf,\"%s\",buf);\n"
+                             "}");
         ASSERT_EQUALS("[test.cpp:4]: (error) Undefined behavior: Variable 'buf' is used as parameter and destination in s[n]printf().\n", errout.str());
     }
 
     void sprintf2() {
-        sprintfUsage("void foo()\n"
-                     "{\n"
-                     "    char buf[100];\n"
-                     "    sprintf(buf,\"%i\",sizeof(buf));\n"
-                     "}");
+        invalidFunctionUsage("void foo()\n"
+                             "{\n"
+                             "    char buf[100];\n"
+                             "    sprintf(buf,\"%i\",sizeof(buf));\n"
+                             "}");
         ASSERT_EQUALS("", errout.str());
     }
 
     void sprintf3() {
-        sprintfUsage("void foo()\n"
-                     "{\n"
-                     "    char buf[100];\n"
-                     "    sprintf(buf,\"%i\",sizeof(buf));\n"
-                     "    if (buf[0]);\n"
-                     "}");
+        invalidFunctionUsage("void foo()\n"
+                             "{\n"
+                             "    char buf[100];\n"
+                             "    sprintf(buf,\"%i\",sizeof(buf));\n"
+                             "    if (buf[0]);\n"
+                             "}");
         ASSERT_EQUALS("", errout.str());
     }
 
     void sprintf4() {
-        sprintfUsage("struct A\n"
-                     "{\n"
-                     "    char filename[128];\n"
-                     "};\n"
-                     "\n"
-                     "void foo()\n"
-                     "{\n"
-                     "    const char* filename = \"hello\";\n"
-                     "    struct A a;\n"
-                     "    snprintf(a.filename, 128, \"%s\", filename);\n"
-                     "}");
+        invalidFunctionUsage("struct A\n"
+                             "{\n"
+                             "    char filename[128];\n"
+                             "};\n"
+                             "\n"
+                             "void foo()\n"
+                             "{\n"
+                             "    const char* filename = \"hello\";\n"
+                             "    struct A a;\n"
+                             "    snprintf(a.filename, 128, \"%s\", filename);\n"
+                             "}");
         ASSERT_EQUALS("", errout.str());
     }
 
@@ -1374,26 +1408,6 @@ private:
         checkInvalidPointerCast("Q_DECLARE_METATYPE(int*)"); // #4135 - don't crash
     }
 
-    void dangerousStrolUsage() {
-        {
-            sprintfUsage("int f(const char *num)\n"
-                         "{\n"
-                         "    return strtol(num, NULL, 1);\n"
-                         "}");
-
-            ASSERT_EQUALS("[test.cpp:3]: (error) Invalid radix in call to strtol(). It must be 0 or 2-36.\n", errout.str());
-        }
-
-        {
-            sprintfUsage("int f(const char *num)\n"
-                         "{\n"
-                         "    return strtol(num, NULL, 10);\n"
-                         "}");
-
-            ASSERT_EQUALS("", errout.str());
-        }
-    }
-
     void testPassedByValue(const char code[]) {
         // Clear the error buffer..
         errout.str("");
@@ -1762,146 +1776,6 @@ private:
               "    std::cout <<  fmodl(1.0,1) << std::endl;\n"
               "}");
         ASSERT_EQUALS("", errout.str());
-    }
-
-    void cctypefunctionCall() {
-        // isalnum
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  isalnum(61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  isalnum(-61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("[test.cpp:3]: (error) Passing value -61 to isalnum() causes undefined behavior which may lead to a crash.\n", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  isalpha(61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  isalpha(-61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("[test.cpp:3]: (error) Passing value -61 to isalpha() causes undefined behavior which may lead to a crash.\n", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  iscntrl(61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  iscntrl(-61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("[test.cpp:3]: (error) Passing value -61 to iscntrl() causes undefined behavior which may lead to a crash.\n", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  isdigit(61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  isdigit(-61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("[test.cpp:3]: (error) Passing value -61 to isdigit() causes undefined behavior which may lead to a crash.\n", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  isgraph(61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  isgraph(-61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("[test.cpp:3]: (error) Passing value -61 to isgraph() causes undefined behavior which may lead to a crash.\n", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  islower(61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  islower(-61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("[test.cpp:3]: (error) Passing value -61 to islower() causes undefined behavior which may lead to a crash.\n", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  isprint(61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  isprint(-61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("[test.cpp:3]: (error) Passing value -61 to isprint() causes undefined behavior which may lead to a crash.\n", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  ispunct(61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  ispunct(-61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("[test.cpp:3]: (error) Passing value -61 to ispunct() causes undefined behavior which may lead to a crash.\n", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  isspace(61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  isspace(-61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("[test.cpp:3]: (error) Passing value -61 to isspace() causes undefined behavior which may lead to a crash.\n", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  isupper(61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  isupper(-61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("[test.cpp:3]: (error) Passing value -61 to isupper() causes undefined behavior which may lead to a crash.\n", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  isxdigit(61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("", errout.str());
-
-        check("void foo()\n"
-              "{\n"
-              "    std::cout <<  isxdigit(-61) << std::endl;\n"
-              "}");
-        ASSERT_EQUALS("[test.cpp:3]: (error) Passing value -61 to isxdigit() causes undefined behavior which may lead to a crash.\n", errout.str());
-
-        check("void f() {\n"
-              "std::isgraph(-10000, loc);\n"
-              "}");
-        ASSERT_EQUALS("[test.cpp:2]: (error) Passing value -10000 to isgraph() causes undefined behavior which may lead to a crash.\n", errout.str());
     }
 
     void switchRedundantAssignmentTest() {
@@ -3821,6 +3695,13 @@ private:
              );
         ASSERT_EQUALS("", errout.str());
 
+        // #5334
+        check("void f(C *src) {\n"
+              "    if (x<A*>(src) || x<B*>(src))\n"
+              "        a++;\n"
+              "}\n");
+        ASSERT_EQUALS("", errout.str());
+
         check("void f(int x) {\n"
               "    if ((x == 1) && (x == 0x00000001))\n"
               "        a++;\n"
@@ -4265,6 +4146,11 @@ private:
               "}");
         ASSERT_EQUALS("[test.cpp:2]: (style) Clarify calculation precedence for '*' and '?'.\n", errout.str());
 
+        check("void f() {\n"
+              "    return (2*a)?b:c;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
         // Ticket #2585 - segmentation fault for invalid code
         check("abcdef?""?<"
               "123456?""?>"
@@ -4295,6 +4181,9 @@ private:
         check("int f() {\n"
               "   return shift < sizeof(int64_t)*8 ? 1 : 2;\n"
               "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("void f() { a = *p ? 1 : 2; }");
         ASSERT_EQUALS("", errout.str());
     }
 
@@ -4709,12 +4598,12 @@ private:
     }
 
     void duplicateExpression1() {
-        check("void foo() {\n"
+        check("void foo(int a) {\n"
               "    if (a == a) { }\n"
               "}");
         ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:2]: (style) Same expression on both sides of '=='.\n", errout.str());
 
-        check("void fun() {\n"
+        check("void fun(int b) {\n"
               "    return  a && a ||\n"
               "            b == b &&\n"
               "            d > d &&\n"
@@ -4736,12 +4625,12 @@ private:
               "}");
         ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:2]: (style) Same expression on both sides of '&&'.\n", errout.str());
 
-        check("void foo() {\n"
+        check("void foo(int b) {\n"
               "    f(a,b == b);\n"
               "}");
         ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:2]: (style) Same expression on both sides of '=='.\n", errout.str());
 
-        check("void foo() {\n"
+        check("void foo(int b) {\n"
               "    f(b == b, a);\n"
               "}");
         ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:2]: (style) Same expression on both sides of '=='.\n", errout.str());
@@ -4754,7 +4643,7 @@ private:
         check("void foo() {\n"
               "    if (x!=2 || y!=3 || x!=2) {}\n"
               "}");
-        TODO_ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:2]: (style) Same expression on both sides of '||'.\n", "", errout.str());
+        ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:2]: (style) Same expression on both sides of '||'.\n", errout.str());
 
         check("void foo() {\n"
               "    if (a && b || a && b) {}\n"
@@ -4877,6 +4766,10 @@ private:
 
         check("struct X { float f; };\n"
               "float f(struct X x) { return x.f == x.f; }");
+        ASSERT_EQUALS("", errout.str());
+
+        // #5284 - when type is unknown, assume it's float
+        check("int f() { return x==x; }");
         ASSERT_EQUALS("", errout.str());
     }
 
@@ -6052,7 +5945,7 @@ private:
 
         // Simplify token list..
         CheckOther checkOther(&tokenizer, &settings, this);
-        tokenizer.simplifyTokenList();
+        tokenizer.simplifyTokenList2();
         checkOther.checkRedundantCopy();
     }
     void checkRedundantCopy() {
@@ -6893,12 +6786,12 @@ private:
         check("void f(){\n"
               "usleep(1000000);\n"
               "}",NULL,false,false,true);
-        ASSERT_EQUALS("[test.cpp:2]: (error) The argument of usleep must be less than 1000000.\n", errout.str());
+        ASSERT_EQUALS("[test.cpp:2]: (error) Invalid usleep() argument nr 1. The value is 1000000 but the valid values are '0-999999'.\n", errout.str());
 
         check("void f(){\n"
               "usleep(1000001);\n"
               "}",NULL,false,false,true);
-        ASSERT_EQUALS("[test.cpp:2]: (error) The argument of usleep must be less than 1000000.\n", errout.str());
+        ASSERT_EQUALS("[test.cpp:2]: (error) Invalid usleep() argument nr 1. The value is 1000001 but the valid values are '0-999999'.\n", errout.str());
     }
 
     void checkCommaSeparatedReturn() {

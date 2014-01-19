@@ -86,6 +86,7 @@ private:
         Settings settings;
         settings.addEnabled("warning");
         settings.inconclusive = inconclusive;
+        //settings.valueFlow = true;
 
         // Tokenize..
         Tokenizer tokenizer(&settings, this);
@@ -98,7 +99,7 @@ private:
         checkNullPointer.nullPointer();
 
         const std::string str1(tokenizer.tokens()->stringifyList(0,true));
-        tokenizer.simplifyTokenList();
+        tokenizer.simplifyTokenList2();
         const std::string str2(tokenizer.tokens()->stringifyList(0,true));
         if (verify && str1 != str2)
             warn(("Unsimplified code in test case. It looks like this test "
@@ -498,7 +499,7 @@ private:
             ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:3]: (warning, inconclusive) Possible null pointer dereference: fred - otherwise it is redundant to check it against null.\n", errout.str());
         }
 
-        // false positives when there are macros
+        // #3425 - false positives when there are macros
         check("void f(struct FRED *fred) {\n"
               "    fred->x = 0;\n"
               "    $if(!fred){}\n"
@@ -822,7 +823,7 @@ private:
               "}");
         ASSERT_EQUALS("", errout.str());
 
-        // false positives when there are macros
+        // #3425 - false positives when there are macros
         check("void f(int *p) {\n"
               "    *p = 0;\n"
               "    $if(!p){}\n"
@@ -2180,7 +2181,7 @@ private:
         // for 1st parameter null pointer is not ok..
         {
             Library library;
-            struct Library::ArgumentChecks arg;
+            Library::ArgumentChecks arg;
             library.argumentChecks["x"][1] = arg;
             library.argumentChecks["x"][2] = arg;
             library.argumentChecks["x"][1].notnull = true;

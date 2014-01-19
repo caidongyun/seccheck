@@ -183,6 +183,7 @@ private:
         TEST_CASE(macro_simple15);
         TEST_CASE(macro_simple16);  // #4703: Macro parameters not trimmed
         TEST_CASE(macro_simple17);  // #5074: isExpandedMacro not set
+        TEST_CASE(macro_simple18);  // (1e-7)
         TEST_CASE(macroInMacro1);
         TEST_CASE(macroInMacro2);
         TEST_CASE(macro_mismatch);
@@ -413,6 +414,10 @@ private:
 
         // #4873
         ASSERT_EQUALS("__asm { }", preprocessor.removeComments("__asm { /* This is a comment */ }", "4873.cpp"));
+
+        // #5169
+        ASSERT_EQUALS("#define A(B) __asm__(\"int $3\"); int wait=1;\n",
+                      preprocessor.removeComments("#define A(B) __asm__(\"int $3\"); /**/ int wait=1;\n", "5169.c"));
     }
 
 
@@ -1975,6 +1980,40 @@ private:
         const char filedata[] = "#define MACRO(A) A+123\n"
                                 "MACRO(123)";
         ASSERT_EQUALS("\n$123+$123", OurPreprocessor::expandMacros(filedata));
+    }
+
+    void macro_simple18() {  // (1e-7)
+        const char filedata1[] = "#define A (1e-7)\n"
+                                 "a=A;";
+        ASSERT_EQUALS("\na=$($1e-7);", OurPreprocessor::expandMacros(filedata1));
+
+        const char filedata2[] = "#define A (1E-7)\n"
+                                 "a=A;";
+        ASSERT_EQUALS("\na=$($1E-7);", OurPreprocessor::expandMacros(filedata2));
+
+        const char filedata3[] = "#define A (1e+7)\n"
+                                 "a=A;";
+        ASSERT_EQUALS("\na=$($1e+7);", OurPreprocessor::expandMacros(filedata3));
+
+        const char filedata4[] = "#define A (1.e+7)\n"
+                                 "a=A;";
+        ASSERT_EQUALS("\na=$($1.e+7);", OurPreprocessor::expandMacros(filedata4));
+
+        const char filedata5[] = "#define A (1.7f)\n"
+                                 "a=A;";
+        ASSERT_EQUALS("\na=$($1.7f);", OurPreprocessor::expandMacros(filedata5));
+
+        const char filedata6[] = "#define A (.1)\n"
+                                 "a=A;";
+        ASSERT_EQUALS("\na=$($.1);", OurPreprocessor::expandMacros(filedata6));
+
+        const char filedata7[] = "#define A (1.)\n"
+                                 "a=A;";
+        ASSERT_EQUALS("\na=$($1.);", OurPreprocessor::expandMacros(filedata7));
+
+        const char filedata8[] = "#define A (8.0E+007)\n"
+                                 "a=A;";
+        ASSERT_EQUALS("\na=$($8.0E+007);", OurPreprocessor::expandMacros(filedata8));
     }
 
     void macroInMacro1() {
