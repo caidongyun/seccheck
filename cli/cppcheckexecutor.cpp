@@ -51,10 +51,10 @@ bool CppCheckExecutor::parseFromArgs(CppCheck *cppcheck, int argc, const char* c
         if (parser.GetShowVersion() && !parser.GetShowErrorMessages()) {
             const char * extraVersion = cppcheck->extraVersion();
             if (*extraVersion != 0)
-                std::cout << "Cppcheck " << cppcheck->version() << " ("
+                std::cout << "Seccheck " << cppcheck->version() << " ("
                           << extraVersion << ')' << std::endl;
             else
-                std::cout << "Cppcheck " << cppcheck->version() << std::endl;
+                std::cout << "Seccheck " << cppcheck->version() << std::endl;
         }
 
         if (parser.GetShowErrorMessages()) {

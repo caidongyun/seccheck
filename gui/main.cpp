@@ -91,7 +91,7 @@ void ShowUsage()
     QString helpMessage = MainWindow::tr(
                               "Cppcheck GUI.\n\n"
                               "Syntax:\n"
-                              "    cppcheck-gui [OPTIONS] [files or paths]\n\n"
+                              "    seccheck-gui [OPTIONS] [files or paths]\n\n"
                               "Options:\n"
                               "    -h, --help     Print this help\n"
                               "    -p <file>      Open given project file and start checking it\n"

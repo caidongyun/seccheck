@@ -73,7 +73,11 @@ private:
             const std::string info = (*i)->classInfo();
             if (!info.empty()) {
                 ASSERT('\n' != info[0]);                   // No \n in the beginning
-                ASSERT('\n' == info[info.length()-1]);     // \n at end
+				const bool isLastEnterChar = ('\n' == info[info.length()-1]);
+                ASSERT(isLastEnterChar);     // \n at end
+				if (!isLastEnterChar) {
+					std::cout << "DEBUG:" << info << std::endl;
+				}
                 if (info.size() > 1)
                     ASSERT('\n' != info[info.length()-2]); // Only one \n at end
             }

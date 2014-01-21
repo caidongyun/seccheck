@@ -117,13 +117,18 @@ protected:
     ErrorLogger * const _errorLogger;
 
     /** report an error */
-    void reportError(const Token *tok, const Severity::SeverityType severity, const std::string &id, const std::string &msg, bool inconclusive = false) {
+	// Parameter msg should contains two parts splitted by '\n'. 
+	// The first part is short message. 
+	// The second part is verbose message.
+    void reportError(const Token *tok, const Severity::SeverityType severity, 
+		const std::string &id, const std::string &msg, bool inconclusive = false) {
         std::list<const Token *> callstack(1, tok);
         reportError(callstack, severity, id, msg, inconclusive);
     }
 
     /** report an error */
-    void reportError(const std::list<const Token *> &callstack, Severity::SeverityType severity, const std::string &id, const std::string& msg, bool inconclusive = false) {
+    void reportError(const std::list<const Token *> &callstack, Severity::SeverityType severity, 
+		const std::string &id, const std::string& msg, bool inconclusive = false) {
         ErrorLogger::ErrorMessage errmsg(callstack, _tokenizer?&_tokenizer->list:0, severity, id, msg, inconclusive);
         if (_errorLogger)
             _errorLogger->reportErr(errmsg);

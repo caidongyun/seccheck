@@ -66,9 +66,9 @@ private:
     }
 
     std::string classInfo() const {
-        std::string info = "Warn if function parameters are complex classes or containers:\n"
-			"* If function parameters are complex classes or containers, it maybe utilize the heavy object copy mechanism, "
-			"* which maybe slow the system.";
+        std::string info = "Warn if complex object copying:\n"
+			"* Function parameters are complex classes or containers.\n"
+			"* Complex classes or containers equation.\n";
 
         return info;
     }

@@ -174,11 +174,13 @@ void CheckComplexCopying::checkComplexParametersAsArgument(const Scope* scope) {
 			if (isComplexContainer(typetok->str()) ) {
 				std::ostringstream errmsg;
 				errmsg << "Complex objects copying in Function " << func->name() 
-					<< " may slow down system performance.\n"
+					<< " may slow down system performance.\n" 
+					<< "Complex objects copying in parameters or equation may slow down the system performance. "
 					<< "Please use pointer or reference instead.";
+				std::string errDesc = errmsg.str();
 				// STL Container
 				reportError(func->token, Severity::performance, 
-					"complexObjectCopying", errmsg.str());
+					"complexObjectCopying", errDesc);
 				break;
 			}
         }

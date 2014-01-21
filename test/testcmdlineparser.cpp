@@ -144,7 +144,7 @@ private:
 
     void nooptions() {
         REDIRECT;
-        const char *argv[] = {"cppcheck"};
+        const char *argv[] = {"seccheck"};
         CmdLineParser parser(&settings);
         ASSERT(parser.ParseFromArgs(1, argv));
         ASSERT_EQUALS(true, parser.GetShowHelp());
@@ -152,7 +152,7 @@ private:
 
     void helpshort() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-h"};
+        const char *argv[] = {"seccheck", "-h"};
         CmdLineParser parser(&settings);
         ASSERT(parser.ParseFromArgs(2, argv));
         ASSERT_EQUALS(true, parser.GetShowHelp());
@@ -160,7 +160,7 @@ private:
 
     void helplong() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--help"};
+        const char *argv[] = {"seccheck", "--help"};
         CmdLineParser parser(&settings);
         ASSERT(parser.ParseFromArgs(2, argv));
         ASSERT_EQUALS(true, parser.GetShowHelp());
@@ -168,7 +168,7 @@ private:
 
     void showversion() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--version"};
+        const char *argv[] = {"seccheck", "--version"};
         CmdLineParser parser(&settings);
         ASSERT(parser.ParseFromArgs(2, argv));
         ASSERT_EQUALS(true, parser.GetShowVersion());
@@ -176,7 +176,7 @@ private:
 
     void onefile() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "file.cpp"};
+        const char *argv[] = {"seccheck", "file.cpp"};
         CmdLineParser parser(&settings);
         ASSERT(parser.ParseFromArgs(2, argv));
         ASSERT_EQUALS(1, (int)parser.GetPathNames().size());
@@ -185,7 +185,7 @@ private:
 
     void onepath() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "src"};
+        const char *argv[] = {"seccheck", "src"};
         CmdLineParser parser(&settings);
         ASSERT(parser.ParseFromArgs(2, argv));
         ASSERT_EQUALS(1, (int)parser.GetPathNames().size());
@@ -194,7 +194,7 @@ private:
 
     void optionwithoutfile() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-v"};
+        const char *argv[] = {"seccheck", "-v"};
         CmdLineParser parser(&settings);
         ASSERT_EQUALS(false, parser.ParseFromArgs(2, argv));
         ASSERT_EQUALS(0, (int)parser.GetPathNames().size());
@@ -202,7 +202,7 @@ private:
 
     void verboseshort() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-v", "file.cpp"};
+        const char *argv[] = {"seccheck", "-v", "file.cpp"};
         settings._verbose = false;
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT_EQUALS(true, settings._verbose);
@@ -210,7 +210,7 @@ private:
 
     void verboselong() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--verbose", "file.cpp"};
+        const char *argv[] = {"seccheck", "--verbose", "file.cpp"};
         settings._verbose = false;
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT_EQUALS(true, settings._verbose);
@@ -218,7 +218,7 @@ private:
 
     void debug() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--debug", "file.cpp"};
+        const char *argv[] = {"seccheck", "--debug", "file.cpp"};
         settings.debug = false;
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT_EQUALS(true, settings.debug);
@@ -226,7 +226,7 @@ private:
 
     void debugwarnings() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--debug-warnings", "file.cpp"};
+        const char *argv[] = {"seccheck", "--debug-warnings", "file.cpp"};
         settings.debugwarnings = false;
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT_EQUALS(true, settings.debugwarnings);
@@ -234,7 +234,7 @@ private:
 
     void forceshort() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-f", "file.cpp"};
+        const char *argv[] = {"seccheck", "-f", "file.cpp"};
         settings._force = false;
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT_EQUALS(true, settings._force);
@@ -242,7 +242,7 @@ private:
 
     void forcelong() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--force", "file.cpp"};
+        const char *argv[] = {"seccheck", "--force", "file.cpp"};
         settings._force = false;
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT_EQUALS(true, settings._force);
@@ -252,20 +252,20 @@ private:
         REDIRECT;
         settings._relativePaths = false;
 
-        const char *argvs[] = {"cppcheck", "-rp", "file.cpp"};
+        const char *argvs[] = {"seccheck", "-rp", "file.cpp"};
         ASSERT(defParser.ParseFromArgs(3, argvs));
         ASSERT_EQUALS(true, settings._relativePaths);
 
         settings._relativePaths = false;
 
-        const char *argvl[] = {"cppcheck", "--relative-paths", "file.cpp"};
+        const char *argvl[] = {"seccheck", "--relative-paths", "file.cpp"};
         ASSERT(defParser.ParseFromArgs(3, argvl));
         ASSERT_EQUALS(true, settings._relativePaths);
 
         settings._relativePaths = false;
         settings._basePaths.clear();
 
-        const char *argvsp[] = {"cppcheck", "-rp=C:/foo;C:\\bar", "file.cpp"};
+        const char *argvsp[] = {"seccheck", "-rp=C:/foo;C:\\bar", "file.cpp"};
         ASSERT(defParser.ParseFromArgs(3, argvsp));
         ASSERT_EQUALS(true, settings._relativePaths);
         ASSERT_EQUALS(2, settings._basePaths.size());
@@ -275,7 +275,7 @@ private:
         settings._relativePaths = false;
         settings._basePaths.clear();
 
-        const char *argvlp[] = {"cppcheck", "--relative-paths=C:/foo;C:\\bar", "file.cpp"};
+        const char *argvlp[] = {"seccheck", "--relative-paths=C:/foo;C:\\bar", "file.cpp"};
         ASSERT(defParser.ParseFromArgs(3, argvlp));
         ASSERT_EQUALS(true, settings._relativePaths);
         ASSERT_EQUALS(2, settings._basePaths.size());
@@ -285,7 +285,7 @@ private:
 
     void quietshort() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-q", "file.cpp"};
+        const char *argv[] = {"seccheck", "-q", "file.cpp"};
         settings._errorsOnly = false;
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT_EQUALS(true, settings._errorsOnly);
@@ -293,7 +293,7 @@ private:
 
     void quietlong() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--quiet", "file.cpp"};
+        const char *argv[] = {"seccheck", "--quiet", "file.cpp"};
         settings._errorsOnly = false;
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT_EQUALS(true, settings._errorsOnly);
@@ -301,28 +301,28 @@ private:
 
     void defines_noarg() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-D"};
+        const char *argv[] = {"seccheck", "-D"};
         // Fails since -D has no param
         ASSERT_EQUALS(false, defParser.ParseFromArgs(2, argv));
     }
 
     void defines_noarg2() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-D", "-v", "file.cpp"};
+        const char *argv[] = {"seccheck", "-D", "-v", "file.cpp"};
         // Fails since -D has no param
         ASSERT_EQUALS(false, defParser.ParseFromArgs(4, argv));
     }
 
     void defines_noarg3() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-D", "--quiet", "file.cpp"};
+        const char *argv[] = {"seccheck", "-D", "--quiet", "file.cpp"};
         // Fails since -D has no param
         ASSERT_EQUALS(false, defParser.ParseFromArgs(4, argv));
     }
 
     void defines() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-D_WIN32", "file.cpp"};
+        const char *argv[] = {"seccheck", "-D_WIN32", "file.cpp"};
         settings.userDefines.clear();
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT_EQUALS("_WIN32=1", settings.userDefines);
@@ -330,7 +330,7 @@ private:
 
     void defines2() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-D_WIN32", "-DNODEBUG", "file.cpp"};
+        const char *argv[] = {"seccheck", "-D_WIN32", "-DNODEBUG", "file.cpp"};
         settings.userDefines.clear();;
         ASSERT(defParser.ParseFromArgs(4, argv));
         ASSERT_EQUALS("_WIN32=1;NODEBUG=1", settings.userDefines);
@@ -338,7 +338,7 @@ private:
 
     void defines3() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-D", "DEBUG", "file.cpp"};
+        const char *argv[] = {"seccheck", "-D", "DEBUG", "file.cpp"};
         settings.userDefines.clear();
         ASSERT(defParser.ParseFromArgs(4, argv));
         ASSERT_EQUALS("DEBUG=1", settings.userDefines);
@@ -346,7 +346,7 @@ private:
 
     void defines4() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-DDEBUG=", "file.cpp"}; // #5137 - defining empty macro
+        const char *argv[] = {"seccheck", "-DDEBUG=", "file.cpp"}; // #5137 - defining empty macro
         settings.userDefines.clear();
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT_EQUALS("DEBUG=", settings.userDefines);
@@ -355,53 +355,53 @@ private:
     void enforceLanguage() {
         REDIRECT;
         {
-            const char *argv[] = {"cppcheck", "file.cpp"};
+            const char *argv[] = {"seccheck", "file.cpp"};
             settings.enforcedLang = Settings::None;
             ASSERT(defParser.ParseFromArgs(2, argv));
             ASSERT_EQUALS(Settings::None, settings.enforcedLang);
         }
         {
-            const char *argv[] = {"cppcheck", "-x", "c++", "file.cpp"};
+            const char *argv[] = {"seccheck", "-x", "c++", "file.cpp"};
             settings.enforcedLang = Settings::None;
             ASSERT(defParser.ParseFromArgs(4, argv));
             ASSERT_EQUALS(Settings::CPP, settings.enforcedLang);
         }
         {
-            const char *argv[] = {"cppcheck", "-x"};
+            const char *argv[] = {"seccheck", "-x"};
             ASSERT(!defParser.ParseFromArgs(2, argv));
         }
         {
-            const char *argv[] = {"cppcheck", "-x", "--inconclusive", "file.cpp"};
+            const char *argv[] = {"seccheck", "-x", "--inconclusive", "file.cpp"};
             ASSERT(!defParser.ParseFromArgs(4, argv));
         }
         {
-            const char *argv[] = {"cppcheck", "--language=c++", "file.cpp"};
+            const char *argv[] = {"seccheck", "--language=c++", "file.cpp"};
             settings.enforcedLang = Settings::None;
             ASSERT(defParser.ParseFromArgs(3, argv));
             ASSERT_EQUALS(Settings::CPP, settings.enforcedLang);
         }
         {
-            const char *argv[] = {"cppcheck", "--language=c", "file.cpp"};
+            const char *argv[] = {"seccheck", "--language=c", "file.cpp"};
             settings.enforcedLang = Settings::None;
             ASSERT(defParser.ParseFromArgs(3, argv));
             ASSERT_EQUALS(Settings::C, settings.enforcedLang);
         }
         {
-            const char *argv[] = {"cppcheck", "--language=unknownLanguage", "file.cpp"};
+            const char *argv[] = {"seccheck", "--language=unknownLanguage", "file.cpp"};
             ASSERT(!defParser.ParseFromArgs(3, argv));
         }
     }
 
     void includesnopath() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-I"};
+        const char *argv[] = {"seccheck", "-I"};
         // Fails since -I has no param
         ASSERT_EQUALS(false, defParser.ParseFromArgs(2, argv));
     }
 
     void includes() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-I", "include", "file.cpp"};
+        const char *argv[] = {"seccheck", "-I", "include", "file.cpp"};
         settings._includePaths.clear();
         ASSERT(defParser.ParseFromArgs(4, argv));
         ASSERT_EQUALS("include/", settings._includePaths.front());
@@ -409,7 +409,7 @@ private:
 
     void includesslash() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-I", "include/", "file.cpp"};
+        const char *argv[] = {"seccheck", "-I", "include/", "file.cpp"};
         settings._includePaths.clear();
         ASSERT(defParser.ParseFromArgs(4, argv));
         ASSERT_EQUALS("include/", settings._includePaths.front());
@@ -417,7 +417,7 @@ private:
 
     void includesbackslash() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-I", "include\\", "file.cpp"};
+        const char *argv[] = {"seccheck", "-I", "include\\", "file.cpp"};
         settings._includePaths.clear();
         ASSERT(defParser.ParseFromArgs(4, argv));
         ASSERT_EQUALS("include/", settings._includePaths.front());
@@ -425,7 +425,7 @@ private:
 
     void includesnospace() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-Iinclude", "file.cpp"};
+        const char *argv[] = {"seccheck", "-Iinclude", "file.cpp"};
         settings._includePaths.clear();
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT_EQUALS("include/", settings._includePaths.front());
@@ -433,7 +433,7 @@ private:
 
     void includes2() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-I", "include/", "-I", "framework/", "file.cpp"};
+        const char *argv[] = {"seccheck", "-I", "include/", "-I", "framework/", "file.cpp"};
         settings._includePaths.clear();
         ASSERT(defParser.ParseFromArgs(6, argv));
         ASSERT_EQUALS("include/", settings._includePaths.front());
@@ -444,14 +444,14 @@ private:
     void includesFile() {
         // TODO: Fails since cannot open the file
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--includes-file=inclpaths.txt", "file.cpp"};
+        const char *argv[] = {"seccheck", "--includes-file=inclpaths.txt", "file.cpp"};
         settings._includePaths.clear();
         ASSERT_EQUALS(true, defParser.ParseFromArgs(3, argv));
     }
 
     void enabledAll() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--enable=all", "file.cpp"};
+        const char *argv[] = {"seccheck", "--enable=all", "file.cpp"};
         settings = Settings();
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT(settings.isEnabled("style"));
@@ -463,7 +463,7 @@ private:
 
     void enabledStyle() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--enable=style", "file.cpp"};
+        const char *argv[] = {"seccheck", "--enable=style", "file.cpp"};
         settings = Settings();
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT(settings.isEnabled("style"));
@@ -476,7 +476,7 @@ private:
 
     void enabledPerformance() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--enable=performance", "file.cpp"};
+        const char *argv[] = {"seccheck", "--enable=performance", "file.cpp"};
         settings = Settings();
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT(!settings.isEnabled("style"));
@@ -489,7 +489,7 @@ private:
 
     void enabledPortability() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--enable=portability", "file.cpp"};
+        const char *argv[] = {"seccheck", "--enable=portability", "file.cpp"};
         settings = Settings();
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT(!settings.isEnabled("style"));
@@ -502,7 +502,7 @@ private:
 
     void enabledUnusedFunction() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--enable=unusedFunction", "file.cpp"};
+        const char *argv[] = {"seccheck", "--enable=unusedFunction", "file.cpp"};
         settings = Settings();
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT(settings.isEnabled("unusedFunction"));
@@ -510,7 +510,7 @@ private:
 
     void enabledMissingInclude() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--enable=missingInclude", "file.cpp"};
+        const char *argv[] = {"seccheck", "--enable=missingInclude", "file.cpp"};
         settings = Settings();
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT(settings.isEnabled("missingInclude"));
@@ -519,7 +519,7 @@ private:
 #ifndef NDEBUG
     void enabledInternal() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--enable=internal", "file.cpp"};
+        const char *argv[] = {"seccheck", "--enable=internal", "file.cpp"};
         settings = Settings();
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT(settings.isEnabled("internal"));
@@ -528,7 +528,7 @@ private:
 
     void enabledMultiple() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--enable=missingInclude,portability,warning", "file.cpp"};
+        const char *argv[] = {"seccheck", "--enable=missingInclude,portability,warning", "file.cpp"};
         settings = Settings();
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT(!settings.isEnabled("style"));
@@ -541,7 +541,7 @@ private:
 
     void inconclusive() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--inconclusive"};
+        const char *argv[] = {"seccheck", "--inconclusive"};
         settings.inconclusive = false;
         ASSERT(defParser.ParseFromArgs(2, argv));
         ASSERT_EQUALS(true, settings.inconclusive);
@@ -549,7 +549,7 @@ private:
 
     void errorExitcode() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--error-exitcode=5", "file.cpp"};
+        const char *argv[] = {"seccheck", "--error-exitcode=5", "file.cpp"};
         settings._exitCode = 0;
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT_EQUALS(5, settings._exitCode);
@@ -557,7 +557,7 @@ private:
 
     void errorExitcodeMissing() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--error-exitcode=", "file.cpp"};
+        const char *argv[] = {"seccheck", "--error-exitcode=", "file.cpp"};
         settings._exitCode = 0;
         // Fails since exit code not given
         ASSERT_EQUALS(false, defParser.ParseFromArgs(3, argv));
@@ -565,7 +565,7 @@ private:
 
     void errorExitcodeStr() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--error-exitcode=foo", "file.cpp"};
+        const char *argv[] = {"seccheck", "--error-exitcode=foo", "file.cpp"};
         settings._exitCode = 0;
         // Fails since invalid exit code
         ASSERT_EQUALS(false, defParser.ParseFromArgs(3, argv));
@@ -574,7 +574,7 @@ private:
     void exitcodeSuppressionsOld() {
         // TODO: Fails since cannot open the file
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--exitcode-suppressions", "suppr.txt", "file.cpp"};
+        const char *argv[] = {"seccheck", "--exitcode-suppressions", "suppr.txt", "file.cpp"};
         settings._exitCode = 0;
         TODO_ASSERT_EQUALS(true, false, defParser.ParseFromArgs(4, argv));
     }
@@ -582,7 +582,7 @@ private:
     void exitcodeSuppressions() {
         // TODO: Fails since cannot open the file
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--exitcode-suppressions=suppr.txt", "file.cpp"};
+        const char *argv[] = {"seccheck", "--exitcode-suppressions=suppr.txt", "file.cpp"};
         settings._exitCode = 0;
         TODO_ASSERT_EQUALS(true, false, defParser.ParseFromArgs(3, argv));
     }
@@ -590,7 +590,7 @@ private:
     void exitcodeSuppressionsNoFile() {
         // TODO: Fails since cannot open the file
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--exitcode-suppressions", "file.cpp"};
+        const char *argv[] = {"seccheck", "--exitcode-suppressions", "file.cpp"};
         settings._exitCode = 0;
         TODO_ASSERT_EQUALS(true, false, defParser.ParseFromArgs(3, argv));
     }
@@ -598,7 +598,7 @@ private:
     void fileList() {
         // TODO: Fails since cannot open the file
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--file-list", "files.txt", "file.cpp"};
+        const char *argv[] = {"seccheck", "--file-list", "files.txt", "file.cpp"};
         TODO_ASSERT_EQUALS(true, false, defParser.ParseFromArgs(4, argv));
     }
 
@@ -606,19 +606,19 @@ private:
             // TODO: Give it some stdin to read from, fails because the list of
             // files in stdin (_pathnames) is empty
             REDIRECT;
-            const char *argv[] = {"cppcheck", "--file-list=-", "file.cpp"};
+            const char *argv[] = {"seccheck", "--file-list=-", "file.cpp"};
             TODO_ASSERT_EQUALS(true, false, defParser.ParseFromArgs(3, argv));
         } */
 
     void inlineSuppr() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--inline-suppr", "file.cpp"};
+        const char *argv[] = {"seccheck", "--inline-suppr", "file.cpp"};
         ASSERT(defParser.ParseFromArgs(3, argv));
     }
 
     void jobs() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-j", "3", "file.cpp"};
+        const char *argv[] = {"seccheck", "-j", "3", "file.cpp"};
         settings._jobs = 0;
         ASSERT(defParser.ParseFromArgs(4, argv));
         ASSERT_EQUALS(3, settings._jobs);
@@ -626,7 +626,7 @@ private:
 
     void jobsMissingCount() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-j", "file.cpp"};
+        const char *argv[] = {"seccheck", "-j", "file.cpp"};
         settings._jobs = 0;
         // Fails since -j is missing thread count
         ASSERT_EQUALS(false, defParser.ParseFromArgs(3, argv));
@@ -634,7 +634,7 @@ private:
 
     void jobsInvalid() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-j", "e", "file.cpp"};
+        const char *argv[] = {"seccheck", "-j", "e", "file.cpp"};
         settings._jobs = 0;
         // Fails since invalid count given for -j
         ASSERT_EQUALS(false, defParser.ParseFromArgs(4, argv));
@@ -642,7 +642,7 @@ private:
 
     void maxConfigs() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-f", "--max-configs=12", "file.cpp"};
+        const char *argv[] = {"seccheck", "-f", "--max-configs=12", "file.cpp"};
         settings._force = false;
         settings._maxConfigs = 12;
         ASSERT(defParser.ParseFromArgs(4, argv));
@@ -652,28 +652,28 @@ private:
 
     void maxConfigsMissingCount() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--max-configs=", "file.cpp"};
+        const char *argv[] = {"seccheck", "--max-configs=", "file.cpp"};
         // Fails since --max-configs= is missing limit
         ASSERT_EQUALS(false, defParser.ParseFromArgs(3, argv));
     }
 
     void maxConfigsInvalid() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--max-configs=e", "file.cpp"};
+        const char *argv[] = {"seccheck", "--max-configs=e", "file.cpp"};
         // Fails since invalid count given for --max-configs=
         ASSERT_EQUALS(false, defParser.ParseFromArgs(3, argv));
     }
 
     void maxConfigsTooSmall() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--max-configs=0", "file.cpp"};
+        const char *argv[] = {"seccheck", "--max-configs=0", "file.cpp"};
         // Fails since limit must be greater than 0
         ASSERT_EQUALS(false, defParser.ParseFromArgs(3, argv));
     }
 
     void reportProgressTest() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--report-progress", "file.cpp"};
+        const char *argv[] = {"seccheck", "--report-progress", "file.cpp"};
         settings.reportProgress = false;
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT(settings.reportProgress);
@@ -681,7 +681,7 @@ private:
 
     void stdposix() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--std=posix", "file.cpp"};
+        const char *argv[] = {"seccheck", "--std=posix", "file.cpp"};
         settings.standards.posix = false;
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT(settings.standards.posix);
@@ -689,7 +689,7 @@ private:
 
     void stdc99() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--std=c99", "file.cpp"};
+        const char *argv[] = {"seccheck", "--std=c99", "file.cpp"};
         settings.standards.c = Standards::C89;
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT(settings.standards.c == Standards::C99);
@@ -697,7 +697,7 @@ private:
 
     void stdcpp11() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--std=c++11", "file.cpp"};
+        const char *argv[] = {"seccheck", "--std=c++11", "file.cpp"};
         settings.standards.cpp = Standards::CPP03;
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT(settings.standards.cpp == Standards::CPP11);
@@ -705,7 +705,7 @@ private:
 
     void platform() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--platform=win64", "file.cpp"};
+        const char *argv[] = {"seccheck", "--platform=win64", "file.cpp"};
         settings.platform(Settings::Unspecified);
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT(settings.platformType == Settings::Win64);
@@ -714,14 +714,14 @@ private:
     void suppressionsOld() {
         // TODO: Fails because there is no suppr.txt file!
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--suppressions", "suppr.txt", "file.cpp"};
+        const char *argv[] = {"seccheck", "--suppressions", "suppr.txt", "file.cpp"};
         ASSERT(!defParser.ParseFromArgs(4, argv));
     }
 
     void suppressions() {
         // TODO: Fails because there is no suppr.txt file!
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--suppressions-list=suppr.txt", "file.cpp"};
+        const char *argv[] = {"seccheck", "--suppressions-list=suppr.txt", "file.cpp"};
         TODO_ASSERT_EQUALS(true, false, defParser.ParseFromArgs(3, argv));
     }
 
@@ -729,21 +729,21 @@ private:
         REDIRECT;
         {
             CLEAR_REDIRECT_OUTPUT;
-            const char *argv[] = {"cppcheck", "--suppressions-list=", "file.cpp"};
+            const char *argv[] = {"seccheck", "--suppressions-list=", "file.cpp"};
             ASSERT_EQUALS(false, defParser.ParseFromArgs(3, argv));
             ASSERT_EQUALS(false, GET_REDIRECT_OUTPUT.find("If you want to pass two files") != std::string::npos);
         }
 
         {
             CLEAR_REDIRECT_OUTPUT;
-            const char *argv[] = {"cppcheck", "--suppressions-list=a.suppr,b.suppr", "file.cpp"};
+            const char *argv[] = {"seccheck", "--suppressions-list=a.suppr,b.suppr", "file.cpp"};
             ASSERT_EQUALS(false, defParser.ParseFromArgs(3, argv));
             ASSERT_EQUALS(true, GET_REDIRECT_OUTPUT.find("If you want to pass two files") != std::string::npos);
         }
 
         {
             CLEAR_REDIRECT_OUTPUT;
-            const char *argv[] = {"cppcheck", "--suppressions-list=a.suppr b.suppr", "file.cpp"};
+            const char *argv[] = {"seccheck", "--suppressions-list=a.suppr b.suppr", "file.cpp"};
             ASSERT_EQUALS(false, defParser.ParseFromArgs(3, argv));
             ASSERT_EQUALS(true, GET_REDIRECT_OUTPUT.find("If you want to pass two files") != std::string::npos);
         }
@@ -751,7 +751,7 @@ private:
 
     void suppressionSingle() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--suppress=uninitvar", "file.cpp"};
+        const char *argv[] = {"seccheck", "--suppress=uninitvar", "file.cpp"};
         settings = Settings();
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT_EQUALS(true, settings.nomsg.isSuppressed("uninitvar", "file.cpp", 1U));
@@ -759,7 +759,7 @@ private:
 
     void suppressionSingleFile() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--suppress=uninitvar:file.cpp", "file.cpp"};
+        const char *argv[] = {"seccheck", "--suppress=uninitvar:file.cpp", "file.cpp"};
         settings = Settings();
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT_EQUALS(true, settings.nomsg.isSuppressed("uninitvar", "file.cpp", 1U));
@@ -767,7 +767,7 @@ private:
 
     void suppressionTwo() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--suppress=uninitvar,unnecessaryQualification", "file.cpp"};
+        const char *argv[] = {"seccheck", "--suppress=uninitvar,unnecessaryQualification", "file.cpp"};
         settings = Settings();
         TODO_ASSERT_EQUALS(true, false, defParser.ParseFromArgs(3, argv));
         TODO_ASSERT_EQUALS(true, false, settings.nomsg.isSuppressed("uninitvar", "file.cpp", 1U));
@@ -776,7 +776,7 @@ private:
 
     void suppressionTwoSeparate() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--suppress=uninitvar", "--suppress=unnecessaryQualification", "file.cpp"};
+        const char *argv[] = {"seccheck", "--suppress=uninitvar", "--suppress=unnecessaryQualification", "file.cpp"};
         settings = Settings();
         ASSERT(defParser.ParseFromArgs(4, argv));
         ASSERT_EQUALS(true, settings.nomsg.isSuppressed("uninitvar", "file.cpp", 1U));
@@ -785,7 +785,7 @@ private:
 
     void templates() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--template", "{file}:{line},{severity},{id},{message}", "file.cpp"};
+        const char *argv[] = {"seccheck", "--template", "{file}:{line},{severity},{id},{message}", "file.cpp"};
         settings._outputFormat.clear();
         ASSERT(defParser.ParseFromArgs(4, argv));
         ASSERT_EQUALS("{file}:{line},{severity},{id},{message}", settings._outputFormat);
@@ -793,7 +793,7 @@ private:
 
     void templatesGcc() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--template", "gcc", "file.cpp"};
+        const char *argv[] = {"seccheck", "--template", "gcc", "file.cpp"};
         settings._outputFormat.clear();
         ASSERT(defParser.ParseFromArgs(4, argv));
         ASSERT_EQUALS("{file}:{line}: {severity}: {message}", settings._outputFormat);
@@ -801,7 +801,7 @@ private:
 
     void templatesVs() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--template", "vs", "file.cpp"};
+        const char *argv[] = {"seccheck", "--template", "vs", "file.cpp"};
         settings._outputFormat.clear();
         ASSERT(defParser.ParseFromArgs(4, argv));
         ASSERT_EQUALS("{file}({line}): {severity}: {message}", settings._outputFormat);
@@ -809,7 +809,7 @@ private:
 
     void templatesEdit() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--template", "edit", "file.cpp"};
+        const char *argv[] = {"seccheck", "--template", "edit", "file.cpp"};
         settings._outputFormat.clear();
         ASSERT(defParser.ParseFromArgs(4, argv));
         ASSERT_EQUALS("{file} +{line}: {severity}: {message}", settings._outputFormat);
@@ -817,7 +817,7 @@ private:
 
     void xml() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--xml", "file.cpp"};
+        const char *argv[] = {"seccheck", "--xml", "file.cpp"};
         settings._xml_version = 1;
         settings._xml = false;
         ASSERT(defParser.ParseFromArgs(3, argv));
@@ -827,7 +827,7 @@ private:
 
     void xmlver1() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--xml-version=1", "file.cpp"};
+        const char *argv[] = {"seccheck", "--xml-version=1", "file.cpp"};
         settings._xml_version = 1;
         settings._xml = false;
         ASSERT(defParser.ParseFromArgs(3, argv));
@@ -837,7 +837,7 @@ private:
 
     void xmlver2() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--xml-version=2", "file.cpp"};
+        const char *argv[] = {"seccheck", "--xml-version=2", "file.cpp"};
         settings._xml_version = 1;
         settings._xml = false;
         ASSERT(defParser.ParseFromArgs(3, argv));
@@ -847,7 +847,7 @@ private:
 
     void xmlver2both() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--xml", "--xml-version=2", "file.cpp"};
+        const char *argv[] = {"seccheck", "--xml", "--xml-version=2", "file.cpp"};
         settings._xml_version = 1;
         settings._xml = false;
         ASSERT(defParser.ParseFromArgs(4, argv));
@@ -857,7 +857,7 @@ private:
 
     void xmlver2both2() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--xml-version=2", "--xml", "file.cpp"};
+        const char *argv[] = {"seccheck", "--xml-version=2", "--xml", "file.cpp"};
         settings._xml_version = 1;
         settings._xml = false;
         ASSERT(defParser.ParseFromArgs(4, argv));
@@ -867,28 +867,28 @@ private:
 
     void xmlverunknown() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--xml", "--xml-version=3", "file.cpp"};
+        const char *argv[] = {"seccheck", "--xml", "--xml-version=3", "file.cpp"};
         // FAils since unknown XML format version
         ASSERT_EQUALS(false, defParser.ParseFromArgs(4, argv));
     }
 
     void xmlverinvalid() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--xml", "--xml-version=a", "file.cpp"};
+        const char *argv[] = {"seccheck", "--xml", "--xml-version=a", "file.cpp"};
         // FAils since unknown XML format version
         ASSERT_EQUALS(false, defParser.ParseFromArgs(4, argv));
     }
 
     void doc() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--doc"};
+        const char *argv[] = {"seccheck", "--doc"};
         ASSERT(defParser.ParseFromArgs(2, argv));
         ASSERT(defParser.ExitAfterPrinting());
     }
 
     void showtime() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--showtime=summary"};
+        const char *argv[] = {"seccheck", "--showtime=summary"};
         settings._showtime = SHOWTIME_NONE;
         ASSERT(defParser.ParseFromArgs(2, argv));
         ASSERT(settings._showtime == SHOWTIME_SUMMARY);
@@ -896,14 +896,14 @@ private:
 
     void errorlist1() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--errorlist"};
+        const char *argv[] = {"seccheck", "--errorlist"};
         ASSERT(defParser.ParseFromArgs(2, argv));
         ASSERT(defParser.GetShowErrorMessages());
     }
 
     void errorlistverbose1() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--verbose", "--errorlist"};
+        const char *argv[] = {"seccheck", "--verbose", "--errorlist"};
         settings._verbose = false;
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT(settings._verbose);
@@ -911,7 +911,7 @@ private:
 
     void errorlistverbose2() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--errorlist", "--verbose"};
+        const char *argv[] = {"seccheck", "--errorlist", "--verbose"};
         settings._verbose = false;
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT(settings._verbose);
@@ -919,7 +919,7 @@ private:
 
     void ignorepathsnopath() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-i"};
+        const char *argv[] = {"seccheck", "-i"};
         CmdLineParser parser(&settings);
         // Fails since no ignored path given
         ASSERT_EQUALS(false, parser.ParseFromArgs(2, argv));
@@ -928,7 +928,7 @@ private:
     /*
         void ignorepaths1() {
             REDIRECT;
-            const char *argv[] = {"cppcheck", "-isrc", "file.cpp"};
+            const char *argv[] = {"seccheck", "-isrc", "file.cpp"};
             CmdLineParser parser(&settings);
             ASSERT(parser.ParseFromArgs(3, argv));
             ASSERT_EQUALS(1, parser.GetIgnoredPaths().size());
@@ -937,7 +937,7 @@ private:
 
         void ignorepaths2() {
             REDIRECT;
-            const char *argv[] = {"cppcheck", "-i", "src", "file.cpp"};
+            const char *argv[] = {"seccheck", "-i", "src", "file.cpp"};
             CmdLineParser parser(&settings);
             ASSERT(parser.ParseFromArgs(4, argv));
             ASSERT_EQUALS(1, parser.GetIgnoredPaths().size());
@@ -946,7 +946,7 @@ private:
 
         void ignorepaths3() {
             REDIRECT;
-            const char *argv[] = {"cppcheck", "-isrc", "-imodule", "file.cpp"};
+            const char *argv[] = {"seccheck", "-isrc", "-imodule", "file.cpp"};
             CmdLineParser parser(&settings);
             ASSERT(parser.ParseFromArgs(4, argv));
             ASSERT_EQUALS(2, parser.GetIgnoredPaths().size());
@@ -956,7 +956,7 @@ private:
 
         void ignorepaths4() {
             REDIRECT;
-            const char *argv[] = {"cppcheck", "-i", "src", "-i", "module", "file.cpp"};
+            const char *argv[] = {"seccheck", "-i", "src", "-i", "module", "file.cpp"};
             CmdLineParser parser(&settings);
             ASSERT(parser.ParseFromArgs(6, argv));
             ASSERT_EQUALS(2, parser.GetIgnoredPaths().size());
@@ -966,7 +966,7 @@ private:
 
         void ignorefilepaths1() {
             REDIRECT;
-            const char *argv[] = {"cppcheck", "-ifoo.cpp", "file.cpp"};
+            const char *argv[] = {"seccheck", "-ifoo.cpp", "file.cpp"};
             CmdLineParser parser(&settings);
             ASSERT(parser.ParseFromArgs(3, argv));
             ASSERT_EQUALS(1, parser.GetIgnoredPaths().size());
@@ -975,7 +975,7 @@ private:
 
         void ignorefilepaths2() {
             REDIRECT;
-            const char *argv[] = {"cppcheck", "-isrc/foo.cpp", "file.cpp"};
+            const char *argv[] = {"seccheck", "-isrc/foo.cpp", "file.cpp"};
             CmdLineParser parser(&settings);
             ASSERT(parser.ParseFromArgs(3, argv));
             ASSERT_EQUALS(1, parser.GetIgnoredPaths().size());
@@ -984,7 +984,7 @@ private:
     */
     void checkconfig() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--check-config", "file.cpp"};
+        const char *argv[] = {"seccheck", "--check-config", "file.cpp"};
         settings.checkConfiguration = false;
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT_EQUALS(true, settings.checkConfiguration);
@@ -992,13 +992,13 @@ private:
 
     void unknownParam() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "--foo", "file.cpp"};
+        const char *argv[] = {"seccheck", "--foo", "file.cpp"};
         ASSERT(!defParser.ParseFromArgs(3, argv));
     }
 
     void undefs() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-U_WIN32", "file.cpp"};
+        const char *argv[] = {"seccheck", "-U_WIN32", "file.cpp"};
         settings = Settings();
         ASSERT(defParser.ParseFromArgs(3, argv));
         ASSERT_EQUALS(1, settings.userUndefs.size());
@@ -1007,7 +1007,7 @@ private:
 
     void undefs2() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-U_WIN32", "-UNODEBUG", "file.cpp"};
+        const char *argv[] = {"seccheck", "-U_WIN32", "-UNODEBUG", "file.cpp"};
         settings = Settings();
         ASSERT(defParser.ParseFromArgs(4, argv));
         ASSERT_EQUALS(2, settings.userUndefs.size());
@@ -1017,21 +1017,21 @@ private:
 
     void undefs_noarg() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-U"};
+        const char *argv[] = {"seccheck", "-U"};
         // Fails since -U has no param
         ASSERT_EQUALS(false, defParser.ParseFromArgs(2, argv));
     }
 
     void undefs_noarg2() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-U", "-v", "file.cpp"};
+        const char *argv[] = {"seccheck", "-U", "-v", "file.cpp"};
         // Fails since -U has no param
         ASSERT_EQUALS(false, defParser.ParseFromArgs(4, argv));
     }
 
     void undefs_noarg3() {
         REDIRECT;
-        const char *argv[] = {"cppcheck", "-U", "--quiet", "file.cpp"};
+        const char *argv[] = {"seccheck", "-U", "--quiet", "file.cpp"};
         // Fails since -U has no param
         ASSERT_EQUALS(false, defParser.ParseFromArgs(4, argv));
     }

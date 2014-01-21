@@ -59,8 +59,7 @@ private:
               "    stl::vector<std::string> a = p;\n"
               "}");
         ASSERT_EQUALS("[test.cpp:1]: (performance) Complex objects copying "
-			"in Function foo may slow down system performance.\n"
-			"Please use pointer or reference instead.", errout.str());
+			"in Function foo may slow down system performance.\n", errout.str());
     }
 };
 
