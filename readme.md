@@ -3,7 +3,7 @@
 ## About
 
 Seccheck is a security analysis tool for C and C++ code.
-The original repository is based on Cppcheck source code.
+The original code repository is based on Cppcheck source code.
 
 ## Manual
 
@@ -44,10 +44,6 @@ To compile with rules (PCRE dependency):
 To compile without rules (no dependencies):
 * remove the preprocessor define `HAVE_RULES` from the project
 * remove the pcre.lib from the project
-
-### Other compilers
-
-Todo...
 
 ## Webpage
 
