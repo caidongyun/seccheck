@@ -23,6 +23,8 @@
 #include "checkcomplexcopying.h"
 #include "symboldatabase.h"
 
+using namespace std;
+
 //---------------------------------------------------------------------------
 
 
@@ -110,9 +112,34 @@ bool CheckComplexCopying::containerAsParam(const Token* tok) const
 	return true;
 }
 
+static bool IsComplexVariable(const Variable *var)
+{
+	if (var == 0)
+	{
+		return false;
+	}
+
+	if (isRefOrPointer(*var)) 
+	{
+		return false;
+	}
+
+	for (const Token *typetok = var->typeStartToken(); 
+			typetok != var->typeEndToken(); typetok = typetok->next()) 
+	{
+		if (isComplexContainer(typetok->str()) )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 static bool IsVariableStlContainer(const Token* tok)
 {
-	if (tok == 0) {
+	if (tok == 0) 
+	{
 		return false;
 	}
 
@@ -122,68 +149,79 @@ static bool IsVariableStlContainer(const Token* tok)
 	}
 
 	// TODO
-	return true;
+	const Variable *var = tok->variable();
+	return IsComplexVariable(var);
+}
+
+static bool isComplexEqual(const Token* tok)
+{
+	Token* prev = tok->previous();
+	Token* next = tok->next();
+	if ((prev == 0) || (next == 0)) 
+	{
+		return false;
+	}
+
+	return IsVariableStlContainer(prev);
 }
 
 void CheckComplexCopying::checkComplexParameters()
 {
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
 
-    for (unsigned int i = 0; i < symbolDatabase->functionScopes.size(); i++) {
+    for (unsigned int i = 0; i < symbolDatabase->functionScopes.size(); i++) 
+	{
         const Scope* scope = symbolDatabase->functionScopes[i];
 		checkComplexParametersAsArgument(scope);
 
-		for (const Token *tok = scope->classStart; tok && tok != scope->classEnd; tok = tok->next()) {
+		for (const Token *tok = scope->classStart; tok && tok != scope->classEnd; tok = tok->next()) 
+		{
 			if (tok->type() != Token::eAssignmentOp)
 			{
 				continue;
 			}
 
-			// TODO
-			//if (tok->str() != "==")
-			//{
-			//	continue;
-			//}
-
-			//if (isFloatComparison(tok))
-			//{
-			//	floatEqualsError(tok);
-			//}
+			if (isComplexEqual(tok))
+			{
+				std::ostringstream errmsg;
+				errmsg << "Complex objects equation may slow down system performance.\n" 
+					<< "Complex objects copying in parameters or equation may slow down the system performance. "
+					<< "Please use pointer or reference instead.";
+				std::string errDesc = errmsg.str();
+				reportError(tok, Severity::performance, 
+					"complexObjectCopying", errDesc);
+			}
         }
     }
 }
 
 /** Check for complex objects as argument */
-void CheckComplexCopying::checkComplexParametersAsArgument(const Scope* scope) {
+void CheckComplexCopying::checkComplexParametersAsArgument(const Scope* scope) 
+{
 	const Function* func = scope->function;
-	if (func == 0 || !func->hasBody){
+	if (func == 0 || !func->hasBody)
+	{
 		// We only look for functions with a body
         return;
 	}
 
 	const size_t totalCount = func->argCount();
-	for (size_t i = 0; i < totalCount; i++) {
+	for (size_t i = 0; i < totalCount; i++) 
+	{
 		const Variable* var = func->getArgumentVar(i);
 
-		if (isRefOrPointer(*var)) {
-			continue;
+		if (IsComplexVariable(var))
+		{
+			std::ostringstream errmsg;
+			errmsg << "Complex objects copying in Function " << func->name() 
+				<< " may slow down system performance.\n" 
+				<< "Complex objects copying in parameters or equation may slow down the system performance. "
+				<< "Please use pointer or reference instead.";
+			std::string errDesc = errmsg.str();
+			// STL Container
+			reportError(func->token, Severity::performance, 
+				"complexObjectCopying", errDesc);
 		}
-
-		for (const Token *typetok = var->typeStartToken(); 
-			typetok != var->typeEndToken(); typetok = typetok->next()) {
-			if (isComplexContainer(typetok->str()) ) {
-				std::ostringstream errmsg;
-				errmsg << "Complex objects copying in Function " << func->name() 
-					<< " may slow down system performance.\n" 
-					<< "Complex objects copying in parameters or equation may slow down the system performance. "
-					<< "Please use pointer or reference instead.";
-				std::string errDesc = errmsg.str();
-				// STL Container
-				reportError(func->token, Severity::performance, 
-					"complexObjectCopying", errDesc);
-				break;
-			}
-        }
 	}
 }
 

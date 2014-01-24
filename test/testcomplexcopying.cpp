@@ -30,10 +30,10 @@ public:
     }
 
 private:
-
-
     void run() {
         TEST_CASE(vectorcopying);
+		TEST_CASE(vectorEqual);
+		TEST_CASE(vectorRefEqual);
     }
 
     void check(const char code[]) {
@@ -59,7 +59,30 @@ private:
               "    stl::vector<std::string> a = p;\n"
               "}");
         ASSERT_EQUALS("[test.cpp:1]: (performance) Complex objects copying "
-			"in Function foo may slow down system performance.\n", errout.str());
+			"in Function foo may slow down system performance.\n"
+			"[test.cpp:3]: (performance) Complex objects equation "
+			"may slow down system performance.\n", 
+			errout.str());
+    }
+
+	void vectorEqual() {
+        check("void foo()\n"
+              "{\n"
+			  "    stl::vector<int> p;\n"
+			  "    p.push_back(123);\n"
+              "    stl::vector<int> a = p;\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:5]: (performance) Complex objects equation may slow down system performance.\n", errout.str());
+    }
+
+	void vectorRefEqual() {
+        check("void foo()\n"
+              "{\n"
+			  "    stl::vector<int> p;\n"
+			  "    p.push_back(123);\n"
+              "    stl::vector<int>* a = &p;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
     }
 };
 

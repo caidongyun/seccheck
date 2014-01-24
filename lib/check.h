@@ -96,6 +96,7 @@ public:
     }
 
     /** get information about this class, used to generate documentation */
+	/** string should terminated with a '\n' char. */
     virtual std::string classInfo() const = 0;
 
     /**
