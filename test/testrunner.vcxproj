@@ -34,6 +34,7 @@
     <ClCompile Include="testassert.cpp" />
     <ClCompile Include="testassignif.cpp" />
     <ClCompile Include="testautovariables.cpp" />
+    <ClCompile Include="testbasedestructor.cpp" />
     <ClCompile Include="testbool.cpp" />
     <ClCompile Include="testboost.cpp" />
     <ClCompile Include="testbufferoverrun.cpp" />
