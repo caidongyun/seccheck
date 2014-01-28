@@ -34,6 +34,7 @@ private:
         TEST_CASE(vectorcopying);
 		TEST_CASE(vectorEqual);
 		TEST_CASE(vectorRefEqual);
+		TEST_CASE(vectorIterator);
     }
 
     void check(const char code[]) {
@@ -53,6 +54,7 @@ private:
         checkComplexCopying.checkComplexParameters();
     }
 
+	// vector container copying by parameter
     void vectorcopying() {
         check("void foo(stl::vector<std::string> p)\n"
               "{\n"
@@ -65,6 +67,7 @@ private:
 			errout.str());
     }
 
+	// vector container equation
 	void vectorEqual() {
         check("void foo()\n"
               "{\n"
@@ -75,12 +78,24 @@ private:
         ASSERT_EQUALS("[test.cpp:5]: (performance) Complex objects equation may slow down system performance.\n", errout.str());
     }
 
+	// vector container pointer equation
 	void vectorRefEqual() {
         check("void foo()\n"
               "{\n"
 			  "    stl::vector<int> p;\n"
 			  "    p.push_back(123);\n"
               "    stl::vector<int>* a = &p;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+    }
+
+	// iterator
+	void vectorIterator() {
+        check("void foo()\n"
+              "{\n"
+			  "    stl::vector<int> p;\n"
+			  "    p.push_back(123);\n"
+			  "    stl::vector<int>::iterator itr = p.begin();\n"
               "}");
         ASSERT_EQUALS("", errout.str());
     }
