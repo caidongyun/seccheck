@@ -141,11 +141,6 @@ static bool IsComplexVariable(const Variable *var)
 	return false;
 }
 
-static bool IsStlIterator(const Token *typeEndToken)
-{
-	return (typeEndToken->str() == "iterator");
-}
-
 static bool IsVariableStlContainer(const Token* tok)
 {
 	if (tok == 0) 
