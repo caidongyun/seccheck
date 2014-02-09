@@ -55,7 +55,7 @@ void CheckBaseDestructor::checkBaseClass()
 				continue;
 			}
 
-			// Check if the destructor of the base class is not virtual
+			// Check if they have a member variable in common
 			for (std::list<Function>::const_iterator itr = parentType->classScope->functionList.begin();
 				itr != parentType->classScope->functionList.end();
 				++itr) 

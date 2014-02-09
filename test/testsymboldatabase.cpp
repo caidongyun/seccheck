@@ -119,6 +119,7 @@ private:
         TEST_CASE(isVariableDeclarationDoesNotIdentifyTemplateClass);
         TEST_CASE(isVariableDeclarationPointerConst);
         TEST_CASE(isVariableDeclarationRValueRef);
+        TEST_CASE(isVariableStlType);
 
         TEST_CASE(arrayMemberVar1);
         TEST_CASE(arrayMemberVar2);
@@ -554,6 +555,50 @@ private:
         ASSERT(true == v.isReference());
         ASSERT(true == v.isRValueReference());
         ASSERT(var.tokens()->tokAt(2)->scope() != 0);
+    }
+
+    void isVariableStlType() {
+        {
+            reset();
+            std::istringstream code("std::string s;");
+            TokenList list(NULL);
+            list.createTokens(code, "test.cpp");
+            bool result = si.isVariableDeclaration(list.front(), vartok, typetok);
+            ASSERT_EQUALS(true, result);
+            Variable v(vartok, list.front(), list.back(), 0, Public, 0, 0);
+            const char* types[] = { "string", "wstring" };
+            const char* no_types[] = { "set" };
+            ASSERT_EQUALS(true, v.isStlType());
+            ASSERT_EQUALS(true, v.isStlType(types));
+            ASSERT_EQUALS(false, v.isStlType(no_types));
+        }
+        {
+            reset();
+            std::istringstream code("std::vector<int> v;");
+            TokenList list(NULL);
+            list.createTokens(code, "test.cpp");
+            list.front()->tokAt(3)->link(list.front()->tokAt(5));
+            bool result = si.isVariableDeclaration(list.front(), vartok, typetok);
+            ASSERT_EQUALS(true, result);
+            Variable v(vartok, list.front(), list.back(), 0, Public, 0, 0);
+            const char* types[] = { "bitset", "set", "vector", "wstring" };
+            const char* no_types[] = { "bitset", "map", "set" };
+            ASSERT_EQUALS(true, v.isStlType());
+            ASSERT_EQUALS(true, v.isStlType(types));
+            ASSERT_EQUALS(false, v.isStlType(no_types));
+        }
+        {
+            reset();
+            std::istringstream code("SomeClass s;");
+            TokenList list(NULL);
+            list.createTokens(code, "test.cpp");
+            bool result = si.isVariableDeclaration(list.front(), vartok, typetok);
+            ASSERT_EQUALS(true, result);
+            Variable v(vartok, list.front(), list.back(), 0, Public, 0, 0);
+            const char* types[] = { "bitset", "set", "vector" };
+            ASSERT_EQUALS(false, v.isStlType());
+            ASSERT_EQUALS(false, v.isStlType(types));
+        }
     }
 
     void arrayMemberVar1() {
@@ -1637,12 +1682,12 @@ private:
         ASSERT(Fred && Fred->classDef && Fred->classScope && Fred->enclosingScope && Fred->name() == "Fred");
         ASSERT(Wilma && Wilma->classDef && Wilma->classScope && Wilma->enclosingScope && Wilma->name() == "Wilma");
         ASSERT(Barney && Barney->classDef && Barney->classScope && Barney->enclosingScope && Barney->name() == "Barney");
-        ASSERT(db && db->getVariableListSize() == 5);
-        if (!db || db->getVariableListSize() != 5)
+        ASSERT(db->getVariableListSize() == 5);
+        if (db->getVariableListSize() != 5)
             return;
-        ASSERT(db && db->getVariableFromVarId(1) && db->getVariableFromVarId(1)->type() && db->getVariableFromVarId(1)->type()->name() == "Barney");
-        ASSERT(db && db->getVariableFromVarId(2) && db->getVariableFromVarId(2)->type() && db->getVariableFromVarId(2)->type()->name() == "Wilma");
-        ASSERT(db && db->getVariableFromVarId(3) && db->getVariableFromVarId(3)->type() && db->getVariableFromVarId(3)->type()->name() == "Barney");
+        ASSERT(db->getVariableFromVarId(1) && db->getVariableFromVarId(1)->type() && db->getVariableFromVarId(1)->type()->name() == "Barney");
+        ASSERT(db->getVariableFromVarId(2) && db->getVariableFromVarId(2)->type() && db->getVariableFromVarId(2)->type()->name() == "Wilma");
+        ASSERT(db->getVariableFromVarId(3) && db->getVariableFromVarId(3)->type() && db->getVariableFromVarId(3)->type()->name() == "Barney");
     }
 
     void symboldatabase38() { // ticket #5125

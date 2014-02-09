@@ -140,6 +140,9 @@
     <ClCompile Include="checkcomplexcopying.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="checkbasedestructor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="checkbufferoverrun.h">
@@ -278,6 +281,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="checkcomplexcopying.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="checkbasedestructor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

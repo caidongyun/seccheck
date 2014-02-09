@@ -1182,6 +1182,25 @@ bool Token::isCalculation() const
     return true;
 }
 
+std::string Token::expressionString() const
+{
+    const Token * const top = this;
+    const Token *start = top;
+    while (start->astOperand1() && start->astOperand2())
+        start = start->astOperand1();
+    const Token *end = top;
+    while (end->astOperand1() && end->astOperand2())
+        end = end->astOperand2();
+    std::string ret;
+    for (const Token *tok = start; tok && tok != end; tok = tok->next()) {
+        ret += tok->str();
+        if (Token::Match(tok, "%var%|%num% %var%|%num%"))
+            ret += " ";
+    }
+    return ret + end->str();
+
+}
+
 void Token::printAst() const
 {
     bool title = false;
@@ -1194,8 +1213,30 @@ void Token::printAst() const
             title = true;
             std::cout << tok->astTop()->astString(" ") << std::endl;
             print = false;
+            if (tok->str() == "(")
+                tok = tok->link();
         }
         if (Token::Match(tok, "[;{}]"))
             print = true;
+    }
+}
+
+void Token::printValueFlow() const
+{
+    int line = -1;
+    std::cout << "\n\n##Value flow" << std::endl;
+    for (const Token *tok = this; tok; tok = tok->next()) {
+        if (tok->values.empty())
+            continue;
+        if (line != tok->linenr())
+            std::cout << "Line " << tok->linenr() << std::endl;
+        line = tok->linenr();
+        std::cout << "  " << tok->str() << ":{";
+        for (std::list<ValueFlow::Value>::const_iterator it=tok->values.begin(); it!=tok->values.end(); ++it) {
+            if (it != tok->values.begin())
+                std::cout << ",";
+            std::cout << it->intvalue;
+        }
+        std::cout << "}" << std::endl;
     }
 }

@@ -18,12 +18,12 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "FileDescription", "cppcheck core library"
+            VALUE "FileDescription", "seccheck core library"
             VALUE "FileVersion", CPPCHECK_VERSION_STRING
-            VALUE "InternalName", "cppcheck"
+            VALUE "InternalName", "seccheck"
             VALUE "LegalCopyright", LEGALCOPYRIGHT
-            VALUE "OriginalFilename", "cppcheck.exe"
-            VALUE "ProductName", "cppcheck core library"
+            VALUE "OriginalFilename", "seccheck.exe"
+            VALUE "ProductName", "seccheck core library"
             VALUE "ProductVersion", CPPCHECK_VERSION_STRING
         END
     END
