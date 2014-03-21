@@ -459,7 +459,7 @@ const char *CheckMemoryLeak::functionArgAlloc(const Function *func, unsigned int
     if (!func || !func->functionScope)
         return "";
 
-    std::list<Variable>::const_iterator arg = func->argumentList.begin();
+    auto arg = func->argumentList.begin();
     for (; arg != func->argumentList.end(); ++arg) {
         if (arg->index() == targetpar-1)
             break;
@@ -615,7 +615,7 @@ const char * CheckMemoryLeakInFunction::call_func(const Token *tok, std::list<co
         return "dealloc_";
 
     const std::string& funcname(tok->str());
-    for (std::list<const Token *>::const_iterator it = callstack.begin(); it != callstack.end(); ++it) {
+    for (auto it = callstack.begin(); it != callstack.end(); ++it) {
         if ((*it) && (*it)->str() == funcname)
             return "recursive";
     }
@@ -2282,8 +2282,7 @@ void CheckMemoryLeakInClass::check()
     const std::size_t classes = symbolDatabase->classAndStructScopes.size();
     for (std::size_t i = 0; i < classes; ++i) {
         const Scope * scope = symbolDatabase->classAndStructScopes[i];
-        std::list<Variable>::const_iterator var;
-        for (var = scope->varlist.begin(); var != scope->varlist.end(); ++var) {
+        for (auto var = scope->varlist.begin(); var != scope->varlist.end(); ++var) {
             if (!var->isStatic() && var->isPointer()) {
                 // allocation but no deallocation of private variables in public function..
                 const Token *tok = var->typeStartToken();
@@ -2324,8 +2323,7 @@ void CheckMemoryLeakInClass::variable(const Scope *scope, const Token *tokVarnam
     bool deallocInDestructor = false;
 
     // Inspect member functions
-    std::list<Function>::const_iterator func;
-    for (func = scope->functionList.begin(); func != scope->functionList.end(); ++func) {
+    for (auto func = scope->functionList.begin(); func != scope->functionList.end(); ++func) {
         const bool constructor = func->isConstructor();
         const bool destructor = func->isDestructor();
         if (!func->hasBody) {
@@ -2452,9 +2450,7 @@ void CheckMemoryLeakInClass::checkPublicFunctions(const Scope *scope, const Toke
 
     // Parse public functions..
     // If they allocate member variables, they should also deallocate
-    std::list<Function>::const_iterator func;
-
-    for (func = scope->functionList.begin(); func != scope->functionList.end(); ++func) {
+    for (auto func = scope->functionList.begin(); func != scope->functionList.end(); ++func) {
         if ((func->type == Function::eFunction || func->type == Function::eOperatorEqual) &&
             func->access == Public && func->hasBody) {
             const Token *tok2 = func->token;

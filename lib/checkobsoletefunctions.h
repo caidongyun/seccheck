@@ -125,7 +125,7 @@ private:
     void getErrorMessages(ErrorLogger *errorLogger, const Settings *settings) const {
         CheckObsoleteFunctions c(0, settings, errorLogger);
 
-        std::map<std::string,std::string>::const_iterator it(_obsoletePosixFunctions.begin()), itend(_obsoletePosixFunctions.end());
+        auto it(_obsoletePosixFunctions.begin()), itend(_obsoletePosixFunctions.end());
         for (; it!=itend; ++it) {
             c.reportError(0, Severity::style, "obsoleteFunctions"+it->first, it->second);
         }
@@ -137,7 +137,7 @@ private:
 
     std::string classInfo() const {
         std::string info = "Warn if any of these obsolete functions are used:\n";
-        std::map<std::string,std::string>::const_iterator it(_obsoletePosixFunctions.begin()), itend(_obsoletePosixFunctions.end());
+        auto it(_obsoletePosixFunctions.begin()), itend(_obsoletePosixFunctions.end());
         for (; it!=itend; ++it) {
             info += "* " + it->first + "\n";
         }

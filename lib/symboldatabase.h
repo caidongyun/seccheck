@@ -768,7 +768,7 @@ public:
     }
 
     bool isClassOrStruct(const std::string &type) const {
-        for (std::list<Type>::const_iterator i = typeList.begin(); i != typeList.end(); ++i)
+        for (auto i = typeList.begin(); i != typeList.end(); ++i)
             if (i->name() == type)
                 return true;
         return false;

@@ -59,8 +59,8 @@ private:
     }
 
     void instancesSorted() const {
-        for (std::list<Check *>::const_iterator i = Check::instances().begin(); i != Check::instances().end(); ++i) {
-            std::list<Check *>::const_iterator j = i;
+        for (auto i = Check::instances().begin(); i != Check::instances().end(); ++i) {
+            auto j = i;
             ++j;
             if (j != Check::instances().end()) {
                 ASSERT_EQUALS(true, (*i)->name() < (*j)->name());
@@ -69,7 +69,7 @@ private:
     }
 
     void classInfoFormat() const {
-        for (std::list<Check *>::const_iterator i = Check::instances().begin(); i != Check::instances().end(); ++i) {
+        for (auto i = Check::instances().begin(); i != Check::instances().end(); ++i) {
             const std::string info = (*i)->classInfo();
             if (!info.empty()) {
                 ASSERT('\n' != info[0]);                   // No \n in the beginning
@@ -88,7 +88,7 @@ private:
 
         // TODO: check if there are duplicate error ids in errorLogger.id
         std::string duplicate;
-        for (std::list<std::string>::iterator it = errorLogger.id.begin();
+        for (auto it = errorLogger.id.begin();
              it != errorLogger.id.end();
              ++it) {
             if (std::find(errorLogger.id.begin(), it, *it) != it) {

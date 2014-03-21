@@ -1730,7 +1730,7 @@ private:
         check.analyse(tokenizer.tokens(), f);
 
         std::string ret;
-        for (std::set<std::string>::const_iterator it = f.begin(); it != f.end(); ++it)
+        for (auto it = f.begin(); it != f.end(); ++it)
             ret += (ret.empty() ? "" : " ") + *it;
         return ret;
     }

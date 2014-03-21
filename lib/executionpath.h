@@ -81,7 +81,7 @@ public:
         if (varid == 0)
             return;
 
-        std::list<ExecutionPath *>::iterator it = checks.begin();
+        auto it = checks.begin();
         while (it != checks.end()) {
             if ((*it)->varId == varid) {
                 delete *it;

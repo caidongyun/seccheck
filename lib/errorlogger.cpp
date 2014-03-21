@@ -52,7 +52,7 @@ ErrorLogger::ErrorMessage::ErrorMessage(const std::list<const Token*>& callstack
     : _id(id), _severity(severity), _inconclusive(inconclusive)
 {
     // Format callstack
-    for (std::list<const Token *>::const_iterator it = callstack.begin(); it != callstack.end(); ++it) {
+    for (auto it = callstack.begin(); it != callstack.end(); ++it) {
         // --errorlist can provide null values here
         if (!(*it))
             continue;
@@ -102,7 +102,7 @@ std::string ErrorLogger::ErrorMessage::serialize() const
     oss << _verboseMessage.length() << " " << _verboseMessage;
     oss << _callStack.size() << " ";
 
-    for (std::list<ErrorLogger::ErrorMessage::FileLocation>::const_iterator tok = _callStack.begin(); tok != _callStack.end(); ++tok) {
+    for (auto tok = _callStack.begin(); tok != _callStack.end(); ++tok) {
         std::ostringstream smallStream;
         smallStream << (*tok).line << ":" << (*tok).getfile();
         oss << smallStream.str().length() << " " << smallStream.str();
@@ -307,14 +307,14 @@ std::string ErrorLogger::ErrorMessage::toString(bool verbose, const std::string 
 void ErrorLogger::reportUnmatchedSuppressions(const std::list<Suppressions::SuppressionEntry> &unmatched)
 {
     // Report unmatched suppressions
-    for (std::list<Suppressions::SuppressionEntry>::const_iterator i = unmatched.begin(); i != unmatched.end(); ++i) {
+    for (auto i = unmatched.begin(); i != unmatched.end(); ++i) {
         // don't report "unmatchedSuppression" as unmatched
         if (i->id == "unmatchedSuppression")
             continue;
 
         // check if this unmatched suppression is suppressed
         bool suppressed = false;
-        for (std::list<Suppressions::SuppressionEntry>::const_iterator i2 = unmatched.begin(); i2 != unmatched.end(); ++i2) {
+        for (auto i2 = unmatched.begin(); i2 != unmatched.end(); ++i2) {
             if (i2->id == "unmatchedSuppression") {
                 if ((i2->file == "*" || i2->file == i->file) &&
                     (i2->line == 0 || i2->line == i->line))
@@ -334,7 +334,7 @@ void ErrorLogger::reportUnmatchedSuppressions(const std::list<Suppressions::Supp
 std::string ErrorLogger::callStackToString(const std::list<ErrorLogger::ErrorMessage::FileLocation> &callStack)
 {
     std::ostringstream ostr;
-    for (std::list<ErrorLogger::ErrorMessage::FileLocation>::const_iterator tok = callStack.begin(); tok != callStack.end(); ++tok) {
+    for (auto tok = callStack.begin(); tok != callStack.end(); ++tok) {
         ostr << (tok == callStack.begin() ? "" : " -> ") << tok->stringify();
     }
     return ostr.str();

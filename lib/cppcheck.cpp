@@ -164,7 +164,7 @@ unsigned int CppCheck::processFile(const std::string& filename, const std::strin
         }
 
         // Run rules on this code
-        for (std::list<Settings::Rule>::const_iterator it = _settings.rules.begin(); it != _settings.rules.end(); ++it) {
+        for (auto it = _settings.rules.begin(); it != _settings.rules.end(); ++it) {
             if (it->tokenlist == "define") {
                 Tokenizer tokenizer2(&_settings, this);
                 std::istringstream istr2(filedata);
@@ -199,7 +199,7 @@ unsigned int CppCheck::processFile(const std::string& filename, const std::strin
         }
 
         unsigned int checkCount = 0;
-        for (std::list<std::string>::const_iterator it = configurations.begin(); it != configurations.end(); ++it) {
+        for (auto it = configurations.begin(); it != configurations.end(); ++it) {
             // Check only a few configurations (default 12), after that bail out, unless --force
             // was used.
             if (!_settings._force && ++checkCount > _settings._maxConfigs)
@@ -309,14 +309,14 @@ void CppCheck::analyseFile(std::istream &fin, const std::string &filename)
 
     // Analyse the tokens..
     std::set<std::string> data;
-    for (std::list<Check *>::const_iterator it = Check::instances().begin(); it != Check::instances().end(); ++it) {
+    for (auto it = Check::instances().begin(); it != Check::instances().end(); ++it) {
         (*it)->analyse(tokenizer.tokens(), data);
     }
 
     // Save analysis results..
     // TODO: This loop should be protected by a mutex or something like that
     //       The saveAnalysisData must _not_ be called from many threads at the same time.
-    for (std::list<Check *>::const_iterator it = Check::instances().begin(); it != Check::instances().end(); ++it) {
+    for (auto it = Check::instances().begin(); it != Check::instances().end(); ++it) {
         (*it)->saveAnalysisData(data);
     }
 }
@@ -337,7 +337,7 @@ void CppCheck::checkFile(const std::string &code, const char FileName[])
         bool result;
 
         // Execute rules for "raw" code
-        for (std::list<Settings::Rule>::const_iterator it = _settings.rules.begin(); it != _settings.rules.end(); ++it) {
+        for (auto it = _settings.rules.begin(); it != _settings.rules.end(); ++it) {
             if (it->tokenlist == "raw") {
                 Tokenizer tokenizer2(&_settings, this);
                 std::istringstream istr(code);
@@ -359,7 +359,7 @@ void CppCheck::checkFile(const std::string &code, const char FileName[])
         }
 
         // call all "runChecks" in all registered Check classes
-        for (std::list<Check *>::iterator it = Check::instances().begin(); it != Check::instances().end(); ++it) {
+        for (auto it = Check::instances().begin(); it != Check::instances().end(); ++it) {
             if (_settings.terminated())
                 return;
 
@@ -382,7 +382,7 @@ void CppCheck::checkFile(const std::string &code, const char FileName[])
             return;
 
         // call all "runSimplifiedChecks" in all registered Check classes
-        for (std::list<Check *>::iterator it = Check::instances().begin(); it != Check::instances().end(); ++it) {
+        for (auto it = Check::instances().begin(); it != Check::instances().end(); ++it) {
             if (_settings.terminated())
                 return;
 
@@ -429,7 +429,7 @@ void CppCheck::executeRules(const std::string &tokenlist, const Tokenizer &token
 #ifdef HAVE_RULES
     // Are there rules to execute?
     bool isrule = false;
-    for (std::list<Settings::Rule>::const_iterator it = _settings.rules.begin(); it != _settings.rules.end(); ++it) {
+    for (auto it = _settings.rules.begin(); it != _settings.rules.end(); ++it) {
         if (it->tokenlist == tokenlist)
             isrule = true;
     }
@@ -444,7 +444,7 @@ void CppCheck::executeRules(const std::string &tokenlist, const Tokenizer &token
         ostr << " " << tok->str();
     const std::string str(ostr.str());
 
-    for (std::list<Settings::Rule>::const_iterator it = _settings.rules.begin(); it != _settings.rules.end(); ++it) {
+    for (auto it = _settings.rules.begin(); it != _settings.rules.end(); ++it) {
         const Settings::Rule &rule = *it;
         if (rule.pattern.empty() || rule.id.empty() || rule.severity.empty() || rule.tokenlist != tokenlist)
             continue;
@@ -638,7 +638,7 @@ void CppCheck::getErrorMessages()
     tooManyConfigsError("",0U);
 
     // call all "getErrorMessages" in all registered Check classes
-    for (std::list<Check *>::iterator it = Check::instances().begin(); it != Check::instances().end(); ++it)
+    for (auto it = Check::instances().begin(); it != Check::instances().end(); ++it)
         (*it)->getErrorMessages(this, &_settings);
 
     Tokenizer::getErrorMessages(this, &_settings);

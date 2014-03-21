@@ -157,7 +157,7 @@ void Variables::alias(unsigned int varid1, unsigned int varid2, bool replace)
 
     if (replace) {
         // remove var1 from all aliases
-        for (std::set<unsigned int>::iterator i = var1->_aliases.begin(); i != var1->_aliases.end(); ++i) {
+        for (auto i = var1->_aliases.begin(); i != var1->_aliases.end(); ++i) {
             VariableUsage *temp = find(*i);
 
             if (temp)
@@ -169,7 +169,7 @@ void Variables::alias(unsigned int varid1, unsigned int varid2, bool replace)
     }
 
     // var1 gets all var2s aliases
-    for (std::set<unsigned int>::iterator i = var2->_aliases.begin(); i != var2->_aliases.end(); ++i) {
+    for (auto i = var2->_aliases.begin(); i != var2->_aliases.end(); ++i) {
         if (*i != varid1)
             var1->_aliases.insert(*i);
     }
@@ -190,9 +190,7 @@ void Variables::clearAliases(unsigned int varid)
 
     if (usage) {
         // remove usage from all aliases
-        std::set<unsigned int>::iterator i;
-
-        for (i = usage->_aliases.begin(); i != usage->_aliases.end(); ++i) {
+        for (auto i = usage->_aliases.begin(); i != usage->_aliases.end(); ++i) {
             VariableUsage *temp = find(*i);
 
             if (temp)
@@ -209,9 +207,7 @@ void Variables::eraseAliases(unsigned int varid)
     VariableUsage *usage = find(varid);
 
     if (usage) {
-        std::set<unsigned int>::iterator aliases;
-
-        for (aliases = usage->_aliases.begin(); aliases != usage->_aliases.end(); ++aliases)
+        for (auto aliases = usage->_aliases.begin(); aliases != usage->_aliases.end(); ++aliases)
             erase(*aliases);
     }
 }
@@ -259,9 +255,7 @@ void Variables::readAliases(unsigned int varid, const Token* tok)
     VariableUsage *usage = find(varid);
 
     if (usage) {
-        std::set<unsigned int>::iterator aliases;
-
-        for (aliases = usage->_aliases.begin(); aliases != usage->_aliases.end(); ++aliases) {
+        for (auto aliases = usage->_aliases.begin(); aliases != usage->_aliases.end(); ++aliases) {
             VariableUsage *aliased = find(*aliases);
 
             if (aliased) {
@@ -296,9 +290,7 @@ void Variables::writeAliases(unsigned int varid, const Token* tok)
     VariableUsage *usage = find(varid);
 
     if (usage) {
-        std::set<unsigned int>::iterator aliases;
-
-        for (aliases = usage->_aliases.begin(); aliases != usage->_aliases.end(); ++aliases) {
+        for (auto aliases = usage->_aliases.begin(); aliases != usage->_aliases.end(); ++aliases) {
             VariableUsage *aliased = find(*aliases);
 
             if (aliased) {
@@ -323,9 +315,7 @@ void Variables::use(unsigned int varid, const Token* tok)
         usage->use(_varReadInScope);
         usage->_lastAccess = tok;
 
-        std::set<unsigned int>::iterator aliases;
-
-        for (aliases = usage->_aliases.begin(); aliases != usage->_aliases.end(); ++aliases) {
+        for (auto aliases = usage->_aliases.begin(); aliases != usage->_aliases.end(); ++aliases) {
             VariableUsage *aliased = find(*aliases);
 
             if (aliased) {
@@ -344,9 +334,7 @@ void Variables::modified(unsigned int varid, const Token* tok)
         usage->_modified = true;
         usage->_lastAccess = tok;
 
-        std::set<unsigned int>::iterator aliases;
-
-        for (aliases = usage->_aliases.begin(); aliases != usage->_aliases.end(); ++aliases) {
+        for (auto aliases = usage->_aliases.begin(); aliases != usage->_aliases.end(); ++aliases) {
             VariableUsage *aliased = find(*aliases);
 
             if (aliased) {
@@ -360,7 +348,7 @@ void Variables::modified(unsigned int varid, const Token* tok)
 Variables::VariableUsage *Variables::find(unsigned int varid)
 {
     if (varid) {
-        std::map<unsigned int, VariableUsage>::iterator i = _varUsage.find(varid);
+        auto i = _varUsage.find(varid);
         if (i != _varUsage.end())
             return &i->second;
     }
@@ -378,7 +366,7 @@ void Variables::leaveScope(bool insideLoop)
     if (insideLoop) {
         // read variables are read again in subsequent run through loop
         std::set<unsigned int> const & currentVarReadInScope = _varReadInScope.back();
-        for (std::set<unsigned int>::const_iterator readIter = currentVarReadInScope.begin();
+        for (auto readIter = currentVarReadInScope.begin();
              readIter != currentVarReadInScope.end();
              ++readIter) {
             read(*readIter, NULL);
@@ -392,7 +380,7 @@ void Variables::leaveScope(bool insideLoop)
 
         std::set<unsigned int> const & currentVarAddedInScope = _varAddedInScope.back();
         std::set<unsigned int>  & currentVarReadInScope = _varReadInScope.back();
-        for (std::set<unsigned int>::const_iterator addedIter = currentVarAddedInScope.begin();
+        for (auto addedIter = currentVarAddedInScope.begin();
              addedIter != currentVarAddedInScope.end();
              ++addedIter) {
             currentVarReadInScope.erase(*addedIter);
@@ -669,7 +657,7 @@ void CheckUnusedVar::checkFunctionVariableUsage_iterateScopes(const Scope* const
     // Find declarations if the scope is executable..
     if (scope->isExecutable()) {
         // Find declarations
-        for (std::list<Variable>::const_iterator i = scope->varlist.begin(); i != scope->varlist.end(); ++i) {
+        for (auto i = scope->varlist.begin(); i != scope->varlist.end(); ++i) {
             if (i->isThrow() || i->isExtern())
                 continue;
             Variables::VariableType type = Variables::none;
@@ -726,7 +714,7 @@ void CheckUnusedVar::checkFunctionVariableUsage_iterateScopes(const Scope* const
     // Check variable usage
     for (const Token *tok = scope->classDef->next(); tok && tok != scope->classEnd; tok = tok->next()) {
         if (tok->str() == "for" || tok->str() == "while" || tok->str() == "do") {
-            for (std::list<Scope*>::const_iterator i = scope->nestedList.begin(); i != scope->nestedList.end(); ++i) {
+            for (auto i = scope->nestedList.begin(); i != scope->nestedList.end(); ++i) {
                 if ((*i)->classDef == tok) { // Find associated scope
                     checkFunctionVariableUsage_iterateScopes(*i, variables, true); // Scan child scope
                     tok = (*i)->classStart->link();
@@ -737,7 +725,7 @@ void CheckUnusedVar::checkFunctionVariableUsage_iterateScopes(const Scope* const
                 break;
         }
         if (tok->str() == "{") {
-            for (std::list<Scope*>::const_iterator i = scope->nestedList.begin(); i != scope->nestedList.end(); ++i) {
+            for (auto i = scope->nestedList.begin(); i != scope->nestedList.end(); ++i) {
                 if ((*i)->classStart == tok) { // Find associated scope
                     checkFunctionVariableUsage_iterateScopes(*i, variables, false); // Scan child scope
                     tok = tok->link();
@@ -1091,7 +1079,7 @@ void CheckUnusedVar::checkFunctionVariableUsage()
 
 
         // Check usage of all variables in the current scope..
-        for (std::map<unsigned int, Variables::VariableUsage>::const_iterator it = variables.varUsage().begin();
+        for (auto it = variables.varUsage().begin();
              it != variables.varUsage().end();
              ++it) {
             const Variables::VariableUsage &usage = it->second;
@@ -1270,7 +1258,7 @@ bool CheckUnusedVar::isRecordTypeWithoutSideEffects(const Type* type)
     // a type that has no side effects (no constructors and no members with constructors)
     /** @todo false negative: check constructors for side effects */
 
-    std::pair<std::map<const Type *,bool>::iterator,bool> found=isRecordTypeWithoutSideEffectsMap.insert(
+    auto found = isRecordTypeWithoutSideEffectsMap.insert(
                 std::pair<const Type *,bool>(type,false)); //Initialize with side effects for possible recursions
     bool & withoutSideEffects=found.first->second;
     if (!found.second)
@@ -1278,7 +1266,7 @@ bool CheckUnusedVar::isRecordTypeWithoutSideEffects(const Type* type)
 
     if (type && type->classScope && type->classScope->numConstructors == 0 &&
         (type->classScope->varlist.empty() || type->needInitialization == Type::True)) {
-        for (std::vector<Type::BaseInfo>::const_iterator i = type->derivedFrom.begin(); i != type->derivedFrom.end(); ++i) {
+        for (auto i = type->derivedFrom.begin(); i != type->derivedFrom.end(); ++i) {
             if (!isRecordTypeWithoutSideEffects(i->type)) {
                 withoutSideEffects=false;
                 return withoutSideEffects;
@@ -1296,7 +1284,7 @@ bool CheckUnusedVar::isEmptyType(const Type* type)
 {
     // a type that has no variables and no constructor
 
-    std::pair<std::map<const Type *,bool>::iterator,bool> found=isEmptyTypeMap.insert(
+    auto found = isEmptyTypeMap.insert(
                 std::pair<const Type *,bool>(type,false));
     bool & emptyType=found.first->second;
     if (!found.second)
@@ -1304,7 +1292,7 @@ bool CheckUnusedVar::isEmptyType(const Type* type)
 
     if (type && type->classScope && type->classScope->numConstructors == 0 &&
         (type->classScope->varlist.empty())) {
-        for (std::vector<Type::BaseInfo>::const_iterator i = type->derivedFrom.begin(); i != type->derivedFrom.end(); ++i) {
+        for (auto i = type->derivedFrom.begin(); i != type->derivedFrom.end(); ++i) {
             if (!isEmptyType(i->type)) {
                 emptyType=false;
                 return emptyType;

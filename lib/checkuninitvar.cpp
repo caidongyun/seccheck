@@ -102,8 +102,7 @@ private:
     static void alloc_pointer(std::list<ExecutionPath *> &checks, unsigned int varid) {
         // loop through the checks and perform a allocation if the
         // variable id matches
-        std::list<ExecutionPath *>::const_iterator it;
-        for (it = checks.begin(); it != checks.end(); ++it) {
+        for (auto it = checks.begin(); it != checks.end(); ++it) {
             UninitVar *c = dynamic_cast<UninitVar *>(*it);
             if (c && c->varId == varid) {
                 if (c->var->isPointer() && !c->var->isArray())
@@ -123,7 +122,7 @@ private:
 
         // loop through the checks and perform a initialization if the
         // variable id matches
-        std::list<ExecutionPath *>::iterator it = checks.begin();
+        auto it = checks.begin();
         while (it != checks.end()) {
             UninitVar *c = dynamic_cast<UninitVar *>(*it);
             if (c && c->varId == varid) {
@@ -148,8 +147,7 @@ private:
 
         // loop through the checks and perform a deallocation if the
         // variable id matches
-        std::list<ExecutionPath *>::const_iterator it;
-        for (it = checks.begin(); it != checks.end(); ++it) {
+        for (auto it = checks.begin(); it != checks.end(); ++it) {
             UninitVar *c = dynamic_cast<UninitVar *>(*it);
             if (c && c->varId == varid) {
                 // unallocated pointer variable => error
@@ -183,10 +181,8 @@ private:
         if (varid2 == 0)
             return;
 
-        std::list<ExecutionPath *>::const_iterator it;
-
         // bail out if first variable is a pointer
-        for (it = checks.begin(); it != checks.end(); ++it) {
+        for (auto it = checks.begin(); it != checks.end(); ++it) {
             UninitVar *c = dynamic_cast<UninitVar *>(*it);
             if (c && c->varId == varid1 && c->var->isPointer() && !c->var->isArray()) {
                 bailOutVar(checks, varid1);
@@ -195,7 +191,7 @@ private:
         }
 
         // bail out if second variable is a array/pointer
-        for (it = checks.begin(); it != checks.end(); ++it) {
+        for (auto it = checks.begin(); it != checks.end(); ++it) {
             UninitVar *c = dynamic_cast<UninitVar *>(*it);
             if (c && c->varId == varid2 && (c->var->isPointer() || c->var->isArray())) {
                 bailOutVar(checks, varid2);
@@ -211,8 +207,7 @@ private:
         if (!varid)
             return;
 
-        std::list<ExecutionPath *>::const_iterator it;
-        for (it = checks.begin(); it != checks.end(); ++it) {
+        for (auto it = checks.begin(); it != checks.end(); ++it) {
             UninitVar *c = dynamic_cast<UninitVar *>(*it);
             if (c && c->varId == varid) {
                 c->strncpy_ = true;
@@ -226,8 +221,7 @@ private:
         if (!varid)
             return;
 
-        std::list<ExecutionPath *>::const_iterator it;
-        for (it = checks.begin(); it != checks.end(); ++it) {
+        for (auto it = checks.begin(); it != checks.end(); ++it) {
             UninitVar *c = dynamic_cast<UninitVar *>(*it);
             if (c && c->varId == varid) {
                 c->memset_nonzero = true;
@@ -249,8 +243,7 @@ private:
         if (varid == 0)
             return false;
 
-        std::list<ExecutionPath *>::const_iterator it;
-        for (it = checks.begin(); it != checks.end(); ++it) {
+        for (auto it = checks.begin(); it != checks.end(); ++it) {
             UninitVar *c = dynamic_cast<UninitVar *>(*it);
             if (c && c->varId == varid) {
                 // mode 0 : the variable is used "directly"
@@ -423,7 +416,7 @@ private:
                 }
                 const Scope* parent = var2->scope()->nestedIn;
                 while (parent) {
-                    for (std::list<Variable>::const_iterator j = parent->varlist.begin(); j != parent->varlist.end(); ++j) {
+                    for (auto j = parent->varlist.begin(); j != parent->varlist.end(); ++j) {
                         if (j->name() == var2->name()) {
                             ExecutionPath::bailOutVar(checks, j->declarationId()); // If there is a variable with the same name in other scopes, this might cause false positives, if there are unexpanded macros
                             break;
@@ -489,8 +482,7 @@ private:
             // Used..
             if (Token::Match(tok.previous(), "[[(,+-*/|=] %var% ]|)|,|;|%op%") && !tok.next()->isAssignmentOp()) {
                 // Taking address of array..
-                std::list<ExecutionPath *>::const_iterator it;
-                for (it = checks.begin(); it != checks.end(); ++it) {
+                for (auto it = checks.begin(); it != checks.end(); ++it) {
                     UninitVar *c = dynamic_cast<UninitVar *>(*it);
                     if (c && c->varId == tok.varId()) {
                         if (c->var->isArray() || c->alloc)
@@ -628,7 +620,7 @@ private:
             {
                 std::list<const Token *> var1;
                 CheckNullPointer::parseFunctionCall(tok, var1, library, 1);
-                for (std::list<const Token *>::const_iterator it = var1.begin(); it != var1.end(); ++it) {
+                for (auto it = var1.begin(); it != var1.end(); ++it) {
                     // does iterator point at first function parameter?
                     const bool firstPar(*it == tok.tokAt(2));
 
@@ -649,7 +641,7 @@ private:
                 // Using uninitialized pointer is bad if using null pointer is bad
                 std::list<const Token *> var2;
                 CheckNullPointer::parseFunctionCall(tok, var2, library, 0);
-                for (std::list<const Token *>::const_iterator it = var2.begin(); it != var2.end(); ++it) {
+                for (auto it = var2.begin(); it != var2.end(); ++it) {
                     if (std::find(var1.begin(), var1.end(), *it) == var1.end())
                         use_dead_pointer(checks, *it);
                 }
@@ -734,7 +726,7 @@ private:
                     // array initialization..
                     if (Token::Match(tok2->previous(), "[,(] %var% [+-]")) {
                         // if var is array, bailout
-                        for (std::list<ExecutionPath *>::const_iterator it = checks.begin(); it != checks.end(); ++it) {
+                        for (auto it = checks.begin(); it != checks.end(); ++it) {
                             if ((*it)->varId == tok2->varId()) {
                                 const UninitVar *c = dynamic_cast<const UninitVar *>(*it);
                                 if (c && (c->var->isArray() || (c->var->isPointer() && c->alloc)))
@@ -746,7 +738,7 @@ private:
                 }
             }
 
-            for (std::set<unsigned int>::const_iterator it = bailouts.begin(); it != bailouts.end(); ++it)
+            for (auto it = bailouts.begin(); it != bailouts.end(); ++it)
                 ExecutionPath::bailOutVar(checks, *it);
         }
 
@@ -892,7 +884,7 @@ private:
             const Token * const ftok = (tok.str() == "!") ? tok.next() : &tok;
             std::list<const Token *> var1;
             CheckNullPointer::parseFunctionCall(*ftok, var1, library, 1);
-            for (std::list<const Token *>::const_iterator it = var1.begin(); it != var1.end(); ++it) {
+            for (auto it = var1.begin(); it != var1.end(); ++it) {
                 // is function memset/memcpy/etc?
                 if (ftok->str().compare(0,3,"mem") == 0)
                     use_array_mem(checks, *it);
@@ -1055,10 +1047,9 @@ void CheckUninitVar::executionPaths()
 void CheckUninitVar::check()
 {
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
-    std::list<Scope>::const_iterator scope;
 
     // check every executable scope
-    for (scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
+    for (auto scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
         if (scope->isExecutable()) {
             checkScope(&*scope);
         }
@@ -1067,7 +1058,7 @@ void CheckUninitVar::check()
 
 void CheckUninitVar::checkScope(const Scope* scope)
 {
-    for (std::list<Variable>::const_iterator i = scope->varlist.begin(); i != scope->varlist.end(); ++i) {
+    for (auto i = scope->varlist.begin(); i != scope->varlist.end(); ++i) {
         if ((_tokenizer->isCPP() && i->type() && !i->isPointer() && i->type()->needInitialization != Type::True) ||
             i->isStatic() || i->isExtern() || i->isConst() || i->isArray() || i->isReference())
             continue;
@@ -1134,12 +1125,12 @@ void CheckUninitVar::checkStruct(const Scope* scope, const Token *tok, const Var
     for (std::size_t j = 0U; j < symbolDatabase->classAndStructScopes.size(); ++j) {
         const Scope *scope2 = symbolDatabase->classAndStructScopes[j];
         if (scope2->className == structname && scope2->numConstructors == 0U) {
-            for (std::list<Variable>::const_iterator it = scope2->varlist.begin(); it != scope2->varlist.end(); ++it) {
+            for (auto it = scope2->varlist.begin(); it != scope2->varlist.end(); ++it) {
                 const Variable &var = *it;
                 if (!var.isArray()) {
                     // is the variable declared in a inner union?
                     bool innerunion = false;
-                    for (std::list<Scope>::const_iterator it2 = symbolDatabase->scopeList.begin(); it2 != symbolDatabase->scopeList.end(); ++it2) {
+                    for (auto it2 = symbolDatabase->scopeList.begin(); it2 != symbolDatabase->scopeList.end(); ++it2) {
                         const Scope &innerScope = *it2;
                         if (innerScope.type == Scope::eUnion && innerScope.nestedIn == scope2) {
                             if (var.typeStartToken()->linenr() >= innerScope.classStart->linenr() &&
@@ -1176,7 +1167,7 @@ static void conditionAlwaysTrueOrFalse(const Token *tok, const std::map<unsigned
     while (Token::Match(vartok, "%var% . %var%"))
         vartok = vartok->tokAt(2);
 
-    std::map<unsigned int, int>::const_iterator it = variableValue.find(vartok->varId());
+    auto it = variableValue.find(vartok->varId());
     if (it == variableValue.end())
         return;
 
@@ -1263,7 +1254,7 @@ bool CheckUninitVar::checkScopeForVariable(const Scope* scope, const Token *tok,
             // checking if a not-zero variable is zero => bail out
             unsigned int condVarId = 0, condVarValue = 0;
             if (Token::Match(tok, "if ( %var% )")) {
-                std::map<unsigned int,int>::const_iterator it = variableValue.find(tok->tokAt(2)->varId());
+                auto it = variableValue.find(tok->tokAt(2)->varId());
                 if (it != variableValue.end() && it->second == NOT_ZERO)
                     return true;   // this scope is not fully analysed => return true
                 else {

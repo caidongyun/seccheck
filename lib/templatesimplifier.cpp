@@ -37,7 +37,7 @@
 
 static void printlist(const std::list<Token *> &list)
 {
-    for (std::list<Token *>::const_iterator it = list.begin(); it != list.end(); ++it) {
+    for (auto it = list.begin(); it != list.end(); ++it) {
         const Token *token = *it;
         std::cout << "   ";
         while (token && !Token::Match(token, "[{};]")) {
@@ -501,7 +501,7 @@ std::list<Token *> TemplateSimplifier::getTemplateInstantiations(Token *tokens)
 void TemplateSimplifier::useDefaultArgumentValues(const std::list<Token *> &templates,
         std::list<Token *> * const templateInstantiations)
 {
-    for (std::list<Token *>::const_iterator iter1 = templates.begin(); iter1 != templates.end(); ++iter1) {
+    for (auto iter1 = templates.begin(); iter1 != templates.end(); ++iter1) {
         // template parameters with default value has syntax such as:
         //     x = y
         // this list will contain all the '=' tokens for such arguments
@@ -534,7 +534,7 @@ void TemplateSimplifier::useDefaultArgumentValues(const std::list<Token *> &temp
             continue;
 
         // iterate through all template instantiations
-        for (std::list<Token *>::const_iterator iter2 = templateInstantiations->begin(); iter2 != templateInstantiations->end(); ++iter2) {
+        for (auto iter2 = templateInstantiations->begin(); iter2 != templateInstantiations->end(); ++iter2) {
             Token *tok = *iter2;
 
             if (!Token::Match(tok, (classname + " < %any%").c_str()))
@@ -554,7 +554,7 @@ void TemplateSimplifier::useDefaultArgumentValues(const std::list<Token *> &temp
             }
             if (tok && tok->str() == ">") {
                 tok = tok->previous();
-                std::list<Token *>::const_iterator it = eq.begin();
+                auto it = eq.begin();
                 for (std::size_t i = (templatepar - eq.size()); it != eq.end() && i < usedpar; ++i)
                     ++it;
                 while (it != eq.end()) {
@@ -578,7 +578,7 @@ void TemplateSimplifier::useDefaultArgumentValues(const std::list<Token *> &temp
             }
         }
 
-        for (std::list<Token *>::iterator it = eq.begin(); it != eq.end(); ++it) {
+        for (auto it = eq.begin(); it != eq.end(); ++it) {
             Token * const eqtok = *it;
             Token *tok2;
             int indentlevel = 0;
@@ -586,7 +586,7 @@ void TemplateSimplifier::useDefaultArgumentValues(const std::list<Token *> &temp
                 if (tok2->str() == "(")
                     tok2 = tok2->link();
                 else if (Token::Match(tok2, "%type% <") && templateParameters(tok2->next())) {
-                    std::list<Token*>::iterator ti = std::find(templateInstantiations->begin(),
+                    auto ti = std::find(templateInstantiations->begin(),
                                                      templateInstantiations->end(),
                                                      tok2);
                     if (ti != templateInstantiations->end())
@@ -1097,7 +1097,7 @@ bool TemplateSimplifier::simplifyTemplateInstantiations(
 
     bool instantiated = false;
 
-    for (std::list<Token *>::const_iterator iter2 = templateInstantiations.begin(); iter2 != templateInstantiations.end(); ++iter2) {
+    for (auto iter2 = templateInstantiations.begin(); iter2 != templateInstantiations.end(); ++iter2) {
         if (amountOftemplateInstantiations != templateInstantiations.size()) {
             amountOftemplateInstantiations = templateInstantiations.size();
             simplifyCalculations(tokenlist.front());
@@ -1298,8 +1298,8 @@ void TemplateSimplifier::simplifyTemplates(
                 templates2.push_back(*iter1);
         }
 
-        for (std::list<Token *>::iterator it = templates2.begin(); it != templates2.end(); ++it) {
-            std::list<Token *>::iterator it1 = std::find(templates.begin(), templates.end(), *it);
+        for (auto it = templates2.begin(); it != templates2.end(); ++it) {
+            auto it1 = std::find(templates.begin(), templates.end(), *it);
             if (it1 != templates.end()) {
                 templates.erase(it1);
                 removeTemplate(*it);

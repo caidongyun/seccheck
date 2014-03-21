@@ -52,7 +52,7 @@ void CheckObsoleteFunctions::obsoleteFunctions()
             if (tok->isName() && tok->varId()==0 && (tok->next() && tok->next()->str() == "(") &&
                 (!Token::Match(tok->previous(), ".|::") || Token::simpleMatch(tok->tokAt(-2), "std ::"))) {
 
-                std::map<std::string,std::string>::const_iterator it = _obsoleteStandardFunctions.find(tok->str());
+                auto it = _obsoleteStandardFunctions.find(tok->str());
                 if (it != _obsoleteStandardFunctions.end()) {
                     // If checking an old code base it might be uninteresting to update obsolete functions.
                     reportError(tok, Severity::style, "obsoleteFunctions"+it->first, it->second);

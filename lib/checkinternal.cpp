@@ -179,8 +179,8 @@ void CheckInternal::checkMissingPercentCharacter()
 
         const std::string pattern = pattern_tok->strValue();
 
-        std::set<std::string>::const_iterator magic, magics_end = magics.end();
-        for (magic = magics.begin(); magic != magics_end; ++magic) {
+        auto magics_end = magics.end();
+        for (auto magic = magics.begin(); magic != magics_end; ++magic) {
             const std::string broken_magic = (*magic).substr(0, (*magic).size()-1);
 
             std::string::size_type pos = 0;

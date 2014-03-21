@@ -34,17 +34,38 @@ namespace
 	CheckBaseDestructor instance;
 }
 
+/** Check for private static members of class */
+/** See: MSC22-CPP. Do not define static private members */
+void CheckBaseDestructor::checkPrivateStaticMembers() 
+{
+	const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
+
+	// Iterate over all classes
+	for (auto classIt = symbolDatabase->typeList.begin();
+		classIt != symbolDatabase->typeList.end();
+		++classIt) 
+	{
+		// Loop in all functions of the class
+		for (auto itr = classIt->classScope->functionList.begin();
+			itr != classIt->classScope->functionList.end();
+			++itr)
+		{
+
+		}
+	}
+}
+
 void CheckBaseDestructor::checkBaseClass()
 {
 	const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
 
 	// Iterate over all classes
-	for (std::list<Type>::const_iterator classIt = symbolDatabase->typeList.begin();
+	for (auto classIt = symbolDatabase->typeList.begin();
 		classIt != symbolDatabase->typeList.end();
 		++classIt) 
 	{
 		// Iterate over the parent classes
-		for (std::vector<Type::BaseInfo>::const_iterator parentClassIt = classIt->derivedFrom.begin();
+		for (auto parentClassIt = classIt->derivedFrom.begin();
 			parentClassIt != classIt->derivedFrom.end();
 			++parentClassIt) 
 		{
@@ -56,7 +77,7 @@ void CheckBaseDestructor::checkBaseClass()
 			}
 
 			// Loop in all functions of the base class
-			for (std::list<Function>::const_iterator itr = parentType->classScope->functionList.begin();
+			for (auto itr = parentType->classScope->functionList.begin();
 				itr != parentType->classScope->functionList.end();
 				++itr) 
 			{

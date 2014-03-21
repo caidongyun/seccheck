@@ -582,8 +582,7 @@ public:
     std::list<ValueFlow::Value> values;
 
     const ValueFlow::Value * getValue(const MathLib::bigint val) const {
-        std::list<ValueFlow::Value>::const_iterator it;
-        for (it = values.begin(); it != values.end(); ++it) {
+        for (auto it = values.begin(); it != values.end(); ++it) {
             if (it->intvalue == val)
                 return &(*it);
         }
@@ -592,8 +591,7 @@ public:
 
     const ValueFlow::Value * getMaxValue(bool condition) const {
         const ValueFlow::Value *ret = 0;
-        std::list<ValueFlow::Value>::const_iterator it;
-        for (it = values.begin(); it != values.end(); ++it) {
+        for (auto it = values.begin(); it != values.end(); ++it) {
             if ((!ret || it->intvalue > ret->intvalue) &&
                 ((it->condition != NULL) == condition))
                 ret = &(*it);

@@ -85,7 +85,7 @@ private:
     void getErrorMessages(ErrorLogger *errorLogger, const Settings *settings) const {
         CheckNonReentrantFunctions c(0, settings, errorLogger);
 
-        std::map<std::string,std::string>::const_iterator it(_nonReentrantFunctions.begin()), itend(_nonReentrantFunctions.end());
+        auto it(_nonReentrantFunctions.begin()), itend(_nonReentrantFunctions.end());
         for (; it!=itend; ++it) {
             c.reportError(0, Severity::portability, "nonreentrantFunctions"+it->first, it->second);
         }
@@ -97,7 +97,7 @@ private:
 
     std::string classInfo() const {
         std::string info = "Warn if any of these non reentrant functions are used:\n";
-        std::map<std::string,std::string>::const_iterator it(_nonReentrantFunctions.begin()), itend(_nonReentrantFunctions.end());
+        auto it(_nonReentrantFunctions.begin()), itend(_nonReentrantFunctions.end());
         for (; it!=itend; ++it) {
             info += "* " + it->first + "\n";
         }

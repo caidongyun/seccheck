@@ -130,7 +130,7 @@ void CheckIO::checkFileUsage()
                 indent++;
             else if (tok->str() == "}") {
                 indent--;
-                for (std::map<unsigned int, Filepointer>::iterator i = filepointers.begin(); i != filepointers.end(); ++i) {
+                for (auto i = filepointers.begin(); i != filepointers.end(); ++i) {
                     if (indent < i->second.mode_indent) {
                         i->second.mode_indent = 0;
                         i->second.mode = UNKNOWN;
@@ -141,14 +141,14 @@ void CheckIO::checkFileUsage()
                     }
                 }
             } else if (tok->str() == "return" || tok->str() == "continue" || tok->str() == "break") { // Reset upon return, continue or break
-                for (std::map<unsigned int, Filepointer>::iterator i = filepointers.begin(); i != filepointers.end(); ++i) {
+                for (auto i = filepointers.begin(); i != filepointers.end(); ++i) {
                     i->second.mode_indent = 0;
                     i->second.mode = UNKNOWN;
                     i->second.op_indent = 0;
                     i->second.lastOperation = Filepointer::UNKNOWN_OP;
                 }
             } else if (tok->varId() && Token::Match(tok, "%var% =") && (tok->strAt(2) != "fopen" && tok->strAt(2) != "freopen" && tok->strAt(2) != "tmpfile")) {
-                std::map<unsigned int, Filepointer>::iterator i = filepointers.find(tok->varId());
+                auto i = filepointers.find(tok->varId());
                 if (i != filepointers.end()) {
                     i->second.mode = UNKNOWN;
                     i->second.lastOperation = Filepointer::UNKNOWN_OP;
@@ -265,7 +265,7 @@ void CheckIO::checkFileUsage()
                 }
             }
         }
-        for (std::map<unsigned int, Filepointer>::iterator i = filepointers.begin(); i != filepointers.end(); ++i) {
+        for (auto i = filepointers.begin(); i != filepointers.end(); ++i) {
             i->second.op_indent = 0;
             i->second.mode = UNKNOWN;
             i->second.lastOperation = Filepointer::UNKNOWN_OP;
@@ -463,7 +463,7 @@ void CheckIO::checkWrongPrintfScanfArguments()
 
             if (Token::Match(tok->next(), "( %any%") && _settings->library.formatstr_function(tok->str())) {
                 const std::map<int, Library::ArgumentChecks>& argumentChecks = _settings->library.argumentChecks.at(tok->str());
-                for (std::map<int, Library::ArgumentChecks>::const_iterator i = argumentChecks.begin(); i != argumentChecks.end(); ++i) {
+                for (auto i = argumentChecks.begin(); i != argumentChecks.end(); ++i) {
                     if (i->second.formatstr) {
                         formatStringArgNo = i->first - 1;
                         break;
@@ -529,7 +529,7 @@ void CheckIO::checkWrongPrintfScanfArguments()
             bool percent = false;
             const Token* argListTok2 = argListTok;
             std::set<unsigned int> parameterPositionsUsed;
-            for (std::string::iterator i = formatString.begin(); i != formatString.end(); ++i) {
+            for (auto i = formatString.begin(); i != formatString.end(); ++i) {
                 if (*i == '%') {
                     percent = !percent;
                 } else if (percent && *i == '[') {
@@ -1283,7 +1283,7 @@ void CheckIO::checkWrongPrintfScanfArguments()
             }
 
             // Check that all parameter positions reference an actual parameter
-            for (std::set<unsigned int>::const_iterator it = parameterPositionsUsed.begin() ; it != parameterPositionsUsed.end() ; ++it) {
+            for (auto it = parameterPositionsUsed.begin() ; it != parameterPositionsUsed.end() ; ++it) {
                 if (((*it == 0) || (*it > numFormat)) && _settings->isEnabled("warning"))
                     wrongPrintfScanfPosixParameterPositionError(tok, tok->str(), *it, numFormat);
             }

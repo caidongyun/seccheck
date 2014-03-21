@@ -409,7 +409,7 @@ void CheckOther::checkSuspiciousSemicolon()
     const SymbolDatabase* const symbolDatabase = _tokenizer->getSymbolDatabase();
 
     // Look for "if(); {}", "for(); {}" or "while(); {}"
-    for (std::list<Scope>::const_iterator i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
+    for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         if (i->type == Scope::eIf || i->type == Scope::eElse || i->type == Scope::eElseIf || i->type == Scope::eWhile || i->type == Scope::eFor) {
             // Ensure the semicolon is at the same line number as the if/for/while statement
             // and the {..} block follows it without an extra empty line.
@@ -613,7 +613,7 @@ static bool nonLocal(const Variable* var)
 
 static void eraseNotLocalArg(std::map<unsigned int, const Token*>& container, const SymbolDatabase* symbolDatabase)
 {
-    for (std::map<unsigned int, const Token*>::iterator i = container.begin(); i != container.end();) {
+    for (auto i = container.begin(); i != container.end();) {
         const Variable* var = symbolDatabase->getVariableFromVarId(i->first);
         if (!var || nonLocal(var)) {
             container.erase(i++);
@@ -626,10 +626,10 @@ static void eraseNotLocalArg(std::map<unsigned int, const Token*>& container, co
 
 static void eraseMemberAssignments(const unsigned int varId, std::map<unsigned int, std::set<unsigned int> > &membervars, std::map<unsigned int, const Token*> &varAssignments)
 {
-    const std::map<unsigned int, std::set<unsigned int> >::const_iterator it = membervars.find(varId);
+    const auto it = membervars.find(varId);
     if (it != membervars.end()) {
         const std::set<unsigned int> v = it->second;
-        for (std::set<unsigned int>::const_iterator vit = v.begin(); vit != v.end(); ++vit) {
+        for (auto vit = v.begin(); vit != v.end(); ++vit) {
             varAssignments.erase(*vit);
             if (*vit != varId)
                 eraseMemberAssignments(*vit, membervars, varAssignments);
@@ -646,7 +646,7 @@ void CheckOther::checkRedundantAssignment()
 
     const SymbolDatabase* symbolDatabase = _tokenizer->getSymbolDatabase();
 
-    for (std::list<Scope>::const_iterator scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
+    for (auto scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
         if (!scope->isExecutable())
             continue;
 
@@ -688,7 +688,7 @@ void CheckOther::checkRedundantAssignment()
                         membervars[startToken->varId()].insert(startToken->tokAt(2)->varId());
                 }
 
-                std::map<unsigned int, const Token*>::iterator it = varAssignments.find(tok->varId());
+                auto it = varAssignments.find(tok->varId());
                 if (tok->next()->isAssignmentOp() && Token::Match(startToken, "[;{}]")) { // Assignment
                     if (it != varAssignments.end()) {
                         bool error = true; // Ensure that variable is not used on right side
@@ -740,7 +740,7 @@ void CheckOther::checkRedundantAssignment()
                         else if (memAssignments.find(param1->varId()) == memAssignments.end())
                             memAssignments[param1->varId()] = tok;
                         else {
-                            const std::map<unsigned int, const Token*>::iterator it = memAssignments.find(param1->varId());
+                            const auto it = memAssignments.find(param1->varId());
                             if (scope->type == Scope::eSwitch && Token::findmatch(it->second, "default|case", tok) && warning)
                                 redundantCopyInSwitchError(it->second, tok, param1->str());
                             else if (performance)
@@ -840,7 +840,7 @@ void CheckOther::checkRedundantAssignmentInSwitch()
 
     // Find the beginning of a switch. E.g.:
     //   switch (var) { ...
-    for (std::list<Scope>::const_iterator i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
+    for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         if (i->type != Scope::eSwitch || !i->classStart)
             continue;
 
@@ -883,7 +883,7 @@ void CheckOther::checkRedundantAssignmentInSwitch()
             else if (Token::Match(tok2->previous(), ";|{|}|: %var% = %var% %or%|& %num% ;") &&
                      tok2->varId() != 0 && tok2->varId() == tok2->tokAt(2)->varId()) {
                 std::string bitOp = tok2->strAt(3) + tok2->strAt(4);
-                std::map<unsigned int, const Token*>::iterator i2 = varsWithBitsSet.find(tok2->varId());
+                auto i2 = varsWithBitsSet.find(tok2->varId());
 
                 // This variable has not had a bit operation performed on it yet, so just make a note of it
                 if (i2 == varsWithBitsSet.end()) {
@@ -936,7 +936,7 @@ void CheckOther::checkSwitchCaseFallThrough()
 
     const SymbolDatabase* const symbolDatabase = _tokenizer->getSymbolDatabase();
 
-    for (std::list<Scope>::const_iterator i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
+    for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         if (i->type != Scope::eSwitch || !i->classStart) // Find the beginning of a switch
             continue;
 
@@ -1071,7 +1071,7 @@ void CheckOther::checkSuspiciousCaseInSwitch()
 
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
 
-    for (std::list<Scope>::const_iterator i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
+    for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         if (i->type != Scope::eSwitch)
             continue;
 
@@ -1834,7 +1834,7 @@ bool CheckOther::checkInnerScope(const Token *tok, const Variable* var, bool& us
     } else if (loopVariable && tok->strAt(-1) == ")") {
         tok = tok->linkAt(-1); // Jump to opening ( of for/while statement
     } else if (scope->type == Scope::eSwitch) {
-        for (std::list<Scope*>::const_iterator i = scope->nestedList.begin(); i != scope->nestedList.end(); ++i) {
+        for (auto i = scope->nestedList.begin(); i != scope->nestedList.end(); ++i) {
             if (used) {
                 bool used2 = false;
                 if (!checkInnerScope((*i)->classStart, var, used2) || used2) {
@@ -2456,7 +2456,7 @@ void CheckOther::checkDuplicateIf()
 
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
 
-    for (std::list<Scope>::const_iterator scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
+    for (auto scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
         const Token* const tok = scope->classDef;
         // only check if statements
         if (scope->type != Scope::eIf || !tok)
@@ -2483,7 +2483,7 @@ void CheckOther::checkDuplicateIf()
             expression = tok1->tokAt(conditionIndex+1)->stringifyList(tok1->linkAt(conditionIndex));
 
             // try to look up the expression to check for duplicates
-            std::map<std::string, const Token *>::iterator it = expressionMap.find(expression);
+            auto it = expressionMap.find(expression);
 
             // found a duplicate
             if (it != expressionMap.end()) {
@@ -2525,9 +2525,7 @@ void CheckOther::checkDuplicateBranch()
 
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
 
-    std::list<Scope>::const_iterator scope;
-
-    for (scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
+    for (auto scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
         if (scope->type != Scope::eIf && scope->type != Scope::eElseIf)
             continue;
 
@@ -2614,8 +2612,8 @@ void CheckOther::checkInvalidFree()
                                tok->strAt(3) == "(" ? 4 : 1;
             const unsigned int var1 = tok->tokAt(varIdx)->varId();
             const unsigned int var2 = tok->tokAt(varIdx + 2)->varId();
-            const std::map<unsigned int, bool>::iterator alloc1 = allocatedVariables.find(var1);
-            const std::map<unsigned int, bool>::iterator alloc2 = allocatedVariables.find(var2);
+            const auto alloc1 = allocatedVariables.find(var1);
+            const auto alloc2 = allocatedVariables.find(var2);
             if (alloc1 != allocatedVariables.end()) {
                 invalidFreeError(tok, alloc1->second);
             } else if (alloc2 != allocatedVariables.end()) {
@@ -2759,19 +2757,17 @@ namespace {
 
     void getConstFunctions(const SymbolDatabase *symbolDatabase, std::list<const Function*> &constFunctions)
     {
-        std::list<Scope>::const_iterator scope;
-        for (scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
-            std::list<Function>::const_iterator func;
+        for (auto scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
+            //std::list<Function>::const_iterator func;
             // only add const functions that do not have a non-const overloaded version
             // since it is pretty much impossible to tell which is being called.
             typedef std::map<std::string, std::list<const Function*> > StringFunctionMap;
             StringFunctionMap functionsByName;
-            for (func = scope->functionList.begin(); func != scope->functionList.end(); ++func) {
+            for (auto func = scope->functionList.begin(); func != scope->functionList.end(); ++func) {
                 functionsByName[func->tokenDef->str()].push_back(&*func);
             }
-            for (StringFunctionMap::iterator it = functionsByName.begin();
-                 it != functionsByName.end(); ++it) {
-                std::list<const Function*>::const_iterator nc = std::find_if(it->second.begin(), it->second.end(), notconst);
+            for (auto it = functionsByName.begin(); it != functionsByName.end(); ++it) {
+                auto nc = std::find_if(it->second.begin(), it->second.end(), notconst);
                 if (nc == it->second.end()) {
                     // ok to add all of them
                     constFunctions.splice(constFunctions.end(), it->second);
@@ -2794,11 +2790,10 @@ void CheckOther::checkDuplicateExpression()
     // Parse all executing scopes..
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
 
-    std::list<Scope>::const_iterator scope;
     std::list<const Function*> constFunctions;
     getConstFunctions(symbolDatabase, constFunctions);
 
-    for (scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
+    for (auto scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
         // only check functions
         if (scope->type != Scope::eFunction)
             continue;
@@ -3156,7 +3151,7 @@ void CheckOther::pointerPositiveError(const Token *tok, bool inconclusive)
 /* check if a constructor in given class scope takes a reference */
 static bool constructorTakesReference(const Scope * const classScope)
 {
-    for (std::list<Function>::const_iterator func = classScope->functionList.begin(); func != classScope->functionList.end(); ++func) {
+    for (auto func = classScope->functionList.begin(); func != classScope->functionList.end(); ++func) {
         if (func->isConstructor()) {
             const Function &constructor = *func;
             for (std::size_t argnr = 0U; argnr < constructor.argCount(); argnr++) {
@@ -3306,7 +3301,7 @@ void CheckOther::oppositeInnerCondition()
 
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
 
-    for (std::list<Scope>::const_iterator scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
+    for (auto scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
         const Token* const toke = scope->classDef;
 
 

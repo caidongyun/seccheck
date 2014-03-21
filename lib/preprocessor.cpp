@@ -94,7 +94,7 @@ static unsigned char readChar(std::istream &istr, unsigned int bom)
 static std::string join(const std::set<std::string>& list, char separator)
 {
     std::string s;
-    for (std::set<std::string>::const_iterator it = list.begin(); it != list.end(); ++it) {
+    for (auto it = list.begin(); it != list.end(); ++it) {
         if (!s.empty())
             s += separator;
 
@@ -367,7 +367,7 @@ std::string Preprocessor::preprocessCleanupDirectives(const std::string &process
 
             char prev = ' '; // hack to make it skip spaces between # and the directive
             code << "#";
-            std::string::const_iterator i = line.begin();
+            auto i = line.begin();
             ++i;
 
             // need space.. #if( => #if (
@@ -445,7 +445,7 @@ static int tolowerWrapper(int c)
 static bool isFallThroughComment(std::string comment)
 {
     // convert comment to lower case without whitespace
-    for (std::string::iterator i = comment.begin(); i != comment.end();) {
+    for (auto i = comment.begin(); i != comment.end();) {
         if (std::isspace(static_cast<unsigned char>(*i)))
             i = comment.erase(i);
         else
@@ -860,7 +860,7 @@ void Preprocessor::preprocess(std::istream &istr, std::map<std::string, std::str
     std::list<std::string> configs;
     std::string data;
     preprocess(istr, data, configs, filename, includePaths);
-    for (std::list<std::string>::const_iterator it = configs.begin(); it != configs.end(); ++it) {
+    for (auto it = configs.begin(); it != configs.end(); ++it) {
         if (_settings && (_settings->userUndefs.find(*it) == _settings->userUndefs.end())) {
             result[ *it ] = getcode(data, *it, filename);
         }
@@ -965,7 +965,7 @@ void Preprocessor::preprocess(std::istream &srcCodeStream, std::string &processe
     processedFile = read(srcCodeStream, filename);
 
     if (_settings) {
-        for (std::list<std::string>::iterator it = _settings->userIncludes.begin();
+        for (auto it = _settings->userIncludes.begin();
              it != _settings->userIncludes.end();
              ++it) {
             std::string cur = *it;
@@ -995,7 +995,7 @@ void Preprocessor::preprocess(std::istream &srcCodeStream, std::string &processe
                 ;
         }
 
-        for (std::vector<std::string>::iterator it = _settings->library.defines.begin();
+        for (auto it = _settings->library.defines.begin();
              it != _settings->library.defines.end();
              ++it) {
             forcedIncludes += *it;
@@ -1063,9 +1063,9 @@ void Preprocessor::preprocess(std::istream &srcCodeStream, std::string &processe
 void Preprocessor::handleUndef(std::list<std::string> &configurations) const
 {
     if (_settings && !_settings->userUndefs.empty()) {
-        for (std::list<std::string>::iterator cfg = configurations.begin(); cfg != configurations.end();) {
+        for (auto cfg = configurations.begin(); cfg != configurations.end();) {
             bool undef = false;
-            for (std::set<std::string>::const_iterator it = _settings->userUndefs.begin(); it != _settings->userUndefs.end(); ++it) {
+            for (auto it = _settings->userUndefs.begin(); it != _settings->userUndefs.end(); ++it) {
                 if (*it == *cfg)
                     undef = true;
                 else if (cfg->compare(0,it->length(),*it)==0 && cfg->find_first_of(";=") == it->length())
@@ -1143,7 +1143,7 @@ static Token *simplifyVarMapExpandValue(Token *tok, const std::map<std::string, 
         return tok;
     seenVariables.insert(tok->str());
 
-    const std::map<std::string, std::string>::const_iterator it = variables.find(tok->str());
+    const auto it = variables.find(tok->str());
     if (it != variables.end()) {
         TokenList tokenList(NULL);
         std::istringstream istr(it->second);
@@ -1175,7 +1175,7 @@ static Token *simplifyVarMapExpandValue(Token *tok, const std::map<std::string, 
  */
 static void simplifyVarMap(std::map<std::string, std::string> &variables)
 {
-    for (std::map<std::string, std::string>::iterator i = variables.begin(); i != variables.end(); ++i) {
+    for (auto i = variables.begin(); i != variables.end(); ++i) {
         TokenList tokenList(NULL);
         std::istringstream istr(i->second);
         if (tokenList.createTokens(istr)) {
@@ -1366,7 +1366,7 @@ std::list<std::string> Preprocessor::getcfgs(const std::string &filedata, const 
             deflist.push_back(def);
             def = "";
 
-            for (std::list<std::string>::const_iterator it = deflist.begin(); it != deflist.end(); ++it) {
+            for (auto it = deflist.begin(); it != deflist.end(); ++it) {
                 if (*it == "0")
                     break;
                 if (*it == "1" || *it == "!")
@@ -1427,12 +1427,12 @@ std::list<std::string> Preprocessor::getcfgs(const std::string &filedata, const 
 
     // Remove defined constants from ifdef configurations..
     std::size_t count = 0;
-    for (std::list<std::string>::iterator it = ret.begin(); it != ret.end(); ++it) {
+    for (auto it = ret.begin(); it != ret.end(); ++it) {
         if (_errorLogger)
             _errorLogger->reportProgress(filename, "Preprocessing (get configurations 2)", (100 * count++) / ret.size());
 
         std::string cfg(*it);
-        for (std::set<std::string>::const_iterator it2 = defines.begin(); it2 != defines.end(); ++it2) {
+        for (auto it2 = defines.begin(); it2 != defines.end(); ++it2) {
             std::string::size_type pos = 0;
 
             // Get name of define
@@ -1469,7 +1469,7 @@ std::list<std::string> Preprocessor::getcfgs(const std::string &filedata, const 
     }
 
     // convert configurations: "defined(A) && defined(B)" => "A;B"
-    for (std::list<std::string>::iterator it = ret.begin(); it != ret.end(); ++it) {
+    for (auto it = ret.begin(); it != ret.end(); ++it) {
         std::string s(*it);
 
         if (s.find("&&") != std::string::npos) {
@@ -1515,7 +1515,7 @@ std::list<std::string> Preprocessor::getcfgs(const std::string &filedata, const 
     }
 
     // Convert configurations into a canonical form: B;C;A or C;A;B => A;B;C
-    for (std::list<std::string>::iterator it = ret.begin(); it != ret.end(); ++it)
+    for (auto it = ret.begin(); it != ret.end(); ++it)
         *it = unify(*it, ';');
 
     // Remove duplicates from the ret list..
@@ -1523,7 +1523,7 @@ std::list<std::string> Preprocessor::getcfgs(const std::string &filedata, const 
     ret.unique();
 
     // cleanup unhandled configurations..
-    for (std::list<std::string>::iterator it = ret.begin(); it != ret.end();) {
+    for (auto it = ret.begin(); it != ret.end();) {
         const std::string s(*it + ";");
 
         bool unhandled = false;
@@ -1589,7 +1589,7 @@ void Preprocessor::simplifyCondition(const std::map<std::string, std::string> &c
     }
 
     if (Token::Match(tokenizer.tokens(), "( %var% )")) {
-        std::map<std::string,std::string>::const_iterator var = cfg.find(tokenizer.tokens()->strAt(1));
+        auto var = cfg.find(tokenizer.tokens()->strAt(1));
         if (var != cfg.end()) {
             const std::string &value = (*var).second;
             condition = (value == "0") ? "0" : "1";
@@ -1599,7 +1599,7 @@ void Preprocessor::simplifyCondition(const std::map<std::string, std::string> &c
     }
 
     if (Token::Match(tokenizer.tokens(), "( ! %var% )")) {
-        std::map<std::string,std::string>::const_iterator var = cfg.find(tokenizer.tokens()->strAt(2));
+        auto var = cfg.find(tokenizer.tokens()->strAt(2));
 
         if (var == cfg.end())
             condition = "1";
@@ -1637,7 +1637,7 @@ void Preprocessor::simplifyCondition(const std::map<std::string, std::string> &c
             continue;
         }
 
-        const std::map<std::string, std::string>::const_iterator it = cfg.find(tok->str());
+        const auto it = cfg.find(tok->str());
         if (it != cfg.end()) {
             if (!it->second.empty()) {
                 // Tokenize the value
@@ -1712,19 +1712,6 @@ void Preprocessor::simplifyCondition(const std::map<std::string, std::string> &c
 
 bool Preprocessor::match_cfg_def(std::map<std::string, std::string> cfg, std::string def)
 {
-    /*
-        std::cout << "cfg: \"";
-        for (std::map<std::string, std::string>::const_iterator it = cfg.begin(); it != cfg.end(); ++it)
-        {
-            std::cout << it->first;
-            if (!it->second.empty())
-                std::cout << "=" << it->second;
-            std::cout << ";";
-        }
-        std::cout << "\"  ";
-        std::cout << "def: \"" << def << "\"\n";
-    */
-
     simplifyVarMap(cfg);
     simplifyCondition(cfg, def, true);
 
@@ -1819,7 +1806,7 @@ std::string Preprocessor::getcode(const std::string &filedata, const std::string
                 }
             }
 
-            for (std::list<bool>::const_iterator it = matching_ifdef.begin(); it != matching_ifdef.end(); ++it)
+            for (auto it = matching_ifdef.begin(); it != matching_ifdef.end(); ++it)
                 match &= bool(*it);
 
             if (match) {
@@ -1892,7 +1879,7 @@ std::string Preprocessor::getcode(const std::string &filedata, const std::string
 
         if (!line.empty() && line[0] == '#') {
             match = true;
-            for (std::list<bool>::const_iterator it = matching_ifdef.begin(); it != matching_ifdef.end(); ++it)
+            for (auto it = matching_ifdef.begin(); it != matching_ifdef.end(); ++it)
                 match &= bool(*it);
         }
 
@@ -2012,7 +1999,7 @@ static bool openHeader(std::string &filename, const std::list<std::string> &incl
     std::list<std::string> includePaths2(includePaths);
     includePaths2.push_front("");
 
-    for (std::list<std::string>::const_iterator iter = includePaths2.begin(); iter != includePaths2.end(); ++iter) {
+    for (auto iter = includePaths2.begin(); iter != includePaths2.end(); ++iter) {
         const std::string nativePath(Path::toNativeSeparators(*iter));
         fin.open((nativePath + filename).c_str());
         if (fin.is_open()) {
@@ -2546,7 +2533,7 @@ private:
                 getparams(param, pos, innerparams, num, endFound);
                 if (pos == param.length()-1 && num==0 && endFound && innerparams.size() == params1.size()) {
                     // Is inner macro defined?
-                    std::map<std::string, PreprocessorMacro *>::const_iterator it = macros.find(innerMacroName);
+                    auto it = macros.find(innerMacroName);
                     if (it != macros.end()) {
                         // expand the inner macro
                         const PreprocessorMacro *innerMacro = it->second;
@@ -2741,7 +2728,7 @@ public:
 
                         // expand nopar macro
                         if (tok->strAt(-1) != "##") {
-                            const std::map<std::string, PreprocessorMacro *>::const_iterator it = macros.find(str);
+                            const auto it = macros.find(str);
                             if (it != macros.end() && it->second->_macro.find("(") == std::string::npos) {
                                 str = it->second->_macro;
                                 if (str.find(" ") != std::string::npos)
@@ -2847,7 +2834,7 @@ bool Preprocessor::validateCfg(const std::string &code, const std::string &cfg)
     }
 
     // check if any empty macros are used in code
-    for (std::set<std::string>::const_iterator it = macros.begin(); it != macros.end(); ++it) {
+    for (auto it = macros.begin(); it != macros.end(); ++it) {
         const std::string &macro = *it;
         std::string::size_type pos = 0;
         while ((pos = code.find_first_of(std::string("#\"'")+macro[0], pos)) != std::string::npos) {
@@ -2911,8 +2898,7 @@ std::string Preprocessor::expandMacros(const std::string &code, std::string file
     {
         // fill up "macros" with user defined macros
         const std::map<std::string,std::string> cfgmap(getcfgmap(cfg,NULL,""));
-        std::map<std::string, std::string>::const_iterator it;
-        for (it = cfgmap.begin(); it != cfgmap.end(); ++it) {
+        for (auto it = cfgmap.begin(); it != cfgmap.end(); ++it) {
             std::string s = it->first;
             if (!it->second.empty())
                 s += " " + it->second;
@@ -2943,8 +2929,7 @@ std::string Preprocessor::expandMacros(const std::string &code, std::string file
                 // BOOST_FOREACH is currently too complex to parse, so skip it.
                 delete macro;
             } else {
-                std::map<std::string, PreprocessorMacro *>::iterator it;
-                it = macros.find(macro->name());
+                auto it = macros.find(macro->name());
                 if (it != macros.end())
                     delete it->second;
                 macros[macro->name()] = macro;
@@ -2954,8 +2939,7 @@ std::string Preprocessor::expandMacros(const std::string &code, std::string file
 
         // undefining a macro..
         else if (line.compare(0, 7, "#undef ") == 0) {
-            std::map<std::string, PreprocessorMacro *>::iterator it;
-            it = macros.find(line.substr(7));
+            auto it = macros.find(line.substr(7));
             if (it != macros.end()) {
                 delete it->second;
                 macros.erase(it);
@@ -3028,8 +3012,7 @@ std::string Preprocessor::expandMacros(const std::string &code, std::string file
                                    "noQuoteCharPair",
                                    std::string("No pair for character (") + ch + "). Can't process file. File is either invalid or unicode, which is currently not supported.");
 
-                        std::map<std::string, PreprocessorMacro *>::iterator it;
-                        for (it = macros.begin(); it != macros.end(); ++it)
+                        for (auto it = macros.begin(); it != macros.end(); ++it)
                             delete it->second;
                         macros.clear();
                         return "";
@@ -3055,8 +3038,7 @@ std::string Preprocessor::expandMacros(const std::string &code, std::string file
                     const std::string id = line.substr(pos1, pos - pos1);
 
                     // is there a macro with this name?
-                    std::map<std::string, PreprocessorMacro *>::const_iterator it;
-                    it = macros.find(id);
+                    auto it = macros.find(id);
                     if (it == macros.end())
                         break;  // no macro with this name exist
 
@@ -3065,7 +3047,7 @@ std::string Preprocessor::expandMacros(const std::string &code, std::string file
                     // check that pos is within allowed limits for this
                     // macro
                     {
-                        const std::map<const PreprocessorMacro *, std::size_t>::const_iterator it2 = limits.find(macro);
+                        const auto it2 = limits.find(macro);
                         if (it2 != limits.end() && pos <= line.length() - it2->second)
                             break;
                     }
@@ -3109,8 +3091,7 @@ std::string Preprocessor::expandMacros(const std::string &code, std::string file
                                    "syntaxError",
                                    std::string("Syntax error. Not enough parameters for macro '") + macro->name() + "'.");
 
-                        std::map<std::string, PreprocessorMacro *>::iterator iter;
-                        for (iter = macros.begin(); iter != macros.end(); ++iter)
+                        for (auto iter = macros.begin(); iter != macros.end(); ++iter)
                             delete iter->second;
                         macros.clear();
                         return "";
@@ -3124,7 +3105,7 @@ std::string Preprocessor::expandMacros(const std::string &code, std::string file
                         ++pos2;
 
                     // Remove old limits
-                    for (std::map<const PreprocessorMacro *, std::size_t>::iterator iter = limits.begin();
+                    for (auto iter = limits.begin();
                          iter != limits.end();) {
                         if ((line.length() - pos1) < iter->second) {
                             // We have gone past this limit, so just delete it
@@ -3223,7 +3204,7 @@ std::string Preprocessor::expandMacros(const std::string &code, std::string file
         }
     }
 
-    for (std::map<std::string, PreprocessorMacro *>::iterator it = macros.begin(); it != macros.end(); ++it)
+    for (auto it = macros.begin(); it != macros.end(); ++it)
         delete it->second;
     macros.clear();
 

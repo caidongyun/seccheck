@@ -34,12 +34,20 @@ class CPPCHECKLIB MathLib {
 public:
     typedef long long bigint;
 
+	/*
+	* string to long long number
+	*/
     static bigint toLongNumber(const std::string & str);
+
     template<class T> static std::string toString(T value) {
         std::ostringstream result;
         result << value;
         return result.str();
     }
+
+	/*
+	* string to double number
+	*/
     static double toDoubleNumber(const std::string & str);
 
     static bool isInt(const std::string & str);

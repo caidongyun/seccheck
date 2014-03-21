@@ -35,14 +35,14 @@ void CheckNonReentrantFunctions::nonReentrantFunctions()
     if (!_settings->standards.posix || !_settings->isEnabled("portability"))
         return;
 
-    std::map<std::string,std::string>::const_iterator nonReentrant_end = _nonReentrantFunctions.end();
+    auto nonReentrant_end = _nonReentrantFunctions.end();
     for (const Token *tok = _tokenizer->tokens(); tok; tok = tok->next()) {
         // Look for function invocations
         if (!tok->isName() || tok->strAt(1) != "(" || tok->varId() != 0)
             continue;
 
         // Check for non-reentrant function name
-        std::map<std::string,std::string>::const_iterator it = _nonReentrantFunctions.find(tok->str());
+        auto it = _nonReentrantFunctions.find(tok->str());
         if (it == nonReentrant_end)
             continue;
 

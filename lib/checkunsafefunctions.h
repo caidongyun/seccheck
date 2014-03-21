@@ -82,7 +82,7 @@ private:
     void getErrorMessages(ErrorLogger *errorLogger, const Settings *settings) const {
         CheckUnsafeFunctions c(0, settings, errorLogger);
 
-        std::map<std::string,std::string>::const_iterator it(_unsafeFunctions.begin()), itend(_unsafeFunctions.end());
+        auto it(_unsafeFunctions.begin()), itend(_unsafeFunctions.end());
         for (; it!=itend; ++it) {
             c.reportError(0, Severity::style, "unsafeFunctions"+it->first, it->second);
         }
@@ -94,7 +94,7 @@ private:
 
     std::string classInfo() const {
         std::string info = "Warn if any of these unsafe functions are used:\n";
-        std::map<std::string,std::string>::const_iterator it(_unsafeFunctions.begin()), itend(_unsafeFunctions.end());
+        auto it(_unsafeFunctions.begin()), itend(_unsafeFunctions.end());
         for (; it!=itend; ++it) {
             info += "* " + it->first + "\n";
         }

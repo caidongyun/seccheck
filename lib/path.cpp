@@ -128,8 +128,6 @@ bool Path::sameFileName(const std::string &fname1, const std::string &fname2)
     return bool(_stricmp(fname1.c_str(), fname2.c_str()) == 0);
 #elif defined(__GNUC__)
     return bool(strcasecmp(fname1.c_str(), fname2.c_str()) == 0);
-#elif defined(__BORLANDC__)
-    return bool(stricmp(fname1.c_str(), fname2.c_str()) == 0);
 #else
 #error Platform filename compare function needed
 #endif
@@ -172,7 +170,7 @@ std::string Path::getFilenameExtensionInLowerCase(const std::string &path)
 
 std::string Path::getRelativePath(const std::string& absolutePath, const std::vector<std::string>& basePaths)
 {
-    for (std::vector<std::string>::const_iterator i = basePaths.begin(); i != basePaths.end(); ++i) {
+    for (auto i = basePaths.begin(); i != basePaths.end(); ++i) {
         if (absolutePath == *i || i->empty()) // Seems to be a file, or path is empty
             continue;
 

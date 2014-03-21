@@ -100,12 +100,12 @@ public:
     std::set<std::string> leakignore;
 
     bool isnoreturn(const std::string &name) const {
-        std::map<std::string, bool>::const_iterator it = _noreturn.find(name);
+        auto it = _noreturn.find(name);
         return (it != _noreturn.end() && it->second);
     }
 
     bool isnotnoreturn(const std::string &name) const {
-        std::map<std::string, bool>::const_iterator it = _noreturn.find(name);
+        auto it = _noreturn.find(name);
         return (it != _noreturn.end() && !it->second);
     }
 
@@ -167,7 +167,7 @@ public:
     }
 
     bool processMarkupAfterCode(const std::string &path) const {
-        const std::map<std::string, bool>::const_iterator it = _processAfterCode.find(Path::getFilenameExtensionInLowerCase(path));
+        const auto it = _processAfterCode.find(Path::getFilenameExtensionInLowerCase(path));
         return (it == _processAfterCode.end() || it->second);
     }
 
@@ -176,7 +176,7 @@ public:
     }
 
     bool reportErrors(const std::string &path) const {
-        const std::map<std::string, bool>::const_iterator it = _reporterrors.find(Path::getFilenameExtensionInLowerCase(path));
+        const auto it = _reporterrors.find(Path::getFilenameExtensionInLowerCase(path));
         return (it == _reporterrors.end() || it->second);
     }
 
@@ -185,13 +185,13 @@ public:
     }
 
     bool isexecutableblock(const std::string &file, const std::string &token) const {
-        const std::map<std::string, CodeBlock>::const_iterator it = _executableblocks.find(Path::getFilenameExtensionInLowerCase(file));
+        const auto it = _executableblocks.find(Path::getFilenameExtensionInLowerCase(file));
         return (it != _executableblocks.end() && it->second.isBlock(token));
     }
 
     int blockstartoffset(const std::string &file) const {
         int offset = -1;
-        const std::map<std::string, CodeBlock>::const_iterator map_it
+        const auto map_it
             = _executableblocks.find(Path::getFilenameExtensionInLowerCase(file));
 
         if (map_it != _executableblocks.end()) {
@@ -202,7 +202,7 @@ public:
 
     std::string blockstart(const std::string &file) const {
         std::string start;
-        const std::map<std::string, CodeBlock>::const_iterator map_it
+        const auto map_it
             = _executableblocks.find(Path::getFilenameExtensionInLowerCase(file));
 
         if (map_it != _executableblocks.end()) {
@@ -213,7 +213,7 @@ public:
 
     std::string blockend(const std::string &file) const {
         std::string end;
-        const std::map<std::string, CodeBlock>::const_iterator map_it
+        const auto map_it
             = _executableblocks.find(Path::getFilenameExtensionInLowerCase(file));
 
         if (map_it != _executableblocks.end()) {
@@ -223,7 +223,7 @@ public:
     }
 
     bool iskeyword(const std::string &file, const std::string &keyword) const {
-        const std::map<std::string, std::set<std::string> >::const_iterator it =
+        const auto it =
             _keywords.find(Path::getFilenameExtensionInLowerCase(file));
         return (it != _keywords.end() && it->second.count(keyword));
     }
@@ -233,33 +233,33 @@ public:
     }
 
     bool isexportedprefix(const std::string &prefix, const std::string &token) const {
-        const std::map<std::string, ExportedFunctions>::const_iterator it = _exporters.find(prefix);
+        const auto it = _exporters.find(prefix);
         return (it != _exporters.end() && it->second.isPrefix(token));
     }
 
     bool isexportedsuffix(const std::string &prefix, const std::string &token) const {
-        const std::map<std::string, ExportedFunctions>::const_iterator it = _exporters.find(prefix);
+        const auto it = _exporters.find(prefix);
         return (it != _exporters.end() && it->second.isSuffix(token));
     }
 
     bool isimporter(const std::string& file, const std::string &importer) const {
-        const std::map<std::string, std::set<std::string> >::const_iterator it =
+        const auto it =
             _importers.find(Path::getFilenameExtensionInLowerCase(file));
         return (it != _importers.end() && it->second.count(importer) > 0);
     }
 
     bool isreflection(const std::string& file, const std::string &token) const {
-        const std::map<std::string,std::map<std::string,int> >::const_iterator it
+        const auto it
             = _reflection.find(Path::getFilenameExtensionInLowerCase(file));
         return (it != _reflection.end() && it->second.count(token));
     }
 
     int reflectionArgument(const std::string& file, const std::string &token) const {
         int argIndex = -1;
-        const std::map<std::string,std::map<std::string,int> >::const_iterator it
+        const auto it
             = _reflection.find(Path::getFilenameExtensionInLowerCase(file));
         if (it != _reflection.end()) {
-            const std::map<std::string,int>::const_iterator it2 =
+            const auto it2 =
                 it->second.find(token);
             if (it2 != it->second.end()) {
                 argIndex = it2->second;
@@ -343,10 +343,9 @@ private:
 
 
     const ArgumentChecks * getarg(const std::string &functionName, int argnr) const {
-        std::map<std::string, std::map<int, ArgumentChecks> >::const_iterator it1;
-        it1 = argumentChecks.find(functionName);
+        auto it1 = argumentChecks.find(functionName);
         if (it1 != argumentChecks.end()) {
-            const std::map<int,ArgumentChecks>::const_iterator it2 = it1->second.find(argnr);
+            const auto it2 = it1->second.find(argnr);
             if (it2 != it1->second.end())
                 return &it2->second;
         }
@@ -354,7 +353,7 @@ private:
     }
 
     static int getid(const std::map<std::string,int> &data, const std::string &name) {
-        const std::map<std::string,int>::const_iterator it = data.find(name);
+        const auto it = data.find(name);
         return (it == data.end()) ? 0 : it->second;
     }
 };

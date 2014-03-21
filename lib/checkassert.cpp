@@ -49,7 +49,7 @@ void CheckAssert::assertWithSideEffects()
 
                 // functions with non-const references
                 else if (f->argCount() != 0) {
-                    for (std::list<Variable>::const_iterator it = f->argumentList.begin(); it != f->argumentList.end(); ++it) {
+                    for (auto it = f->argumentList.begin(); it != f->argumentList.end(); ++it) {
                         if (it->isConst() || it->isLocal()) continue;
                         else if (it->isReference()) {
                             const Token* next = it->nameToken()->next();
@@ -80,7 +80,7 @@ void CheckAssert::assertWithSideEffects()
                     }
 
                     bool noReturnInScope = true;
-                    for (std::vector<const Token*>::iterator rt = returnTokens.begin(); rt != returnTokens.end(); ++rt) {
+                    for (auto rt = returnTokens.begin(); rt != returnTokens.end(); ++rt) {
                         noReturnInScope &= !inSameScope(*rt, tok2);
                     }
                     if (noReturnInScope) continue;

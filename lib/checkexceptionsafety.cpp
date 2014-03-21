@@ -139,7 +139,7 @@ void CheckExceptionSafety::checkRethrowCopy()
 
     const SymbolDatabase* const symbolDatabase = _tokenizer->getSymbolDatabase();
 
-    for (std::list<Scope>::const_iterator i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
+    for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         if (i->type != Scope::eCatch)
             continue;
 
@@ -165,7 +165,7 @@ void CheckExceptionSafety::checkCatchExceptionByValue()
 
     const SymbolDatabase* const symbolDatabase = _tokenizer->getSymbolDatabase();
 
-    for (std::list<Scope>::const_iterator i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
+    for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         if (i->type != Scope::eCatch)
             continue;
 

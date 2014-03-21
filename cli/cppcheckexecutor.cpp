@@ -93,8 +93,7 @@ bool CppCheckExecutor::parseFromArgs(CppCheck *cppcheck, int argc, const char* c
 
     if (!pathnames.empty()) {
         // Execute recursiveAddFiles() to each given file parameter
-        std::vector<std::string>::const_iterator iter;
-        for (iter = pathnames.begin(); iter != pathnames.end(); ++iter)
+        for (auto iter = pathnames.begin(); iter != pathnames.end(); ++iter)
             FileLister::recursiveAddFiles(_files, Path::toNativeSeparators(*iter), _settings->library.markupExtensions());
     }
 
@@ -104,7 +103,7 @@ bool CppCheckExecutor::parseFromArgs(CppCheck *cppcheck, int argc, const char* c
         // TODO: Remove all unknown files? (use FileLister::acceptFile())
         bool warn = false;
         std::vector<std::string> ignored = parser.GetIgnoredPaths();
-        for (std::vector<std::string>::iterator i = ignored.begin(); i != ignored.end();) {
+        for (auto i = ignored.begin(); i != ignored.end();) {
             const std::string extension = Path::getFilenameExtension(*i);
             if (extension == ".h" || extension == ".hpp") {
                 i = ignored.erase(i);
@@ -124,7 +123,7 @@ bool CppCheckExecutor::parseFromArgs(CppCheck *cppcheck, int argc, const char* c
         const bool caseSensitive = true;
 #endif
         PathMatch matcher(parser.GetIgnoredPaths(), caseSensitive);
-        for (std::map<std::string, std::size_t>::iterator i = _files.begin(); i != _files.end();) {
+        for (auto i = _files.begin(); i != _files.end();) {
             if (matcher.Match(i->first))
                 _files.erase(i++);
             else
@@ -191,13 +190,13 @@ int CppCheckExecutor::check(int argc, const char* const argv[])
         // Single process
 
         std::size_t totalfilesize = 0;
-        for (std::map<std::string, std::size_t>::const_iterator i = _files.begin(); i != _files.end(); ++i) {
+        for (auto i = _files.begin(); i != _files.end(); ++i) {
             totalfilesize += i->second;
         }
 
         std::size_t processedsize = 0;
         unsigned int c = 0;
-        for (std::map<std::string, std::size_t>::const_iterator i = _files.begin(); i != _files.end(); ++i) {
+        for (auto i = _files.begin(); i != _files.end(); ++i) {
             if (!_settings->library.markupFile(i->first)
                 || !_settings->library.processMarkupAfterCode(i->first)) {
                 returnValue += cppCheck.check(i->first);
@@ -210,7 +209,7 @@ int CppCheckExecutor::check(int argc, const char* const argv[])
 
         // second loop to parse all markup files which may not work until all
         // c/cpp files have been parsed and checked
-        for (std::map<std::string, std::size_t>::const_iterator i = _files.begin(); i != _files.end(); ++i) {
+        for (auto i = _files.begin(); i != _files.end(); ++i) {
             if (_settings->library.markupFile(i->first) && _settings->library.processMarkupAfterCode(i->first)) {
                 returnValue += cppCheck.check(i->first);
                 processedsize += i->second;

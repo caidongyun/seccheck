@@ -3125,7 +3125,7 @@ private:
         //beforedead.push_back("break");
         //beforedead.push_back("continue");
 
-        for (std::list<std::string>::iterator it = beforedead.begin(); it != beforedead.end(); ++it) {
+        for (auto it = beforedead.begin(); it != beforedead.end(); ++it) {
             {
                 ASSERT_EQUALS("void f ( ) { " + *it + " ; }", tok("void f() { " + *it + "; foo(); }"));
                 ASSERT_EQUALS("void f ( ) { " + *it + " ; }", tok("void f() { " + *it + "; if (m) foo(); }"));

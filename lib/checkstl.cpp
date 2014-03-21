@@ -301,7 +301,7 @@ void CheckStl::stlOutOfBounds()
     const SymbolDatabase* const symbolDatabase = _tokenizer->getSymbolDatabase();
 
     // Scan through all scopes..
-    for (std::list<Scope>::const_iterator i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
+    for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         const Token* tok = i->classDef;
         // only interested in conditions
         if ((i->type != Scope::eFor && i->type != Scope::eWhile && i->type != Scope::eIf && i->type != Scope::eElseIf) || !tok)
@@ -451,7 +451,7 @@ private:
                     iteratorId = tok.tokAt(3)->varId();
 
                 // invalidate this iterator in the corresponding checks
-                for (std::list<ExecutionPath *>::const_iterator it = checks.begin(); it != checks.end(); ++it) {
+                for (auto it = checks.begin(); it != checks.end(); ++it) {
                     EraseCheckLoop *c = dynamic_cast<EraseCheckLoop *>(*it);
                     if (c && c->varId == iteratorId) {
                         c->eraseToken = &tok;
@@ -480,7 +480,7 @@ private:
     /** @brief going out of scope - all execution paths end */
     void end(const std::list<ExecutionPath *> &checks, const Token * /*tok*/) const {
         // check if there are any invalid iterators. If so there is an error.
-        for (std::list<ExecutionPath *>::const_iterator it = checks.begin(); it != checks.end(); ++it) {
+        for (auto it = checks.begin(); it != checks.end(); ++it) {
             EraseCheckLoop *c = dynamic_cast<EraseCheckLoop *>(*it);
             if (c && c->eraseToken) {
                 CheckStl *checkStl = dynamic_cast<CheckStl *>(c->owner);
@@ -497,7 +497,7 @@ void CheckStl::erase()
 {
     const SymbolDatabase* const symbolDatabase = _tokenizer->getSymbolDatabase();
 
-    for (std::list<Scope>::const_iterator i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
+    for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         const Token* const tok = i->classDef;
 
         if (tok && i->type == Scope::eFor) {
@@ -810,7 +810,7 @@ void CheckStl::if_find()
 
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
 
-    for (std::list<Scope>::const_iterator i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
+    for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         if ((i->type != Scope::eIf && i->type != Scope::eElseIf && i->type != Scope::eWhile) || !i->classDef)
             continue;
 
@@ -1048,7 +1048,7 @@ void CheckStl::missingComparison()
 
     const SymbolDatabase* const symbolDatabase = _tokenizer->getSymbolDatabase();
 
-    for (std::list<Scope>::const_iterator i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
+    for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         if (i->type != Scope::eFor || !i->classDef)
             continue;
 
@@ -1146,8 +1146,8 @@ void CheckStl::string_c_str()
     // Find all functions that take std::string as argument
     std::multimap<std::string, unsigned int> c_strFuncParam;
     if (_settings->isEnabled("performance")) {
-        for (std::list<Scope>::const_iterator scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
-            for (std::list<Function>::const_iterator func = scope->functionList.begin(); func != scope->functionList.end(); ++func) {
+        for (auto scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
+            for (auto func = scope->functionList.begin(); func != scope->functionList.end(); ++func) {
                 if (c_strFuncParam.erase(func->tokenDef->str()) != 0) { // Check if function with this name was already found
                     c_strFuncParam.insert(std::make_pair(func->tokenDef->str(), 0)); // Disable, because there are overloads. TODO: Handle overloads
                     continue;
@@ -1165,7 +1165,7 @@ void CheckStl::string_c_str()
     }
 
     // Try to detect common problems when using string::c_str()
-    for (std::list<Scope>::const_iterator scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
+    for (auto scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
         if (scope->type != Scope::eFunction || !scope->function)
             continue;
 
@@ -1195,8 +1195,8 @@ void CheckStl::string_c_str()
                     string_c_strError(tok);
             } else if (Token::Match(tok, "%var% ( !!)") && c_strFuncParam.find(tok->str()) != c_strFuncParam.end() &&
                        _settings->isEnabled("performance") && !Token::Match(tok->previous(), "::|.") && tok->varId() == 0 && tok->str() != scope->className) { // calling function. TODO: Add support for member functions
-                std::pair<std::multimap<std::string, unsigned int>::const_iterator, std::multimap<std::string, unsigned int>::const_iterator> range = c_strFuncParam.equal_range(tok->str());
-                for (std::multimap<std::string, unsigned int>::const_iterator i = range.first; i != range.second; ++i) {
+                auto range = c_strFuncParam.equal_range(tok->str());
+                for (auto i = range.first; i != range.second; ++i) {
                     if (i->second == 0)
                         continue;
 
@@ -1359,14 +1359,14 @@ void CheckStl::checkAutoPointer()
         } else {
             if (Token::Match(tok, "%var% = %var% ;")) {
                 if (_settings->isEnabled("style")) {
-                    std::set<unsigned int>::const_iterator iter = autoPtrVarId.find(tok->tokAt(2)->varId());
+                    auto iter = autoPtrVarId.find(tok->tokAt(2)->varId());
                     if (iter != autoPtrVarId.end()) {
                         autoPointerError(tok->tokAt(2));
                     }
                 }
             } else if ((Token::Match(tok, "%var% = new %type% ") && hasArrayEnd(tok)) ||
                        (Token::Match(tok, "%var% . reset ( new %type% ") && hasArrayEndParen(tok))) {
-                std::set<unsigned int>::const_iterator iter = autoPtrVarId.find(tok->varId());
+                auto iter = autoPtrVarId.find(tok->varId());
                 if (iter != autoPtrVarId.end()) {
                     autoPointerArrayError(tok);
                 }
@@ -1495,7 +1495,7 @@ void CheckStl::checkDereferenceInvalidIterator()
     // Iterate over "if", "while", and "for" conditions where there may
     // be an iterator that is dereferenced before being checked for validity.
     const std::list<Scope>& scopeList = _tokenizer->getSymbolDatabase()->scopeList;
-    for (std::list<Scope>::const_iterator i = scopeList.begin(); i != scopeList.end(); ++i) {
+    for (auto i = scopeList.begin(); i != scopeList.end(); ++i) {
         if (i->type == Scope::eIf || i->type == Scope::eWhile || i->type == Scope::eFor) {
 
             const Token* const tok = i->classDef;

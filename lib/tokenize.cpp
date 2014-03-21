@@ -83,7 +83,7 @@ unsigned int Tokenizer::sizeOfType(const Token *type) const
     if (type->type() == Token::eString)
         return static_cast<unsigned int>(Token::getStrLength(type) + 1);
 
-    std::map<std::string, unsigned int>::const_iterator it = _typeSize.find(type->str());
+    auto it = _typeSize.find(type->str());
     if (it == _typeSize.end())
         return 0;
     else if (type->isLong()) {
@@ -1191,8 +1191,7 @@ void Tokenizer::simplifyTypedef()
                     tok2 = copyTokens(tok2, typeStart->next(), typeEnd);
 
                     if (!pointers.empty()) {
-                        std::list<std::string>::const_iterator iter;
-                        for (iter = pointers.begin(); iter != pointers.end(); ++iter) {
+                        for (auto iter = pointers.begin(); iter != pointers.end(); ++iter) {
                             tok2->insertToken(*iter);
                             tok2 = tok2->next();
                         }
@@ -2299,7 +2298,7 @@ static void setVarIdClassDeclaration(Token * const startToken,
         } else if (tok->str() == "}")
             --indentlevel;
         else if (initList && indentlevel == 0 && Token::Match(tok->previous(), "[,:] %var% (")) {
-            const std::map<std::string, unsigned int>::const_iterator it = variableId.find(tok->str());
+            const auto it = variableId.find(tok->str());
             if (it != variableId.end()) {
                 tok->varId(it->second);
             }
@@ -2314,7 +2313,7 @@ static void setVarIdClassDeclaration(Token * const startToken,
                         continue;
                 }
 
-                const std::map<std::string, unsigned int>::const_iterator it = variableId.find(tok->str());
+                const auto it = variableId.find(tok->str());
                 if (it != variableId.end()) {
                     tok->varId(it->second);
                     setVarIdStructMembers(&tok, structMembers, _varId);
@@ -2344,7 +2343,7 @@ static void setVarIdClassFunction(const std::string &classname,
         if (Token::Match(tok2->tokAt(-2), "!!this . "))
             continue;
 
-        const std::map<std::string,unsigned int>::const_iterator it = varlist.find(tok2->str());
+        const auto it = varlist.find(tok2->str());
         if (it != varlist.end()) {
             tok2->varId(it->second);
             setVarIdStructMembers(&tok2, structMembers, _varId);
@@ -2511,7 +2510,7 @@ void Tokenizer::setVarId()
                     continue;
             }
 
-            const std::map<std::string, unsigned int>::const_iterator it = variableId.find(tok->str());
+            const auto it = variableId.find(tok->str());
             if (it != variableId.end()) {
                 tok->varId(it->second);
                 setVarIdStructMembers(&tok, &structMembers, &_varId);
@@ -2574,7 +2573,7 @@ void Tokenizer::setVarId()
                 continue;
 
             // Member variables
-            for (std::list<Token *>::iterator func = allMemberVars.begin(); func != allMemberVars.end(); ++func) {
+            for (auto func = allMemberVars.begin(); func != allMemberVars.end(); ++func) {
                 if (!Token::simpleMatch(*func, classname.c_str()))
                     continue;
 
@@ -2585,7 +2584,7 @@ void Tokenizer::setVarId()
 
             // Set variable ids in member functions for this class..
             const std::string funcpattern(classname + " :: %var% (");
-            for (std::list<Token *>::iterator func = allMemberFunctions.begin(); func != allMemberFunctions.end(); ++func) {
+            for (auto func = allMemberFunctions.begin(); func != allMemberFunctions.end(); ++func) {
                 Token *tok2 = *func;
 
                 // Found a class function..
@@ -4974,8 +4973,7 @@ bool Tokenizer::simplifyFunctionParameters()
             if (argumentNames.size() != argumentNames2.size()) {
                 //move back 'tok1' to the last ';'
                 tok1 = tok1->previous();
-                std::map<std::string, Token *>::iterator it;
-                for (it = argumentNames.begin(); it != argumentNames.end(); ++it) {
+                for (auto it = argumentNames.begin(); it != argumentNames.end(); ++it) {
                     if (argumentNames2.find(it->first) == argumentNames2.end()) {
                         //add the missing parameter argument declaration
                         tok1->insertToken(";");
@@ -9803,7 +9801,7 @@ void Tokenizer::createSymbolDatabase()
         _symbolDatabase = new SymbolDatabase(this, _settings, _errorLogger);
 
         // Set scope pointers
-        for (std::list<Scope>::iterator scope = _symbolDatabase->scopeList.begin(); scope != _symbolDatabase->scopeList.end(); ++scope) {
+        for (auto scope = _symbolDatabase->scopeList.begin(); scope != _symbolDatabase->scopeList.end(); ++scope) {
             Token* start = const_cast<Token*>(scope->classStart);
             Token* end = const_cast<Token*>(scope->classEnd);
             if (scope->type == Scope::eGlobal) {
@@ -9818,7 +9816,7 @@ void Tokenizer::createSymbolDatabase()
                 for (Token* tok = start->next(); tok != end; tok = tok->next()) {
                     if (tok->str() == "{") {
                         bool break2 = false;
-                        for (std::list<Scope*>::const_iterator innerScope = scope->nestedList.begin(); innerScope != scope->nestedList.end(); ++innerScope) {
+                        for (auto innerScope = scope->nestedList.begin(); innerScope != scope->nestedList.end(); ++innerScope) {
                             if (tok == (*innerScope)->classStart) { // Is begin of inner scope
                                 tok = tok->link();
                                 if (!tok || tok->next() == end || !tok->next()) {
@@ -10150,11 +10148,10 @@ void Tokenizer::printUnknownTypes()
     }
 
     if (!unknowns.empty()) {
-        std::multimap<std::string, const Token *>::const_iterator it;
         std::string last;
         size_t count = 0;
 
-        for (it = unknowns.begin(); it != unknowns.end(); ++it) {
+        for (auto it = unknowns.begin(); it != unknowns.end(); ++it) {
             // skip types is std namespace because they are not interesting
             if (it->first.find("std::") != 0) {
                 if (it->first != last) {

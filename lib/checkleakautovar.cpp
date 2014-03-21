@@ -46,10 +46,9 @@ namespace {
 void VarInfo::print()
 {
     std::cout << "size=" << alloctype.size() << std::endl;
-    std::map<unsigned int, int>::const_iterator it;
-    for (it = alloctype.begin(); it != alloctype.end(); ++it) {
+    for (auto it = alloctype.begin(); it != alloctype.end(); ++it) {
         std::string strusage;
-        std::map<unsigned int, std::string>::const_iterator use = possibleUsage.find(it->first);
+        auto use = possibleUsage.find(it->first);
         if (use != possibleUsage.end())
             strusage = use->second;
 
@@ -61,8 +60,7 @@ void VarInfo::print()
 void VarInfo::possibleUsageAll(const std::string &functionName)
 {
     possibleUsage.clear();
-    std::map<unsigned int, int>::const_iterator it;
-    for (it = alloctype.begin(); it != alloctype.end(); ++it)
+    for (auto it = alloctype.begin(); it != alloctype.end(); ++it)
         possibleUsage[it->first] = functionName;
 }
 
@@ -123,7 +121,7 @@ void CheckLeakAutoVar::check()
         varInfo.conditionalAlloc.clear();
 
         // Clear reference arguments from varInfo..
-        std::map<unsigned int, int>::iterator it = varInfo.alloctype.begin();
+        auto it = varInfo.alloctype.begin();
         while (it != varInfo.alloctype.end()) {
             const Variable *var = symbolDatabase->getVariableFromVarId(it->first);
             if (!var ||
@@ -151,7 +149,7 @@ void CheckLeakAutoVar::checkScope(const Token * const startToken,
     for (const Token *tok = startToken; tok && tok != endToken; tok = tok->next()) {
         // Deallocation and then dereferencing pointer..
         if (tok->varId() > 0) {
-            const std::map<unsigned int, int>::iterator var = alloctype.find(tok->varId());
+            const auto var = alloctype.find(tok->varId());
             if (var != alloctype.end()) {
                 if (var->second == DEALLOC && !Token::Match(tok->previous(), "[;{},=] %var% =")) {
                     deallocUseError(tok, tok->str());
@@ -289,8 +287,7 @@ void CheckLeakAutoVar::checkScope(const Token * const startToken,
                 old.swap(*varInfo);
 
                 // Conditional allocation in varInfo1
-                std::map<unsigned int, int>::const_iterator it;
-                for (it = varInfo1.alloctype.begin(); it != varInfo1.alloctype.end(); ++it) {
+                for (auto it = varInfo1.alloctype.begin(); it != varInfo1.alloctype.end(); ++it) {
                     if (varInfo2.alloctype.find(it->first) == varInfo2.alloctype.end() &&
                         old.alloctype.find(it->first) == old.alloctype.end()) {
                         varInfo->conditionalAlloc.insert(it->first);
@@ -298,7 +295,7 @@ void CheckLeakAutoVar::checkScope(const Token * const startToken,
                 }
 
                 // Conditional allocation in varInfo2
-                for (it = varInfo2.alloctype.begin(); it != varInfo2.alloctype.end(); ++it) {
+                for (auto it = varInfo2.alloctype.begin(); it != varInfo2.alloctype.end(); ++it) {
                     if (varInfo1.alloctype.find(it->first) == varInfo1.alloctype.end() &&
                         old.alloctype.find(it->first) == old.alloctype.end()) {
                         varInfo->conditionalAlloc.insert(it->first);
@@ -306,13 +303,13 @@ void CheckLeakAutoVar::checkScope(const Token * const startToken,
                 }
 
                 // Conditional allocation/deallocation
-                for (it = varInfo1.alloctype.begin(); it != varInfo1.alloctype.end(); ++it) {
+                for (auto it = varInfo1.alloctype.begin(); it != varInfo1.alloctype.end(); ++it) {
                     if (it->second == DEALLOC && conditionalAlloc.find(it->first) != conditionalAlloc.end()) {
                         varInfo->conditionalAlloc.erase(it->first);
                         varInfo2.erase(it->first);
                     }
                 }
-                for (it = varInfo2.alloctype.begin(); it != varInfo2.alloctype.end(); ++it) {
+                for (auto it = varInfo2.alloctype.begin(); it != varInfo2.alloctype.end(); ++it) {
                     if (it->second == DEALLOC && conditionalAlloc.find(it->first) != conditionalAlloc.end()) {
                         varInfo->conditionalAlloc.erase(it->first);
                         varInfo1.erase(it->first);
@@ -404,7 +401,7 @@ void CheckLeakAutoVar::functionCall(const Token *tok, VarInfo *varInfo, const in
                 arg = arg->next();
 
             // Is variable allocated?
-            const std::map<unsigned int,int>::iterator var = alloctype.find(arg->varId());
+            const auto var = alloctype.find(arg->varId());
             if (var != alloctype.end()) {
                 if (dealloc == NOALLOC) {
                     // possible usage
@@ -438,9 +435,9 @@ void CheckLeakAutoVar::leakIfAllocated(const Token *vartok,
     const std::map<unsigned int, int> &alloctype = varInfo.alloctype;
     const std::map<unsigned int, std::string> &possibleUsage = varInfo.possibleUsage;
 
-    const std::map<unsigned int,int>::const_iterator var = alloctype.find(vartok->varId());
+    const auto var = alloctype.find(vartok->varId());
     if (var != alloctype.end() && var->second != DEALLOC) {
-        const std::map<unsigned int, std::string>::const_iterator use = possibleUsage.find(vartok->varId());
+        const auto use = possibleUsage.find(vartok->varId());
         if (use == possibleUsage.end()) {
             leakError(vartok, vartok->str(), var->second);
         } else {
@@ -455,7 +452,7 @@ void CheckLeakAutoVar::ret(const Token *tok, const VarInfo &varInfo)
     const std::map<unsigned int, std::string> &possibleUsage = varInfo.possibleUsage;
 
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
-    for (std::map<unsigned int, int>::const_iterator it = alloctype.begin(); it != alloctype.end(); ++it) {
+    for (auto it = alloctype.begin(); it != alloctype.end(); ++it) {
         // don't warn if variable is conditionally allocated
         if (it->second != DEALLOC && varInfo.conditionalAlloc.find(it->first) != varInfo.conditionalAlloc.end())
             continue;
@@ -487,7 +484,7 @@ void CheckLeakAutoVar::ret(const Token *tok, const VarInfo &varInfo)
 
             else if (!used && it->second != DEALLOC) {
 
-                const std::map<unsigned int, std::string>::const_iterator use = possibleUsage.find(varid);
+                const auto use = possibleUsage.find(varid);
                 if (use == possibleUsage.end()) {
                     leakError(tok, var->name(), it->second);
                 } else {

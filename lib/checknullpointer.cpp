@@ -271,7 +271,7 @@ void CheckNullPointer::parseFunctionCall(const Token &tok, std::list<const Token
 
         if (argListTok) {
             bool percent = false;
-            for (std::string::iterator i = formatString.begin(); i != formatString.end(); ++i) {
+            for (auto i = formatString.begin(); i != formatString.end(); ++i) {
                 if (*i == '%') {
                     percent = !percent;
                 } else if (percent) {
@@ -499,7 +499,7 @@ void CheckNullPointer::nullPointerLinkedList()
     //        if (tok->str() == "hello")
     //            tok = tok->next;   // <- tok might become a null pointer!
     //    }
-    for (std::list<Scope>::const_iterator i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
+    for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         const Token* const tok1 = i->classDef;
         // search for a "for" scope..
         if (i->type != Scope::eFor || !tok1)
@@ -526,7 +526,7 @@ void CheckNullPointer::nullPointerLinkedList()
                     continue;
 
                 // Check usage of dereferenced variable in the loop..
-                for (std::list<Scope*>::const_iterator j = i->nestedList.begin(); j != i->nestedList.end(); ++j) {
+                for (auto j = i->nestedList.begin(); j != i->nestedList.end(); ++j) {
                     Scope* scope = *j;
                     if (scope->type != Scope::eWhile)
                         continue;
@@ -612,7 +612,7 @@ void CheckNullPointer::nullPointerByCheckAndDeRef()
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
 
     // Check if pointer is NULL and then dereference it..
-    for (std::list<Scope>::const_iterator i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
+    for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         if (i->type != Scope::eIf && i->type != Scope::eElseIf && i->type != Scope::eWhile)
             continue;
         if (!i->classDef || i->classDef->isExpandedMacro())
@@ -763,7 +763,7 @@ void CheckNullPointer::nullPointerByCheckAndDeRef()
             if (Token::Match(tok2, "%var% (") && !Token::Match(tok2, "if|while")) {
                 std::list<const Token *> vars;
                 parseFunctionCall(*tok2, vars, &_settings->library, 0);
-                for (std::list<const Token *>::const_iterator it = vars.begin(); it != vars.end(); ++it) {
+                for (auto it = vars.begin(); it != vars.end(); ++it) {
                     if (Token::Match(*it, "%varid% [,)]", varid)) {
                         nullPointerError(*it, pointerName, vartok, inconclusive);
                         break;
@@ -868,7 +868,7 @@ void CheckNullPointer::nullConstantDereference()
                     parseFunctionCall(*tok, var, &_settings->library, 0);
 
                     // is one of the var items a NULL pointer?
-                    for (std::list<const Token *>::const_iterator it = var.begin(); it != var.end(); ++it) {
+                    for (auto it = var.begin(); it != var.end(); ++it) {
                         if (Token::Match(*it, "0|NULL [,)]")) {
                             nullPointerError(*it);
                         }

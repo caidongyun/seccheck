@@ -221,7 +221,7 @@ void CheckAssignIf::comparison()
                 continue;
             std::list<MathLib::bigint> numbers;
             getnumchildren(expr1, numbers);
-            for (std::list<MathLib::bigint>::const_iterator num = numbers.begin(); num != numbers.end(); ++num) {
+            for (auto num = numbers.begin(); num != numbers.end(); ++num) {
                 const MathLib::bigint num1 = *num;
                 if (num1 < 0)
                     continue;
@@ -261,7 +261,7 @@ void CheckAssignIf::multiCondition()
 
     const SymbolDatabase* const symbolDatabase = _tokenizer->getSymbolDatabase();
 
-    for (std::list<Scope>::const_iterator i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
+    for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         if (i->type == Scope::eIf && Token::Match(i->classDef, "if ( %var% & %num% ) {")) {
             const Token* const tok = i->classDef;
             const unsigned int varid(tok->tokAt(2)->varId());

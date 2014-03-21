@@ -144,7 +144,7 @@ unsigned int ThreadExecutor::check()
     unsigned int result = 0;
 
     std::size_t totalfilesize = 0;
-    for (std::map<std::string, std::size_t>::const_iterator i = _files.begin(); i != _files.end(); ++i) {
+    for (auto i = _files.begin(); i != _files.end(); ++i) {
         totalfilesize += i->second;
     }
 
@@ -152,7 +152,7 @@ unsigned int ThreadExecutor::check()
     std::map<pid_t, std::string> childFile;
     std::map<int, std::string> pipeFile;
     std::size_t processedsize = 0;
-    std::map<std::string, std::size_t>::const_iterator i = _files.begin();
+    auto i = _files.begin();
     for (;;) {
         // Start a new child
         if (i != _files.end() && rpipes.size() < _settings._jobs) {
@@ -209,23 +209,23 @@ unsigned int ThreadExecutor::check()
         } else if (!rpipes.empty()) {
             fd_set rfds;
             FD_ZERO(&rfds);
-            for (std::list<int>::const_iterator rp = rpipes.begin(); rp != rpipes.end(); ++rp)
+            for (auto rp = rpipes.begin(); rp != rpipes.end(); ++rp)
                 FD_SET(*rp, &rfds);
 
             int r = select(*std::max_element(rpipes.begin(), rpipes.end()) + 1, &rfds, NULL, NULL, NULL);
 
             if (r > 0) {
-                std::list<int>::iterator rp = rpipes.begin();
+                auto rp = rpipes.begin();
                 while (rp != rpipes.end()) {
                     if (FD_ISSET(*rp, &rfds)) {
                         int readRes = handleRead(*rp, result);
                         if (readRes == -1) {
                             std::size_t size = 0;
-                            std::map<int, std::string>::iterator p = pipeFile.find(*rp);
+                            auto p = pipeFile.find(*rp);
                             if (p != pipeFile.end()) {
                                 std::string name = p->second;
                                 pipeFile.erase(p);
-                                std::map<std::string, std::size_t>::const_iterator fs = _files.find(name);
+                                auto fs = _files.find(name);
                                 if (fs != _files.end()) {
                                     size = fs->second;
                                 }
@@ -249,7 +249,7 @@ unsigned int ThreadExecutor::check()
             pid_t child = waitpid(0, &stat, WNOHANG);
             if (child > 0) {
                 std::string childname;
-                std::map<pid_t, std::string>::iterator c = childFile.find(child);
+                auto c = childFile.find(child);
                 if (c != childFile.end()) {
                     childname = c->second;
                     childFile.erase(c);
@@ -330,7 +330,7 @@ unsigned int ThreadExecutor::check()
     _processedSize = 0;
     _totalFiles = _files.size();
     _totalFileSize = 0;
-    for (std::map<std::string, std::size_t>::const_iterator i = _files.begin(); i != _files.end(); ++i) {
+    for (auto i = _files.begin(); i != _files.end(); ++i) {
         _totalFileSize += i->second;
     }
 
@@ -388,7 +388,7 @@ unsigned int __stdcall ThreadExecutor::threadProc(void *args)
     unsigned int result = 0;
 
     ThreadExecutor *threadExecutor = static_cast<ThreadExecutor*>(args);
-    std::map<std::string, std::size_t>::const_iterator &it = threadExecutor->_itNextFile;
+    auto &it = threadExecutor->_itNextFile;
 
     // guard static members of CppCheck against concurrent access
     EnterCriticalSection(&threadExecutor->_fileSync);
@@ -413,7 +413,7 @@ unsigned int __stdcall ThreadExecutor::threadProc(void *args)
 
         LeaveCriticalSection(&threadExecutor->_fileSync);
 
-        std::map<std::string, std::string>::const_iterator fileContent = threadExecutor->_fileContents.find(file);
+        auto fileContent = threadExecutor->_fileContents.find(file);
         if (fileContent != threadExecutor->_fileContents.end()) {
             // File content was given as a string
             result += fileChecker.check(file, fileContent->second);

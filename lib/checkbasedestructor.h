@@ -53,6 +53,10 @@ public:
     /** Check for destructor of base class */
     void checkBaseClass();
 
+	/** Check for private static members of class */
+	/** See: MSC22-CPP. Do not define static private members */
+    void checkPrivateStaticMembers();
+
 private:
     void getErrorMessages(ErrorLogger *errorLogger, const Settings *settings) const {
         CheckBaseDestructor c(0, settings, errorLogger);

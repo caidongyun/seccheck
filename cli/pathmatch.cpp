@@ -24,7 +24,7 @@ PathMatch::PathMatch(const std::vector<std::string> &masks, bool caseSensitive)
     : _masks(masks), _caseSensitive(caseSensitive)
 {
     if (!_caseSensitive)
-        for (std::vector<std::string>::iterator i = _masks.begin(); i != _masks.end(); ++i)
+        for (auto i = _masks.begin(); i != _masks.end(); ++i)
             std::transform(i->begin(), i->end(), i->begin(), ::tolower);
 }
 
@@ -33,7 +33,7 @@ bool PathMatch::Match(const std::string &path) const
     if (path.empty())
         return false;
 
-    for (std::vector<std::string>::const_iterator iterMask = _masks.begin(); iterMask != _masks.end(); ++iterMask) {
+    for (auto iterMask = _masks.begin(); iterMask != _masks.end(); ++iterMask) {
         const std::string& mask(*iterMask);
 
         std::string findpath(path);

@@ -635,7 +635,7 @@ void CheckBufferOverrun::checkFunctionParameter(const Token &tok, unsigned int p
     if (Token::Match(tok.previous(), ".") || Token::Match(tok.tokAt(-2), "!!std ::"))
         total_size.clear();
 
-    std::map<std::string, unsigned int>::const_iterator it = total_size.find(tok.str());
+    auto it = total_size.find(tok.str());
     if (it != total_size.end()) {
         if (arrayInfo.element_size() == 0)
             return;
@@ -789,7 +789,7 @@ void CheckBufferOverrun::checkFunctionCall(const Token *tok, const ArrayInfo &ar
         return;
 
     // Prevent recursion
-    for (std::list<const Token*>::const_iterator it = callstack.begin(); it != callstack.end(); ++it) {
+    for (auto it = callstack.begin(); it != callstack.end(); ++it) {
         // Same function name => bail out
         if (tok->str() == (*it)->str())
             return;
@@ -1590,8 +1590,7 @@ void CheckBufferOverrun::checkStructVariable()
         const Scope * scope = symbolDatabase->classAndStructScopes[i];
 
         // check all variables to see if they are arrays
-        std::list<Variable>::const_iterator var;
-        for (var = scope->varlist.begin(); var != scope->varlist.end(); ++var) {
+        for (auto var = scope->varlist.begin(); var != scope->varlist.end(); ++var) {
             if (var->isArray()) {
                 // create ArrayInfo from the array variable
                 ArrayInfo arrayInfo(&*var, _tokenizer);
@@ -1768,7 +1767,7 @@ MathLib::bigint CheckBufferOverrun::countSprintfLength(const std::string &input_
     bool handleNextParameter = false;
     std::string digits_string = "";
     bool i_d_x_f_found = false;
-    std::list<const Token*>::const_iterator paramIter = parameters.begin();
+    auto paramIter = parameters.begin();
     std::size_t parameterLength = 0;
     for (std::string::size_type i = 0; i < input_string.length(); ++i) {
         if (input_string[i] == '\\') {

@@ -92,7 +92,7 @@ static std::string writestr(const std::string &str, bool gccStyle = false)
     std::ostringstream ostr;
     if (gccStyle)
         ostr << '\"';
-    for (std::string::const_iterator i = str.begin(); i != str.end(); ++i) {
+    for (auto i = str.begin(); i != str.end(); ++i) {
         if (*i == '\n') {
             ostr << "\\n";
             if ((i+1) != str.end() && !gccStyle)
@@ -246,7 +246,7 @@ std::size_t TestFixture::runTests(const options& args)
 
     const std::list<TestFixture *> &tests = TestRegistry::theInstance().tests();
 
-    for (std::list<TestFixture *>::const_iterator it = tests.begin(); it != tests.end(); ++it) {
+    for (auto it = tests.begin(); it != tests.end(); ++it) {
         if (classname.empty() || (*it)->classname == classname) {
             (*it)->processOptions(args);
             (*it)->run(testname);
@@ -270,7 +270,7 @@ std::size_t TestFixture::runTests(const options& args)
 
     if (!missingLibs.empty()) {
         std::cerr << "Missing libraries: ";
-        for (std::set<std::string>::const_iterator i = missingLibs.begin(); i != missingLibs.end(); ++i)
+        for (auto i = missingLibs.begin(); i != missingLibs.end(); ++i)
             std::cerr << *i << "  ";
         std::cerr << std::endl << std::endl;
     }

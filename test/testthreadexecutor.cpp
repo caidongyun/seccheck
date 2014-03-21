@@ -61,7 +61,7 @@ private:
         Settings settings;
         settings._jobs = jobs;
         ThreadExecutor executor(filemap, settings, *this);
-        for (std::map<std::string, std::size_t>::const_iterator i = filemap.begin(); i != filemap.end(); ++i)
+        for (auto i = filemap.begin(); i != filemap.end(); ++i)
             executor.addFileContent(i->first, data);
 
         ASSERT_EQUALS(result, executor.check());

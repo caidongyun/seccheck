@@ -32,7 +32,7 @@ static void printvalues(const Token *tok)
 {
     if (tok->values.empty())
         std::cout << "empty";
-    for (std::list<ValueFlow::Value>::const_iterator it = tok->values.begin(); it != tok->values.end(); ++it)
+    for (auto it = tok->values.begin(); it != tok->values.end(); ++it)
         std::cout << " " << (it->intvalue);
     std::cout << std::endl;
 }
@@ -496,8 +496,7 @@ static void valueFlowAfterAssign(TokenList *tokenlist, ErrorLogger *errorLogger,
                     }
 
                     // Remove conditional values
-                    std::list<ValueFlow::Value>::iterator it;
-                    for (it = values.begin(); it != values.end();) {
+                    for (auto it = values.begin(); it != values.end();) {
                         if (it->condition || it->conditional)
                             values.erase(it++);
                         else
@@ -535,8 +534,7 @@ static void valueFlowAfterAssign(TokenList *tokenlist, ErrorLogger *errorLogger,
                 ++number_of_if;
 
                 // Set "conditional" flag for all values
-                std::list<ValueFlow::Value>::iterator it;
-                for (it = values.begin(); it != values.end(); ++it)
+                for (auto it = values.begin(); it != values.end(); ++it)
                     it->conditional = true;
 
                 if (Token::simpleMatch(tok2,"} else {"))
@@ -569,8 +567,7 @@ static void valueFlowAfterAssign(TokenList *tokenlist, ErrorLogger *errorLogger,
                 }
 
                 {
-                    std::list<ValueFlow::Value>::const_iterator it;
-                    for (it = values.begin(); it != values.end(); ++it)
+                    for (auto it = values.begin(); it != values.end(); ++it)
                         setTokenValue(tok2, *it);
                 }
 
@@ -582,8 +579,7 @@ static void valueFlowAfterAssign(TokenList *tokenlist, ErrorLogger *errorLogger,
                     break;
                 }
                 if (inconclusive) {
-                    std::list<ValueFlow::Value>::iterator it;
-                    for (it = values.begin(); it != values.end(); ++it)
+                    for (auto it = values.begin(); it != values.end(); ++it)
                         it->inconclusive = true;
                 }
             }

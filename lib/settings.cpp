@@ -89,8 +89,7 @@ std::string Settings::addEnabled(const std::string &str)
     }
 
     if (str == "all") {
-        std::set<std::string>::const_iterator it;
-        for (it = id.begin(); it != id.end(); ++it) {
+        for (auto it = id.begin(); it != id.end(); ++it) {
             if (*it == "internal")
                 continue;
 

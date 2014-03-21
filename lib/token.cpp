@@ -1232,7 +1232,7 @@ void Token::printValueFlow() const
             std::cout << "Line " << tok->linenr() << std::endl;
         line = tok->linenr();
         std::cout << "  " << tok->str() << ":{";
-        for (std::list<ValueFlow::Value>::const_iterator it=tok->values.begin(); it!=tok->values.end(); ++it) {
+        for (auto it = tok->values.begin(); it != tok->values.end(); ++it) {
             if (it != tok->values.begin())
                 std::cout << ",";
             std::cout << it->intvalue;

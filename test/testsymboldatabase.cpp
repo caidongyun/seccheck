@@ -63,9 +63,7 @@ private:
     }
 
     static const Scope *findFunctionScopeByToken(const SymbolDatabase * db, const Token *tok) {
-        std::list<Scope>::const_iterator scope;
-
-        for (scope = db->scopeList.begin(); scope != db->scopeList.end(); ++scope) {
+        for (auto scope = db->scopeList.begin(); scope != db->scopeList.end(); ++scope) {
             if (scope->type == Scope::eFunction) {
                 if (scope->classDef == tok)
                     return &(*scope);
@@ -83,7 +81,7 @@ private:
                 currScope = currScope->nestedIn;
         }
         while (currScope) {
-            for (std::list<Function>::const_iterator i = currScope->functionList.begin(); i != currScope->functionList.end(); ++i) {
+            for (auto i = currScope->functionList.begin(); i != currScope->functionList.end(); ++i) {
                 if (i->tokenDef->str() == str)
                     return &*i;
             }
@@ -840,8 +838,8 @@ private:
 
         if (db) {
             bool seen_something = false;
-            for (std::list<Scope>::const_iterator scope = db->scopeList.begin(); scope != db->scopeList.end(); ++scope) {
-                for (std::list<Function>::const_iterator func = scope->functionList.begin(); func != scope->functionList.end(); ++func) {
+            for (auto scope = db->scopeList.begin(); scope != db->scopeList.end(); ++scope) {
+                for (auto func = scope->functionList.begin(); func != scope->functionList.end(); ++func) {
                     ASSERT_EQUALS("Sub", func->token->str());
                     ASSERT_EQUALS(true, func->hasBody);
                     ASSERT_EQUALS(Function::eConstructor, func->type);
@@ -976,10 +974,10 @@ private:
 
         ASSERT(db && db->scopeList.size() == 1);
         if (db && db->scopeList.size() == 1) {
-            std::list<Scope>::const_iterator it = db->scopeList.begin();
+            auto it = db->scopeList.begin();
             ASSERT(it->varlist.size() == 1);
             if (it->varlist.size() == 1) {
-                std::list<Variable>::const_iterator var = it->varlist.begin();
+                auto var = it->varlist.begin();
                 ASSERT(var->name() == "i");
                 ASSERT(var->typeStartToken()->str() == "int");
             }
@@ -991,10 +989,10 @@ private:
 
         ASSERT(db && db->scopeList.size() == 1);
         if (db && db->scopeList.size() == 1) {
-            std::list<Scope>::const_iterator it = db->scopeList.begin();
+            auto it = db->scopeList.begin();
             ASSERT(it->varlist.size() == 1);
             if (it->varlist.size() == 1) {
-                std::list<Variable>::const_iterator var = it->varlist.begin();
+                auto var = it->varlist.begin();
                 ASSERT(var->name() == "array");
                 ASSERT(var->typeStartToken()->str() == "int");
             }
@@ -1006,10 +1004,10 @@ private:
 
         ASSERT(db && db->scopeList.size() == 1);
         if (db && db->scopeList.size() == 1) {
-            std::list<Scope>::const_iterator it = db->scopeList.begin();
+            auto it = db->scopeList.begin();
             ASSERT(it->varlist.size() == 1);
             if (it->varlist.size() == 1) {
-                std::list<Variable>::const_iterator var = it->varlist.begin();
+                auto var = it->varlist.begin();
                 ASSERT(var->name() == "array");
                 ASSERT(var->typeStartToken()->str() == "int");
             }
@@ -1152,7 +1150,7 @@ private:
 
         // Locate the scope for the class..
         const Scope *scope = NULL;
-        for (std::list<Scope>::const_iterator it = db->scopeList.begin(); it != db->scopeList.end(); ++it) {
+        for (auto it = db->scopeList.begin(); it != db->scopeList.end(); ++it) {
             if (it->isClassOrStruct()) {
                 scope = &(*it);
                 break;
@@ -1186,7 +1184,7 @@ private:
 
         // Locate the scope for the class..
         const Scope *scope = NULL;
-        for (std::list<Scope>::const_iterator it = db->scopeList.begin(); it != db->scopeList.end(); ++it) {
+        for (auto it = db->scopeList.begin(); it != db->scopeList.end(); ++it) {
             if (it->isClassOrStruct()) {
                 scope = &(*it);
                 break;
@@ -1491,7 +1489,7 @@ private:
 
         // Find the scope for the Fred struct..
         const Scope *fredScope = NULL;
-        for (std::list<Scope>::const_iterator scope = db->scopeList.begin(); scope != db->scopeList.end(); ++scope) {
+        for (auto scope = db->scopeList.begin(); scope != db->scopeList.end(); ++scope) {
             if (scope->isClassOrStruct() && scope->className == "Fred")
                 fredScope = &(*scope);
         }
@@ -1505,7 +1503,7 @@ private:
         // Get linenumbers where the bodies for the constructor and destructor are..
         unsigned int constructor = 0;
         unsigned int destructor = 0;
-        for (std::list<Function>::const_iterator it = fredScope->functionList.begin(); it != fredScope->functionList.end(); ++it) {
+        for (auto it = fredScope->functionList.begin(); it != fredScope->functionList.end(); ++it) {
             if (it->type == Function::eConstructor)
                 constructor = it->token->linenr();  // line number for constructor body
             if (it->type == Function::eDestructor)
@@ -1603,7 +1601,7 @@ private:
         ASSERT(db && db->isClassOrStruct("Sub"));
         if (!db || db->typeList.size() < 5)
             return;
-        std::list<Type>::const_iterator i = db->typeList.begin();
+        auto i = db->typeList.begin();
         const Type* Foo = &(*i++);
         const Type* Bar = &(*i++);
         const Type* Sub = &(*i++);
@@ -1675,7 +1673,7 @@ private:
         ASSERT(db && db->isClassOrStruct("Barney"));
         if (!db || db->typeList.size() != 3)
             return;
-        std::list<Type>::const_iterator i = db->typeList.begin();
+        auto i = db->typeList.begin();
         const Type* Fred = &(*i++);
         const Type* Wilma = &(*i++);
         const Type* Barney = &(*i++);

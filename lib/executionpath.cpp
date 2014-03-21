@@ -45,7 +45,7 @@ bool ExecutionPath::parseCondition(const Token &tok, std::list<ExecutionPath *> 
         }
     }
 
-    for (std::list<ExecutionPath *>::iterator it = checks.begin(); it != checks.end();) {
+    for (auto it = checks.begin(); it != checks.end();) {
         if ((*it)->varId > 0 && (*it)->numberOfIf >= 1) {
             delete *it;
             checks.erase(it++);
@@ -70,7 +70,7 @@ void ExecutionPath::print() const
 /*
 static void printchecks(const std::list<ExecutionPath *> &checks)
 {
-    for (std::list<ExecutionPath *>::const_iterator it = checks.begin(); it != checks.end(); ++it)
+    for (auto it = checks.begin(); it != checks.end(); ++it)
         (*it)->print();
 }
 */
@@ -92,8 +92,7 @@ static void parseIfSwitchBody(const Token * const tok,
     std::set<unsigned int> countif2;
     std::list<ExecutionPath *> c;
     if (!checks.empty()) {
-        std::list<ExecutionPath *>::const_iterator it;
-        for (it = checks.begin(); it != checks.end(); ++it) {
+        for (auto it = checks.begin(); it != checks.end(); ++it) {
             if ((*it)->numberOfIf == 0)
                 c.push_back((*it)->copy());
             if ((*it)->varId != 0)
@@ -109,8 +108,7 @@ static void parseIfSwitchBody(const Token * const tok,
         }
 
         bool duplicate = false;
-        std::list<ExecutionPath *>::const_iterator it;
-        for (it = checks.begin(); it != checks.end(); ++it) {
+        for (auto it = checks.begin(); it != checks.end(); ++it) {
             if (*(*it) == *c.back() && (*it)->numberOfIf == c.back()->numberOfIf) {
                 duplicate = true;
                 countif2.erase((*it)->varId);
@@ -231,8 +229,7 @@ void ExecutionPath::checkScope(const Token *tok, std::list<ExecutionPath *> &che
                 std::copy(newchecks.begin(), newchecks.end(), std::back_inserter(checks));
 
                 // Increase numberOfIf
-                std::list<ExecutionPath *>::iterator it;
-                for (it = checks.begin(); it != checks.end(); ++it) {
+                for (auto it = checks.begin(); it != checks.end(); ++it) {
                     if (countif.find((*it)->varId) != countif.end())
                         (*it)->numberOfIf++;
                 }
@@ -245,7 +242,7 @@ void ExecutionPath::checkScope(const Token *tok, std::list<ExecutionPath *> &che
                 }
 
                 // it is not certain that a for/while will be executed:
-                for (std::list<ExecutionPath *>::iterator it = checks.begin(); it != checks.end();) {
+                for (auto it = checks.begin(); it != checks.end();) {
                     if ((*it)->numberOfIf > 0) {
                         delete *it;
                         checks.erase(it++);
@@ -268,7 +265,7 @@ void ExecutionPath::checkScope(const Token *tok, std::list<ExecutionPath *> &che
                             // Is there a assignment and then a break?
                             const Token *t = Token::findsimplematch(tok3, ";");
                             if (t && t->tokAt(3) == tok4) {
-                                for (std::list<ExecutionPath *>::iterator it = checks.begin(); it != checks.end(); ++it) {
+                                for (auto it = checks.begin(); it != checks.end(); ++it) {
                                     if ((*it)->varId == tok3->next()->varId()) {
                                         (*it)->numberOfIf++;
                                         break;
@@ -465,7 +462,7 @@ void ExecutionPath::checkScope(const Token *tok, std::list<ExecutionPath *> &che
 
 void checkExecutionPaths(const SymbolDatabase *symbolDatabase, ExecutionPath *c)
 {
-    for (std::list<Scope>::const_iterator i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
+    for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         if (i->type != Scope::eFunction || !i->classStart)
             continue;
 
