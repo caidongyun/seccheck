@@ -100,6 +100,9 @@ private:
         }
         return info;
     }
+
+private:
+	bool isWinExecuteFunction(const Token* tok);
 };
 /// @}
 //---------------------------------------------------------------------------

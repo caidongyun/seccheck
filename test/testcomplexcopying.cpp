@@ -35,6 +35,7 @@ private:
 		TEST_CASE(vectorEqual);
 		TEST_CASE(vectorRefEqual);
 		TEST_CASE(vectorIterator);
+		TEST_CASE(tc_useostrstream);
     }
 
     void check(const char code[]) {
@@ -50,8 +51,8 @@ private:
         tokenizer.tokenize(istr, "test.cpp");
 
         // Check char variable usage..
-        CheckComplexCopying checkComplexCopying(&tokenizer, &settings, this);
-        checkComplexCopying.checkComplexParameters();
+        CheckComplexCopying checker(&tokenizer, &settings, this);
+        checker.checkComplexParameters();
     }
 
 	// vector container copying by parameter
@@ -99,6 +100,18 @@ private:
               "}");
         ASSERT_EQUALS("", errout.str());
     }
+
+	// using ostrstream
+	void tc_useostrstream() {
+		check("void foo()\n"
+              "{\n"
+			  "    stl::ostrstream p;\n"
+			  "    p << \"123\" << 456;\n"
+              "}");
+		std::string result = errout.str();
+        ASSERT_EQUALS("[test.cpp:3]: (style) Obsolete STL container used.\n"
+			"[test.cpp:4]: (style) Obsolete STL container used.\n", result);
+	}
 };
 
 REGISTER_TEST(TestComplexCopying)

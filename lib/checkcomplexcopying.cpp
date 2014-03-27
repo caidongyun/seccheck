@@ -130,20 +130,15 @@ static bool IsComplexVariable(const Variable *var)
 	}
 
 	for (const Token *typetok = var->typeStartToken(); 
-			typetok != var->typeEndToken(); typetok = typetok->next()) 
+		typetok && (typetok != var->nameToken()); typetok = typetok->next()) 
 	{
-		if (isComplexContainer(typetok->str()) )
+		if (isComplexContainer(typetok->str()))
 		{
 			return true;
 		}
 	}
 
 	return false;
-}
-
-static bool IsStlIterator(const Token *typeEndToken)
-{
-	return (typeEndToken->str() == "iterator");
 }
 
 static bool IsVariableStlContainer(const Token* tok)
@@ -158,7 +153,6 @@ static bool IsVariableStlContainer(const Token* tok)
 		return false;
 	}
 
-	// TODO
 	const Variable *var = tok->variable();
 	return IsComplexVariable(var);
 }
@@ -175,10 +169,38 @@ static bool isComplexEqual(const Token* tok)
 	return IsVariableStlContainer(prev);
 }
 
+// Is obsolete STL container? 
+// ostrstream => ostringstream
+static bool IsObsoleteStlContainer(const Token* tok)
+{
+	if (tok == 0)
+	{
+		return false;
+	}
+
+	const Variable *var = tok->variable();
+	if (var == 0)
+	{
+		return false;
+	}
+
+	for (const Token *typetok = var->typeStartToken(); 
+			typetok && (typetok != var->nameToken()); typetok = typetok->next()) 
+	{
+		if (typetok->str() == "ostrstream")
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void CheckComplexCopying::checkComplexParameters()
 {
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
 
+	// loop in all functions
     for (unsigned int i = 0; i < symbolDatabase->functionScopes.size(); i++) 
 	{
         const Scope* scope = symbolDatabase->functionScopes[i];
@@ -186,12 +208,7 @@ void CheckComplexCopying::checkComplexParameters()
 
 		for (const Token *tok = scope->classStart; tok && tok != scope->classEnd; tok = tok->next()) 
 		{
-			if (tok->type() != Token::eAssignmentOp)
-			{
-				continue;
-			}
-
-			if (isComplexEqual(tok))
+			if ((tok->type() == Token::eAssignmentOp) && isComplexEqual(tok))
 			{
 				std::ostringstream errmsg;
 				errmsg << "Complex objects equation may slow down system performance.\n" 
@@ -200,6 +217,17 @@ void CheckComplexCopying::checkComplexParameters()
 				std::string errDesc = errmsg.str();
 				reportError(tok, Severity::performance, 
 					"complexObjectCopying", errDesc);
+			}
+
+			if ((tok->type() == Token::eVariable) && IsObsoleteStlContainer(tok))
+			{
+				std::ostringstream errmsg;
+				errmsg << "Obsolete STL container used.\n" 
+					<< "Obsolete STL container used. "
+					<< "Includes ostrstream. Should use ostringstream instead. ";
+				std::string errDesc = errmsg.str();
+				reportError(tok, Severity::style, 
+					"obsoleteContainer", errDesc);
 			}
         }
     }

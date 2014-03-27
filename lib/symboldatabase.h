@@ -505,6 +505,7 @@ private:
     void evaluate();
 };
 
+/** @brief Information about a function (class members or function). */
 class CPPCHECKLIB Function {
 public:
     enum Type { eConstructor, eCopyConstructor, eMoveConstructor, eOperatorEqual, eDestructor, eFunction };
@@ -535,6 +536,11 @@ public:
           retFuncPtr(false) {
     }
 
+	/**
+     * Get function name
+     * @return function name (not include class name or other prefix, nor () )
+	 * eg: class A{public: void func(){}; }; returns func
+     */
     const std::string &name() const {
         return tokenDef->str();
     }

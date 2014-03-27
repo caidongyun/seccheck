@@ -20,7 +20,7 @@
 // Base class's destructor is not virtual
 //---------------------------------------------------------------------------
 
-#include "checkbasedestructor.h"
+#include "checkclasssecurity.h"
 #include "symboldatabase.h"
 
 using namespace std;
@@ -31,12 +31,12 @@ using namespace std;
 // Register this check class (by creating a static instance of it)
 namespace 
 {
-	CheckBaseDestructor instance;
+	CheckClassSecurity instance;
 }
 
 /** Check for private static members of class */
 /** See: MSC22-CPP. Do not define static private members */
-void CheckBaseDestructor::checkPrivateStaticMembers() 
+void CheckClassSecurity::checkPrivateStaticMembers() 
 {
 	const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
 
@@ -50,12 +50,21 @@ void CheckBaseDestructor::checkPrivateStaticMembers()
 			itr != classIt->classScope->functionList.end();
 			++itr)
 		{
-
+			if (itr->isStatic && (itr->access == Private))
+			{
+				// private and static function
+				std::ostringstream errmsg;
+				errmsg << "Function: " << itr->name() << " is private static function.\n"
+					<< "The definition of private static function maybe questionable.";
+				std::string errDesc = errmsg.str();
+				reportError(itr->token, Severity::performance, 
+					"privateStaticFunction", errDesc);
+			}
 		}
 	}
 }
 
-void CheckBaseDestructor::checkBaseClass()
+void CheckClassSecurity::checkBaseClass()
 {
 	const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
 
@@ -92,6 +101,38 @@ void CheckBaseDestructor::checkBaseClass()
 						"baseClassDestructor", errDesc);
 				}
 			}
+		}
+	}
+}
+
+void CheckClassSecurity::checkDeleteThis()
+{
+	const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
+
+	const std::size_t classes = symbolDatabase->classAndStructScopes.size();
+    for (std::size_t i = 0; i < classes; ++i) {
+        const Scope * scope = symbolDatabase->classAndStructScopes[i];
+
+		for (auto func = scope->functionList.begin(); func != scope->functionList.end(); ++func)
+		{
+			checkDeleteThisInFunction(&(*func));
+		}
+	}
+}
+
+void CheckClassSecurity::checkDeleteThisInFunction(const Function *func)
+{
+	const Token *last = func->functionScope->classEnd;
+    for (const Token *tok = func->functionScope->classStart; tok && (tok != last); tok = tok->next())
+	{
+		if (Token::Match(tok, "delete this"))
+		{
+			std::ostringstream errmsg;
+					errmsg << "Avoid use delete this statement.\n"
+						<< "use [delete this;] statement may cause error if accessing its members after delete. ";
+					std::string errDesc = errmsg.str();
+					reportError(tok, Severity::performance, 
+						"avoidDeleteThis", errDesc);
 		}
 	}
 }

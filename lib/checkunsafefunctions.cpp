@@ -31,6 +31,12 @@ namespace {
     CheckUnsafeFunctions instance;
 }
 
+bool CheckUnsafeFunctions::isWinExecuteFunction(const Token* tok)
+{
+	// TODO
+	return false;
+}
+
 void CheckUnsafeFunctions::unsafeFunctions()
 {
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();

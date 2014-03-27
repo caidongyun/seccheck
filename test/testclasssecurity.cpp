@@ -18,15 +18,15 @@
 
 
 #include "tokenize.h"
-#include "checkbasedestructor.h"
+#include "checkclasssecurity.h"
 #include "testsuite.h"
 #include <sstream>
 
 extern std::ostringstream errout;
 
-class TestBaseDestructor : public TestFixture {
+class TestClassSecurity : public TestFixture {
 public:
-    TestBaseDestructor() : TestFixture("TestBaseDestructor") {
+    TestClassSecurity() : TestFixture("TestClassSecurity") {
     }
 
 private:
@@ -34,6 +34,8 @@ private:
         TEST_CASE(baseDerivedNotVirtual);
 		TEST_CASE(baseDerivedVirtual);
 		TEST_CASE(baseDerivedNestVirtual);
+		TEST_CASE(checkPrivateStaticFunc);
+		TEST_CASE(checkDeleteThis);
     }
 
     void check(const char code[]) {
@@ -49,8 +51,10 @@ private:
         tokenizer.tokenize(istr, "test.cpp");
 
         // Check char variable usage..
-        CheckBaseDestructor checker(&tokenizer, &settings, this);
+        CheckClassSecurity checker(&tokenizer, &settings, this);
         checker.checkBaseClass();
+		checker.checkPrivateStaticMembers();
+		checker.checkDeleteThis();
     }
 
     void baseDerivedNotVirtual() {
@@ -76,6 +80,26 @@ private:
         ASSERT_EQUALS("[test.cpp:3]: (performance) Destructor of base class: B is not virtual.\n", 
 			errout.str());
     }
+
+	void checkPrivateStaticFunc() {
+		check("class A{ public: A(){}; virtual ~A(){}; \n"
+			"private: static void f1(){}; \n"
+			"protected: static void f2(){}; };\n"
+			  );
+		std::string result = errout.str();
+		ASSERT_EQUALS("[test.cpp:2]: (performance) Function: f1 is private static function.\n", 
+			result);
+	}
+
+	void checkDeleteThis() {
+		check("class A{ public: A(){}; virtual ~A(){}; \n"
+			"protected: static void f1(){ delete this; }; \n"
+			"protected: static void f2(){ char* p = new char(); delete p; }; };\n"
+			  );
+		std::string result = errout.str();
+		ASSERT_EQUALS("[test.cpp:2]: (performance) Avoid use delete this statement.\n", 
+			result);
+	}
 };
 
-REGISTER_TEST(TestBaseDestructor)
+REGISTER_TEST(TestClassSecurity)

@@ -49,7 +49,7 @@ void CheckObsoleteFunctions::obsoleteFunctions()
     for (unsigned int i = 0; i < symbolDatabase->functionScopes.size(); i++) {
         const Scope* scope = symbolDatabase->functionScopes[i];
         for (const Token* tok = scope->classStart; tok != scope->classEnd; tok = tok->next()) {
-            if (tok->isName() && tok->varId()==0 && (tok->next() && tok->next()->str() == "(") &&
+            if (tok->isName() && tok->varId()==Token::eVariable && (tok->next() && tok->next()->str() == "(") &&
                 (!Token::Match(tok->previous(), ".|::") || Token::simpleMatch(tok->tokAt(-2), "std ::"))) {
 
                 auto it = _obsoleteStandardFunctions.find(tok->str());

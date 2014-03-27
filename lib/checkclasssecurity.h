@@ -31,23 +31,25 @@
 /// @{
 
 /**
- * @brief Checker for destructor of base class (should be virtual) 
+ * @brief Checker for class security
  */
 
-class CPPCHECKLIB CheckBaseDestructor : public Check {
+class CPPCHECKLIB CheckClassSecurity : public Check {
 public:
-    /** This constructor is used when registering the CheckBaseDestructor */
-    CheckBaseDestructor() : Check(myName()) {
+    /** This constructor is used when registering the CheckClassSecurity */
+    CheckClassSecurity() : Check(myName()) {
     }
 
     /** This constructor is used when running checks. */
-    CheckBaseDestructor(const Tokenizer *tokenizer, const Settings *settings, ErrorLogger *errorLogger)
+    CheckClassSecurity(const Tokenizer *tokenizer, const Settings *settings, ErrorLogger *errorLogger)
         : Check(myName(), tokenizer, settings, errorLogger) {
     }
 
     void runSimplifiedChecks(const Tokenizer *tokenizer, const Settings *settings, ErrorLogger *errorLogger) {
-        CheckBaseDestructor checker(tokenizer, settings, errorLogger);
+        CheckClassSecurity checker(tokenizer, settings, errorLogger);
         checker.checkBaseClass();
+		checker.checkPrivateStaticMembers();
+		checker.checkDeleteThis();
     }
 
     /** Check for destructor of base class */
@@ -57,21 +59,27 @@ public:
 	/** See: MSC22-CPP. Do not define static private members */
     void checkPrivateStaticMembers();
 
+	void checkDeleteThis();
+
 private:
     void getErrorMessages(ErrorLogger *errorLogger, const Settings *settings) const {
-        CheckBaseDestructor c(0, settings, errorLogger);
+        CheckClassSecurity c(0, settings, errorLogger);
     }
 
     static std::string myName() {
-        return "Base destructor";
+        return "Class security";
     }
 
     std::string classInfo() const {
-        std::string info = "Warn if destructor of base class:\n"
-			"* is not virtual.\n";
+        std::string info = "Warn if class:\n"
+			"* destructor of base class is not virtual.\n"
+			"* has private static functions.\n"
+			"* has delete this statement.\n";
 
         return info;
     }
+
+	void checkDeleteThisInFunction(const Function *func);
 };
 /// @}
 //---------------------------------------------------------------------------
