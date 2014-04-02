@@ -34,6 +34,8 @@ private:
         TEST_CASE(tc_stdstrcpy);
 		TEST_CASE(tc_strcpy);
 		TEST_CASE(tc_strcpydefined);
+		TEST_CASE(tc_passwordinvariablename);
+		TEST_CASE(tc_passwordotherwise);
     }
 
     void check(const char code[]) {
@@ -88,6 +90,30 @@ private:
 			  "    strcpy(des, src, 10);\n"
               "}\n");
         std::string result = errout.str();
+        ASSERT_EQUALS("", result);
+    }
+
+	void tc_passwordinvariablename() {
+        check("char * foo()\n"
+              "{\n"
+			  "    char password[10];\n"
+			  "    std::string pwd = \"123456\";\n"
+			  "    int passwd = 1234;\n"
+              "}\n");
+		std::string result = errout.str();
+        ASSERT_EQUALS("[test.cpp:3]: (style) Suspicious variable name: password maybe identify the hard-coded password.\n"
+			"[test.cpp:4]: (style) Suspicious variable name: pwd maybe identify the hard-coded password.\n"
+			"[test.cpp:5]: (style) Suspicious variable name: passwd maybe identify the hard-coded password.\n", 
+			result);
+    }
+
+	void tc_passwordotherwise() {
+        check("char * foo()\n"
+              "{\n"
+			  "    void password(int para){ return para + 1; };\n"
+			  "    std::string p1 = \"pwd\";\n"
+              "}\n");
+		std::string result = errout.str();
         ASSERT_EQUALS("", result);
     }
 };

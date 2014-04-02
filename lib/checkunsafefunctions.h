@@ -68,6 +68,7 @@ private:
             const char* good;
         } unsafe_stdmsgs[] = {
             {"strcpy", "strncpy"},
+			{"wcscpy", "wcsncpy"},
             {"strcat", "strncat"},
             {"sprintf", "snprintf"},
 			{"vsprintf", "vsnprintf"}

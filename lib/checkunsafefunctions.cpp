@@ -37,6 +37,37 @@ bool CheckUnsafeFunctions::isWinExecuteFunction(const Token* tok)
 	return false;
 }
 
+static bool isNotMemberFunction(const Token* tok)
+{
+	return (!Token::Match(tok->previous(), ".|::") || Token::simpleMatch(tok->tokAt(-2), "std ::"));
+}
+
+/** Check for suspicious variable names. eg: 'password', 'pwd' */
+class SuspiciousNames
+{
+public:
+	SuspiciousNames()
+	{
+		_Containers.insert("password");
+		_Containers.insert("pwd");		
+		_Containers.insert("passwd");
+	}
+
+	bool isBadName(const std::string& para) const
+	{
+		return _Containers.find(para) != _Containers.end();
+	}
+
+private:
+	std::set<std::string> _Containers;
+};
+
+static bool isSuspiciousName(const std::string& para)
+{
+	static SuspiciousNames names;
+	return names.isBadName(para);
+}
+
 void CheckUnsafeFunctions::unsafeFunctions()
 {
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
@@ -51,7 +82,7 @@ void CheckUnsafeFunctions::unsafeFunctions()
         const Scope* scope = symbolDatabase->functionScopes[i];
         for (const Token* tok = scope->classStart; tok != scope->classEnd; tok = tok->next()) {
             if (tok->isName() && tok->varId()==0 && (tok->next() && tok->next()->str() == "(") &&
-                (!Token::Match(tok->previous(), ".|::") || Token::simpleMatch(tok->tokAt(-2), "std ::"))) {
+                isNotMemberFunction(tok)) {
 
                 auto it = _unsafeFunctions.find(tok->str());
                 if (it != _unsafeFunctions.end()) {
@@ -60,7 +91,17 @@ void CheckUnsafeFunctions::unsafeFunctions()
                 } else {
                 }
             }
+
+			if ((tok->type() == Token::eVariable) && isSuspiciousName(tok->str())) {
+				// 
+                reportError(tok, Severity::style, 
+					"suspiciousVariableName:"+tok->str(), "Suspicious variable name: "
+					+ tok->str() + " maybe identify the hard-coded password.\n" 
+					+ "Hard coded passwords are like backdoor access to the system, " 
+					+ "so it should not be used.");
+			}
         }
     }
 }
+
 //---------------------------------------------------------------------------
