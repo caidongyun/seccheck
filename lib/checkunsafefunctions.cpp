@@ -88,7 +88,11 @@ void CheckUnsafeFunctions::unsafeFunctions()
                 if (it != _unsafeFunctions.end()) {
                     // If checking an old code base it might be uninteresting to update unsafe functions.
                     reportError(tok, Severity::style, "unsafeFunctions"+it->first, it->second);
-                } else {
+                }
+
+				auto it2 = _unsafeIntegerFunctions.find(tok->str());
+				if (it2 != _unsafeIntegerFunctions.end()) {
+                    reportError(tok, Severity::style, "strConvFunctions"+it2->first, it2->second);
                 }
             }
 
@@ -99,6 +103,12 @@ void CheckUnsafeFunctions::unsafeFunctions()
 					+ tok->str() + " maybe identify the hard-coded password.\n" 
 					+ "Hard coded passwords are like backdoor access to the system, " 
 					+ "so it should not be used.");
+			}
+
+			// Noncompliant Example (operator>>())
+			// CERT INT06-CPP
+			if (tok->isOp() && tok->astOperand1() && !Token::Match(tok, ">>")) {
+
 			}
         }
     }

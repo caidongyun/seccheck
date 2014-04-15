@@ -48,6 +48,7 @@
     <ClCompile Include="checkcomplexcopying.cpp" />
     <ClCompile Include="checkexceptionsafety.cpp" />
     <ClCompile Include="checkfloatarithmetic.cpp" />
+    <ClCompile Include="checkintegers.cpp" />
     <ClCompile Include="checkinternal.cpp" />
     <ClCompile Include="checkio.cpp" />
     <ClCompile Include="checkleakautovar.cpp" />
@@ -95,6 +96,7 @@
     <ClInclude Include="checkcomplexcopying.h" />
     <ClInclude Include="checkexceptionsafety.h" />
     <ClInclude Include="checkfloatarithmetic.h" />
+    <ClInclude Include="checkintegers.h" />
     <ClInclude Include="checkinternal.h" />
     <ClInclude Include="checkio.h" />
     <ClInclude Include="checkleakautovar.h" />

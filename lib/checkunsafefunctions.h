@@ -58,7 +58,7 @@ public:
 private:
     /* function name / error message */
     std::map<std::string, std::string> _unsafeFunctions;
-    std::map<std::string, std::string> _unsafeStandardFunctions;
+    std::map<std::string, std::string> _unsafeIntegerFunctions;
 
     /** init unsafe functions list ' */
     void initUnsafeFunctions() {
@@ -77,6 +77,23 @@ private:
 		for (std::size_t i = 0; i < (sizeof(unsafe_stdmsgs) / sizeof(*unsafe_stdmsgs)); ++i) {
             _unsafeFunctions[unsafe_stdmsgs[i].bad] = "Obsolete function '" + std::string(unsafe_stdmsgs[i].bad) 
 				+ "' called. It is recommended to use the function '" + unsafe_stdmsgs[i].good + "' instead.";
+        }
+
+		const struct {
+            const char* bad;
+            const char* good;
+        } unsafestr_stdmsgs[] = {
+            {"atol", "strtol"},
+			{"atoi", "strtol"},
+            {"atoll", "strtoll"},
+			{"sscanf", "strtoll"},
+			{"scanf", "strtoll"},
+			{"fscanf", "strtoll"}
+        };
+
+		for (std::size_t i = 0; i < (sizeof(unsafestr_stdmsgs) / sizeof(*unsafestr_stdmsgs)); ++i) {
+            _unsafeIntegerFunctions[unsafestr_stdmsgs[i].bad] = "[CERT INT06-CPP] string token to integer function '" + std::string(unsafestr_stdmsgs[i].bad) 
+				+ "' called. It is recommended to use the function '" + unsafestr_stdmsgs[i].good + "' instead.";
         }
     }
 
