@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -348,8 +348,13 @@ private:
         ASSERT_EQUALS("[test.cpp:3]: (error) Address of local auto-variable assigned to a function parameter.\n", errout.str());
     }
 
-    void testautovar12() { // Ticket #5024 - Crash on invalid input
+    void testautovar12() { // Ticket #5024, #5050 - Crash on invalid input
         check("void f(int* a) { a = }");
+        check("struct custom_type { custom_type(int) {} };\n"
+              "void func(int) {}\n"
+              "int var;\n"
+              "void init() { func(var); }\n"
+              "UNKNOWN_MACRO_EXPANDING_TO_SIGNATURE { custom_type a(var); }");
     }
 
     void testautovar_array1() {

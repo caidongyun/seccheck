@@ -64,7 +64,7 @@ private:
               "}\n");
 		std::string result = errout.str();
         ASSERT_EQUALS("[test.cpp:5]: (style) Obsolete function 'strcpy' called. "
-			"It is recommended to use the function 'strncpy' instead.", result);
+			"It is recommended to use the function 'strncpy' instead.\n", result);
     }
 
 	void tc_strcpy() {
@@ -76,7 +76,7 @@ private:
               "}\n");
         std::string result = errout.str();
         ASSERT_EQUALS("[test.cpp:5]: (style) Obsolete function 'strcpy' called. "
-			"It is recommended to use the function 'strncpy' instead.", result);
+			"It is recommended to use the function 'strncpy' instead.\n", result);
     }
 
 	// Obsolete function name already be defined, should return empty. 

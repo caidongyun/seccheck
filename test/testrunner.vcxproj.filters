@@ -184,7 +184,10 @@
     <ClCompile Include="testcomplexcopying.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="testbasedestructor.cpp">
+    <ClCompile Include="testclasssecurity.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="testunsafefunctions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

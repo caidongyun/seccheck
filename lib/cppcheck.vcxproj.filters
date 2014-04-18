@@ -140,7 +140,7 @@
     <ClCompile Include="checkcomplexcopying.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="checkbasedestructor.cpp">
+    <ClCompile Include="checkclasssecurity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -283,7 +283,7 @@
     <ClInclude Include="checkcomplexcopying.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="checkbasedestructor.h">
+    <ClInclude Include="checkclasssecurity.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

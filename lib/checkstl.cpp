@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -133,7 +133,7 @@ void CheckStl::iterators()
                 if (container && tok2->varId() != container->declarationId()) {
                     // skip error message if container is a set..
                     const Variable *variableInfo = tok2->variable();
-                    const Token *decltok = variableInfo ? variableInfo->typeStartToken() : NULL;
+                    const Token *decltok = variableInfo ? variableInfo->typeStartToken() : nullptr;
 
                     if (Token::simpleMatch(decltok, "std :: set"))
                         continue; // No warning
@@ -434,7 +434,7 @@ private:
             // check if there is a "it = ints.erase(it);" pattern. if so
             // the it is not invalidated.
             const Token *token = &tok;
-            while (NULL != (token = token ? token->previous() : 0)) {
+            while (nullptr != (token = token ? token->previous() : 0)) {
                 if (Token::Match(token, "[;{}]"))
                     break;
                 else if (token->str() == "=")
@@ -506,7 +506,7 @@ void CheckStl::erase()
                     if (Token::Match(tok2, "; %var% !=")) {
                         // Get declaration token for var..
                         const Variable *variableInfo = tok2->next()->variable();
-                        const Token *decltok = variableInfo ? variableInfo->typeEndToken() : NULL;
+                        const Token *decltok = variableInfo ? variableInfo->typeEndToken() : nullptr;
 
                         // Is variable an iterator?
                         bool isIterator = false;
@@ -655,7 +655,7 @@ void CheckStl::pushback()
                     if (varId == 0)
                         continue;
 
-                    const Token *pushbackTok = 0;
+                    const Token *pushbackTok = nullptr;
 
                     // Count { and } for tok3
                     const Token *tok3 = tok2->tokAt(20);
@@ -1077,7 +1077,7 @@ void CheckStl::missingComparison()
                 break;
             }
 
-            const Token *incrementToken = 0;
+            const Token *incrementToken = nullptr;
 
             // Parse loop..
             for (const Token *tok3 = i->classStart; tok3 != i->classEnd; tok3 = tok3->next()) {

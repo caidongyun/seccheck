@@ -71,7 +71,7 @@ private:
     }
 
     static std::string myName() {
-        return "Class security";
+        return "Integers security";
     }
 
     std::string classInfo() const {
