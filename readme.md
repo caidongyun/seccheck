@@ -7,7 +7,7 @@ The original code repository is based on Cppcheck source code.
 
 ## Manual
 
-[TODO]
+seccheck [options] [path or source code files]
 
 ## Compiling
 
