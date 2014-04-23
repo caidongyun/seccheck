@@ -752,7 +752,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
 
 void CmdLineParser::PrintHelp()
 {
-    std::cout <<   "Cppcheck - A tool for static C/C++ code analysis\n"
+    std::cout <<   "Seccheck - A tool for security C/C++ code analysis\n"
               "\n"
               "Syntax:\n"
               "    seccheck [OPTIONS] [files or paths]\n"

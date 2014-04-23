@@ -45,6 +45,10 @@ void CheckClassSecurity::checkPrivateStaticMembers()
 		classIt != symbolDatabase->typeList.end();
 		++classIt) 
 	{
+		if (classIt->classScope == nullptr)
+		{
+			continue;
+		}
 		// Loop in all functions of the class
 		for (auto itr = classIt->classScope->functionList.begin();
 			itr != classIt->classScope->functionList.end();
@@ -122,6 +126,11 @@ void CheckClassSecurity::checkDeleteThis()
 
 void CheckClassSecurity::checkDeleteThisInFunction(const Function *func)
 {
+	if (func->functionScope == nullptr)
+	{
+		return;
+	}
+
 	const Token *last = func->functionScope->classEnd;
     for (const Token *tok = func->functionScope->classStart; tok && (tok != last); tok = tok->next())
 	{
