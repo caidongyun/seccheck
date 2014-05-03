@@ -36,6 +36,10 @@ private:
 		TEST_CASE(tc_strcpydefined);
 		TEST_CASE(tc_passwordinvariablename);
 		TEST_CASE(tc_passwordotherwise);
+		TEST_CASE(tc_atoi);
+		TEST_CASE(tc_rewind);
+		TEST_CASE(tc_fopen);
+		TEST_CASE(tc_setbuf);
     }
 
     void check(const char code[]) {
@@ -77,6 +81,53 @@ private:
         std::string result = errout.str();
         ASSERT_EQUALS("[test.cpp:5]: (style) Obsolete function 'strcpy' called. "
 			"It is recommended to use the function 'strncpy' instead.\n", result);
+    }
+
+	void tc_atoi() {
+        check("char * foo()\n"
+              "{\n"
+			  "    int i;\n"
+			  "    i = atoi(\"123\");\n"
+              "}\n");
+        std::string result = errout.str();
+        ASSERT_EQUALS("[test.cpp:4]: (style) [CERT INT06-CPP] string token to integer function 'atoi' called. "
+			"It is recommended to use the function 'strtol' instead.\n", result);
+    }
+
+	void tc_rewind() {
+        check("char * foo()\n"
+              "{\n"
+			  "    FILE* pFile;\n"
+			  "    rewind(pFile);\n"
+              "}\n");
+        std::string result = errout.str();
+        ASSERT_EQUALS("[test.cpp:4]: (style) [CERT FIO07-CPP] Unsafe function 'rewind' called. "
+			"It is recommended to use the function 'fseek' instead.\n", result);
+    }
+
+	void tc_fopen() {
+        check("char * foo()\n"
+              "{\n"
+			  "    FILE* pFile;\n"
+			  "    pFile = fopen(\"123\", \"w\");\n"
+              "}\n");
+        std::string result = errout.str();
+        ASSERT_EQUALS("[test.cpp:4]: (style) [CERT FIO06-CPP] Unsafe create file function 'fopen' called. "
+			"It is recommended to use the function 'fopen_s' instead.\n", result);
+    }
+
+	void tc_setbuf() {
+        check("char * foo()\n"
+              "{\n"
+			  "    FILE* pFile; char buffer[512];\n"
+			  "    pFile = fopen(\"123\", \"w\");\n"
+			  "    setbuf(pFile, buffer);\n"
+              "}\n");
+        std::string result = errout.str();
+        ASSERT_EQUALS("[test.cpp:4]: (style) [CERT FIO06-CPP] Unsafe create file function 'fopen' called. "
+			"It is recommended to use the function 'fopen_s' instead.\n"
+			"[test.cpp:5]: (style) [CERT FIO12-CPP] Unsafe stream function 'setbuf' called. "
+			"It is recommended to use the function 'setvbuf' instead.\n", result);
     }
 
 	// Obsolete function name already be defined, should return empty. 

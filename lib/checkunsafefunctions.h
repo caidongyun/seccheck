@@ -58,42 +58,39 @@ public:
 private:
     /* function name / error message */
     std::map<std::string, std::string> _unsafeFunctions;
-    std::map<std::string, std::string> _unsafeIntegerFunctions;
+    //std::map<std::string, std::string> _unsafeIntegerFunctions;
 
     /** init unsafe functions list ' */
     void initUnsafeFunctions() {
+
+		const char* unsafe_int_function_tips = "[CERT INT06-CPP] string token to integer";
         // Unsafe functions, which messages suggest only one alternative and doesn't contain additional information.
         const struct {
             const char* bad;
             const char* good;
+			const char* prefix;
         } unsafe_stdmsgs[] = {
-            {"strcpy", "strncpy"},
-			{"wcscpy", "wcsncpy"},
-            {"strcat", "strncat"},
-            {"sprintf", "snprintf"},
-			{"vsprintf", "vsnprintf"}
+            {"strcpy", "strncpy", "Obsolete"},
+			{"wcscpy", "wcsncpy", "Obsolete"},
+            {"strcat", "strncat", "Obsolete"},
+            {"sprintf", "snprintf", "Obsolete"},
+			{"vsprintf", "vsnprintf", "Obsolete"},
+			{"rewind", "fseek", "[CERT FIO07-CPP] Unsafe"},
+			{"fopen", "fopen_s", "[CERT FIO06-CPP] Unsafe create file"},
+			{"setbuf", "setvbuf", "[CERT FIO12-CPP] Unsafe stream"},
+			{"atol", "strtol", unsafe_int_function_tips},
+			{"atoi", "strtol", unsafe_int_function_tips},
+            {"atoll", "strtoll", unsafe_int_function_tips},
+			{"sscanf", "strtoll", unsafe_int_function_tips},
+			{"scanf", "strtoll", unsafe_int_function_tips},
+			{"fscanf", "strtoll", unsafe_int_function_tips}
         };
 
 		for (std::size_t i = 0; i < (sizeof(unsafe_stdmsgs) / sizeof(*unsafe_stdmsgs)); ++i) {
-            _unsafeFunctions[unsafe_stdmsgs[i].bad] = "Obsolete function '" + std::string(unsafe_stdmsgs[i].bad) 
-				+ "' called. It is recommended to use the function '" + unsafe_stdmsgs[i].good + "' instead.";
-        }
-
-		const struct {
-            const char* bad;
-            const char* good;
-        } unsafestr_stdmsgs[] = {
-            {"atol", "strtol"},
-			{"atoi", "strtol"},
-            {"atoll", "strtoll"},
-			{"sscanf", "strtoll"},
-			{"scanf", "strtoll"},
-			{"fscanf", "strtoll"}
-        };
-
-		for (std::size_t i = 0; i < (sizeof(unsafestr_stdmsgs) / sizeof(*unsafestr_stdmsgs)); ++i) {
-            _unsafeIntegerFunctions[unsafestr_stdmsgs[i].bad] = "[CERT INT06-CPP] string token to integer function '" + std::string(unsafestr_stdmsgs[i].bad) 
-				+ "' called. It is recommended to use the function '" + unsafestr_stdmsgs[i].good + "' instead.";
+			_unsafeFunctions[unsafe_stdmsgs[i].bad] = std::string(unsafe_stdmsgs[i].prefix) 
+				+ " function '" + std::string(unsafe_stdmsgs[i].bad) 
+				+ "' called. It is recommended to use the function '" 
+				+ unsafe_stdmsgs[i].good + "' instead.";
         }
     }
 

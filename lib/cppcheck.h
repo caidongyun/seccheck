@@ -122,9 +122,9 @@ public:
     void getErrorMessages();
 
     /**
-     * @brief Analyse file - It's public so unit tests can be written
+     * Deprecated
      */
-    void analyseFile(std::istream &f, const std::string &filename);
+    //void analyseFile(std::istream &f, const std::string &filename);
 
     void tooManyConfigsError(const std::string &file, const std::size_t numberOfConfigurations);
 

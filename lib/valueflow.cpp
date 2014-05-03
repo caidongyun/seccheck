@@ -28,15 +28,6 @@
 #include <stack>
 
 
-static void printvalues(const Token *tok)
-{
-    if (tok->values.empty())
-        std::cout << "empty";
-    for (auto it = tok->values.begin(); it != tok->values.end(); ++it)
-        std::cout << " " << (it->intvalue);
-    std::cout << std::endl;
-}
-
 static void bailout(TokenList *tokenlist, ErrorLogger *errorLogger, const Token *tok, const std::string &what)
 {
     std::list<ErrorLogger::ErrorMessage::FileLocation> callstack;

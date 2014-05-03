@@ -1,6 +1,6 @@
 /*
  * Seccheck - A tool for security C/C++ code analysis
- * Copyright (C) 2013 Wang Anyu
+ * Copyright (C) 2014 Wang Anyu
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,11 +88,6 @@ void CheckUnsafeFunctions::unsafeFunctions()
                 if (it != _unsafeFunctions.end()) {
                     // If checking an old code base it might be uninteresting to update unsafe functions.
                     reportError(tok, Severity::style, "unsafeFunctions"+it->first, it->second);
-                }
-
-				auto it2 = _unsafeIntegerFunctions.find(tok->str());
-				if (it2 != _unsafeIntegerFunctions.end()) {
-                    reportError(tok, Severity::style, "strConvFunctions"+it2->first, it2->second);
                 }
             }
 
