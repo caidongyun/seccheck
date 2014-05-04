@@ -64,6 +64,8 @@ private:
     void initUnsafeFunctions() {
 
 		const char* unsafe_int_function_tips = "[CERT INT06-CPP] string token to integer";
+		const char* raw_memory_function_tips = "[CERT MEM08-CPP] Raw memory";
+		const char* cstyle_fio_function_tips = "[CERT FIO17-CPP] C-style input and output";
         // Unsafe functions, which messages suggest only one alternative and doesn't contain additional information.
         const struct {
             const char* bad;
@@ -77,7 +79,14 @@ private:
 			{"vsprintf", "vsnprintf", "Obsolete"},
 			{"rewind", "fseek", "[CERT FIO07-CPP] Unsafe"},
 			{"fopen", "fopen_s", "[CERT FIO06-CPP] Unsafe create file"},
-			{"setbuf", "setvbuf", "[CERT FIO12-CPP] Unsafe stream"},
+			{"malloc", "new and delete", raw_memory_function_tips},
+			{"calloc", "new and delete", raw_memory_function_tips},
+			{"realloc", "new and delete", raw_memory_function_tips},
+			{"free", "new and delete", raw_memory_function_tips},
+			{"fprintf", "C++ streams", cstyle_fio_function_tips},
+			{"fscanf", "C++ streams", cstyle_fio_function_tips},
+			{"printf", "C++ streams", cstyle_fio_function_tips},
+			{"scanf", "C++ streams", cstyle_fio_function_tips},
 			{"atol", "strtol", unsafe_int_function_tips},
 			{"atoi", "strtol", unsafe_int_function_tips},
             {"atoll", "strtoll", unsafe_int_function_tips},
