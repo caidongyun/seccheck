@@ -70,7 +70,7 @@ void CheckFloatArithmetic::floatEqualsError(const Token *tok)
 {
 	reportError(tok, Severity::warning,
                 "FloatEqualsError",
-                "Compare two float variables is improper.\n"
+                "Comparing two float variables is improper.\n"
 				"Should avoid compare two float variables directly. "
 				"Maybe you can compare with an epsilon value."
 				"Please see: http://stackoverflow.com/questions/17333/most-effective-way-for-float-and-double-comparison ");

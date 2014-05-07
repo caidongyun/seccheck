@@ -40,6 +40,7 @@ private:
 		TEST_CASE(tc_rewind);
 		TEST_CASE(tc_fopen);
 		TEST_CASE(tc_setbuf);
+		TEST_CASE(tc_system);
     }
 
     void check(const char code[]) {
@@ -163,6 +164,15 @@ private:
               "{\n"
 			  "    void password(int para){ return para + 1; };\n"
 			  "    std::string p1 = \"pwd\";\n"
+              "}\n");
+		std::string result = errout.str();
+        ASSERT_EQUALS("", result);
+    }
+
+	void tc_system() {
+        check("char * foo()\n"
+              "{\n"
+			  "    system(\"rm ~/.config\");\n"
               "}\n");
 		std::string result = errout.str();
         ASSERT_EQUALS("", result);

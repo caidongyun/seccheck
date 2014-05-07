@@ -81,8 +81,10 @@ void CheckUnsafeFunctions::unsafeFunctions()
     for (unsigned int i = 0; i < symbolDatabase->functionScopes.size(); i++) {
         const Scope* scope = symbolDatabase->functionScopes[i];
         for (const Token* tok = scope->classStart; tok != scope->classEnd; tok = tok->next()) {
-            if (tok->isName() && tok->varId()==0 && (tok->next() && tok->next()->str() == "(") &&
-                isNotMemberFunction(tok)) {
+			// Only check cpp file for unsafe functions
+            if (_tokenizer->isCPP() 
+				&& tok->isName() && tok->varId()==0 && (tok->next() && tok->next()->str() == "(") 
+				&& isNotMemberFunction(tok)) {
 
                 auto it = _unsafeFunctions.find(tok->str());
                 if (it != _unsafeFunctions.end()) {

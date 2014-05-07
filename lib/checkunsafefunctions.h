@@ -87,6 +87,7 @@ private:
 			{"fscanf", "C++ streams", cstyle_fio_function_tips},
 			{"printf", "C++ streams", cstyle_fio_function_tips},
 			{"scanf", "C++ streams", cstyle_fio_function_tips},
+			{"system", "POSIX execve or other exec family", "[CERT ENV04-CPP] Unsafe C99 Command interpreter"},
 			{"atol", "strtol", unsafe_int_function_tips},
 			{"atoi", "strtol", unsafe_int_function_tips},
             {"atoll", "strtoll", unsafe_int_function_tips},
