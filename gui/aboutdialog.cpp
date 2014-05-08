@@ -31,7 +31,7 @@ AboutDialog::AboutDialog(const QString &version, const QString &extraVersion, QW
         fmtVersion += " (" + extraVersion + ")";
     }
     mUI.mVersion->setText(mUI.mVersion->text().arg(fmtVersion));
-    QString url = "<a href=\"http://cppcheck.sourceforge.net/\">http://cppcheck.sourceforge.net/</a>";
+    QString url = "<a href=\"https://github.com/rainrambler/seccheck/\">https://github.com/rainrambler/seccheck/</a>";
     mUI.mHomepage->setText(mUI.mHomepage->text().arg(url));
     connect(mUI.mButtons, SIGNAL(accepted()), this, SLOT(accept()));
 }

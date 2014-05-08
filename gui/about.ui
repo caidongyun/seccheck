@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>About Cppcheck</string>
+   <string>About Seccheck</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_3">
    <item>
@@ -68,7 +68,7 @@
        <item>
         <widget class="QLabel" name="mName">
          <property name="text">
-          <string>Cppcheck - A tool for static C/C++ code analysis.</string>
+          <string>Seccheck - A security analysis tool for C and C++ code.</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
@@ -78,7 +78,7 @@
        <item>
         <widget class="QLabel" name="mCopyright">
          <property name="text">
-          <string>Copyright © 2007-2013 Daniel Marjamäki and cppcheck team.</string>
+          <string>Copyright © 2007-2014 Wang Anyu.</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
@@ -99,7 +99,7 @@ of the GNU General Public License version 3</string>
        <item>
         <widget class="QLabel" name="mHomepage">
          <property name="text">
-          <string>Visit Cppcheck homepage at %1</string>
+          <string>Visit Seccheck homepage at %1</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>

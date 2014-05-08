@@ -51,11 +51,11 @@ int main(int argc, char *argv[])
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
 #endif
 
-    QCoreApplication::setOrganizationName("Cppcheck");
-    QCoreApplication::setApplicationName("Cppcheck-GUI");
+    QCoreApplication::setOrganizationName("Seccheck");
+    QCoreApplication::setApplicationName("Seccheck-GUI");
 
     TranslationHandler* th = new TranslationHandler(&app);
-    QSettings* settings = new QSettings("Cppcheck", "Cppcheck-GUI", &app);
+    QSettings* settings = new QSettings("Seccheck", "Seccheck-GUI", &app);
     th->SetLanguage(settings->value(SETTINGS_LANGUAGE, th->SuggestLanguage()).toString());
 
     if (!CheckArgs(app.arguments()))
@@ -89,7 +89,7 @@ bool CheckArgs(const QStringList &args)
 void ShowUsage()
 {
     QString helpMessage = MainWindow::tr(
-                              "Cppcheck GUI.\n\n"
+                              "Seccheck GUI.\n\n"
                               "Syntax:\n"
                               "    seccheck-gui [OPTIONS] [files or paths]\n\n"
                               "Options:\n"
@@ -100,7 +100,7 @@ void ShowUsage()
                               "    -v, --version  Show program version");
 #if defined(_WIN32)
     QMessageBox msgBox(QMessageBox::Information,
-                       MainWindow::tr("Cppcheck GUI - Command line parameters"),
+                       MainWindow::tr("Seccheck GUI - Command line parameters"),
                        helpMessage,
                        QMessageBox::Ok
                       );
@@ -117,7 +117,7 @@ void ShowVersion()
     dlg->exec();
     delete dlg;
 #else
-    std::string versionMessage("Cppcheck ");
+    std::string versionMessage("Seccheck ");
     versionMessage += CppCheck::version();
     const char * extraVersion = CppCheck::extraVersion();
     if (*extraVersion != 0)

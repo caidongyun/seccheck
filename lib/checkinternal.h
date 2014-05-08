@@ -91,7 +91,7 @@ private:
     }
 
     static std::string myName() {
-        return "cppcheck internal API usage";
+        return "seccheck internal API usage";
     }
 
     std::string classInfo() const {

@@ -189,7 +189,7 @@ std::string ErrorLogger::ErrorMessage::getXMLHeader(int xml_version)
     // version 2 header
     if (xml_version == 2) {
         printer.PushAttribute("version", xml_version);
-        printer.OpenElement("cppcheck", false);
+        printer.OpenElement("seccheck", false);
         printer.PushAttribute("version", CppCheck::version());
         printer.CloseElement(false);
         printer.OpenElement("errors", false);

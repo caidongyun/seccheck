@@ -498,7 +498,7 @@ void CppCheck::tooManyConfigsError(const std::string &file, const std::size_t nu
     }
 
     std::ostringstream msg;
-    msg << "Too many #ifdef configurations - cppcheck only checks " << _settings._maxConfigs;
+    msg << "Too many #ifdef configurations - seccheck only checks " << _settings._maxConfigs;
     if (numberOfConfigurations > _settings._maxConfigs)
         msg << " of " << numberOfConfigurations << " configurations. Use --force to check all configurations.\n";
     if (file.empty())

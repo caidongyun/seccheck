@@ -164,12 +164,12 @@ int CppCheckExecutor::check(int argc, const char* const argv[])
         const std::list<ErrorLogger::ErrorMessage::FileLocation> callstack;
         const std::string msg("Failed to load " + std::string(!std ? "std.cfg" : "posix.cfg") + ". Your Cppcheck installation is broken, please re-install.");
 #ifdef CFGDIR
-        const std::string details("The Cppcheck binary was compiled with CFGDIR set to \"" +
+        const std::string details("The Seccheck binary was compiled with CFGDIR set to \"" +
                                   std::string(CFGDIR) + "\" and will therefore search for "
                                   "std.cfg in that path.");
 #else
         const std::string cfgfolder(Path::fromNativeSeparators(Path::getPathFromFilename(argv[0])) + "cfg");
-        const std::string details("The Cppcheck binary was compiled without CFGDIR set. Either the "
+        const std::string details("The Seccheck binary was compiled without CFGDIR set. Either the "
                                   "std.cfg should be available in " + cfgfolder + " or the CFGDIR "
                                   "should be configured.");
 #endif
@@ -238,11 +238,11 @@ int CppCheckExecutor::check(int argc, const char* const argv[])
             const std::list<ErrorLogger::ErrorMessage::FileLocation> callStack;
             ErrorLogger::ErrorMessage msg(callStack,
                                           Severity::information,
-                                          "Cppcheck cannot find all the include files (use --check-config for details)\n"
-                                          "Cppcheck cannot find all the include files. Cppcheck can check the code without the "
+                                          "Seccheck cannot find all the include files (use --check-config for details)\n"
+                                          "Seccheck cannot find all the include files. Seccheck can check the code without the "
                                           "include files found. But the results will probably be more accurate if all the include "
                                           "files are found. Please check your project's include directories and add all of them "
-                                          "as include directories for Cppcheck. To see what files Cppcheck cannot find use "
+                                          "as include directories for Seccheck. To see what files Seccheck cannot find use "
                                           "--check-config.",
                                           "missingInclude",
                                           false);

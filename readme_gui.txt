@@ -1,7 +1,7 @@
-Cppcheck GUI
+Seccheck GUI
 ============
-This is a GUI for cppcheck. It allows selecting folder or set of files to check
-with cppcheck and shows list of found errors.
+This is a GUI for seccheck. It allows selecting folder or set of files to check
+with seccheck and shows list of found errors.
 
 Running
 -------

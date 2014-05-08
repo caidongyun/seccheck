@@ -1,7 +1,7 @@
-Cppcheck for 64-bit Windows
+Seccheck for 64-bit Windows
 ===========================
 
-This is quick start to get you started with compiling Cppcheck for 64-bit
+This is quick start to get you started with compiling Seccheck for 64-bit
 Windows with free VS Express editions.
 
 Software needed:
@@ -13,7 +13,7 @@ LIB, CLI and testsuite
 ----------------------
 
 Visual Studio 2010 and later:
-Just open cppcheck.sln, choose "x64" as platform and compile.
+Just open seccheck.sln, choose "x64" as platform and compile.
 
 
 GUI

@@ -74,7 +74,7 @@ void ApplicationDialog::Ok()
 {
     if (mUI.mName->text().isEmpty() || mUI.mPath->text().isEmpty()) {
         QMessageBox msg(QMessageBox::Warning,
-                        tr("Cppcheck"),
+                        tr("Seccheck"),
                         tr("You must specify a name, a path and optionally parameters for the application!"),
                         QMessageBox::Ok,
                         this);

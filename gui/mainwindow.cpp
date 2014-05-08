@@ -275,7 +275,7 @@ void MainWindow::LoadSettings()
                                "Please check (and fix) the editor application settings, otherwise the editor "
                                "program might not start correctly.");
         QMessageBox msgBox(QMessageBox::Warning,
-                           tr("Cppcheck"),
+                           tr("Seccheck"),
                            msg,
                            QMessageBox::Ok,
                            this);
@@ -336,7 +336,7 @@ void MainWindow::DoCheckFiles(const QStringList &files)
 
     if (fileNames.isEmpty()) {
         QMessageBox msg(QMessageBox::Warning,
-                        tr("Cppcheck"),
+                        tr("Seccheck"),
                         tr("No suitable files found to check!"),
                         QMessageBox::Ok,
                         this);
@@ -392,7 +392,7 @@ QStringList MainWindow::SelectFilesToCheck(QFileDialog::FileMode mode)
 {
     if (mProject) {
         QMessageBox msgBox(this);
-        msgBox.setWindowTitle(tr("Cppcheck"));
+        msgBox.setWindowTitle(tr("Seccheck"));
         const QString msg(tr("You must close the project file before selecting new files or directories!"));
         msgBox.setText(msg);
         msgBox.setIcon(QMessageBox::Critical);
@@ -455,7 +455,7 @@ void MainWindow::CheckDirectory()
         if (projFiles.size() == 1) {
             // If one project file found, suggest loading it
             QMessageBox msgBox(this);
-            msgBox.setWindowTitle(tr("Cppcheck"));
+            msgBox.setWindowTitle(tr("Seccheck"));
             const QString msg(tr("Found project file: %1\n\nDo you want to "
                                  "load this project file instead?").arg(projFiles[0]));
             msgBox.setText(msg);
@@ -477,7 +477,7 @@ void MainWindow::CheckDirectory()
             // If multiple project files found inform that there are project
             // files also available.
             QMessageBox msgBox(this);
-            msgBox.setWindowTitle(tr("Cppcheck"));
+            msgBox.setWindowTitle(tr("Seccheck"));
             const QString msg(tr("Found project files from the directory.\n\n"
                                  "Do you want to proceed checking without "
                                  "using any of these project files?"));
@@ -613,7 +613,7 @@ Settings MainWindow::GetCppcheckSettings()
         posix = LoadLibrary(&result.library, "posix.cfg");
 
     if (!std || !posix)
-        QMessageBox::warning(this, tr("Error"), tr("Failed to load %1. Your Cppcheck installation is broken.").arg(!std ? "std.cfg" : "posix.cfg"));
+        QMessageBox::warning(this, tr("Error"), tr("Failed to load %1. Your Seccheck installation is broken.").arg(!std ? "std.cfg" : "posix.cfg"));
 
     if (result._jobs <= 1) {
         result._jobs = 1;
@@ -724,7 +724,7 @@ void MainWindow::OpenResults()
 {
     if (mUI.mResults->HasResults()) {
         QMessageBox msgBox(this);
-        msgBox.setWindowTitle(tr("Cppcheck"));
+        msgBox.setWindowTitle(tr("Seccheck"));
         const QString msg(tr("Current results will be cleared.\n\n"
                              "Opening a new XML file will clear current results."
                              "Do you want to proceed?"));
@@ -826,10 +826,10 @@ void MainWindow::closeEvent(QCloseEvent *event)
         event->accept();
     } else {
         const QString text(tr("Checking is running.\n\n" \
-                              "Do you want to stop the checking and exit Cppcheck?."));
+                              "Do you want to stop the checking and exit Seccheck?."));
 
         QMessageBox msg(QMessageBox::Warning,
-                        tr("Cppcheck"),
+                        tr("Seccheck"),
                         text,
                         QMessageBox::Yes | QMessageBox::No,
                         this);
@@ -949,9 +949,9 @@ void MainWindow::FormatAndSetTitle(const QString &text)
 {
     QString title;
     if (text.isEmpty())
-        title = tr("Cppcheck");
+        title = tr("Seccheck");
     else
-        title = QString(tr("Cppcheck - %1")).arg(text);
+        title = QString(tr("Seccheck - %1")).arg(text);
     setWindowTitle(title);
 }
 
@@ -1117,7 +1117,7 @@ void MainWindow::EditProjectFile()
 {
     if (!mProject) {
         QMessageBox msg(QMessageBox::Critical,
-                        tr("Cppcheck"),
+                        tr("Seccheck"),
                         QString(tr("No project file loaded")),
                         QMessageBox::Ok,
                         this);
@@ -1198,7 +1198,7 @@ void MainWindow::OpenRecentProject()
                                   "used projects -list?").arg(project));
 
             QMessageBox msg(QMessageBox::Warning,
-                            tr("Cppcheck"),
+                            tr("Seccheck"),
                             text,
                             QMessageBox::Yes | QMessageBox::No,
                             this);

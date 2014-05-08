@@ -1,5 +1,5 @@
 TEMPLATE = app
-TARGET = cppcheck
+TARGET = seccheck
 DEPENDPATH += .
 INCLUDEPATH += . ../lib
 OBJECTS_DIR = temp

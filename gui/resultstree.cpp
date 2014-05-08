@@ -584,9 +584,9 @@ void ResultsTree::StartApplication(QStandardItem *target, int application)
     //If there are no applications specified, tell the user about it
     if (mApplications->GetApplicationCount() == 0) {
         QMessageBox msg(QMessageBox::Critical,
-                        tr("Cppcheck"),
+                        tr("Seccheck"),
                         tr("No editor application configured.\n\n"
-                           "Configure the editor application for Cppcheck in preferences/Applications."),
+                           "Configure the editor application for Seccheck in preferences/Applications."),
                         QMessageBox::Ok,
                         this);
         msg.exec();
@@ -598,7 +598,7 @@ void ResultsTree::StartApplication(QStandardItem *target, int application)
 
     if (application == -1) {
         QMessageBox msg(QMessageBox::Critical,
-                        tr("Cppcheck"),
+                        tr("Seccheck"),
                         tr("No default editor application selected.\n\n"
                            "Please select the default editor application in preferences/Applications."),
                         QMessageBox::Ok,
@@ -627,7 +627,7 @@ void ResultsTree::StartApplication(QStandardItem *target, int application)
         if (!info.exists()) {
             if (info.isAbsolute()) {
                 QMessageBox msgbox(this);
-                msgbox.setWindowTitle("Cppcheck");
+                msgbox.setWindowTitle("Seccheck");
                 msgbox.setText(tr("Could not find the file!"));
                 msgbox.setIcon(QMessageBox::Critical);
                 msgbox.exec();
@@ -677,7 +677,7 @@ void ResultsTree::StartApplication(QStandardItem *target, int application)
             QString text = tr("Could not start %1\n\nPlease check the application path and parameters are correct.").arg(program);
 
             QMessageBox msgbox(this);
-            msgbox.setWindowTitle("Cppcheck");
+            msgbox.setWindowTitle("Seccheck");
             msgbox.setText(text);
             msgbox.setIcon(QMessageBox::Critical);
 
@@ -690,7 +690,7 @@ QString ResultsTree::AskFileDir(const QString &file)
 {
     QString text = tr("Could not find file:\n%1\nPlease select the directory where file is located.").arg(file);
     QMessageBox msgbox(this);
-    msgbox.setWindowTitle("Cppcheck");
+    msgbox.setWindowTitle("Seccheck");
     msgbox.setText(text);
     msgbox.setIcon(QMessageBox::Warning);
     msgbox.exec();

@@ -2,7 +2,7 @@
 <HTML
 ><HEAD
 ><TITLE
->Cppcheck 1.46</TITLE
+>Seccheck 1.46</TITLE
 ><META
 NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.79"></HEAD
@@ -24,7 +24,7 @@ CLASS="TITLEPAGE"
 CLASS="title"
 ><A
 NAME="AEN2"
->Cppcheck 1.46</A
+>Seccheck 1.46</A
 ></H1
 ><HR></DIV
 ><DIV
@@ -190,8 +190,8 @@ NAME="AEN5"
 ></A
 >Chapter 1. Introduction</H1
 ><P
->Cppcheck is an analysis tool for C/C++ code. Unlike C/C++ compilers
-    and many other analysis tools, it doesn't detect syntax errors. Cppcheck
+>Seccheck is a security analysis tool for C/C++ code. Unlike C/C++ compilers
+    and many other analysis tools, it doesn't detect syntax errors. Seccheck
     only detects the types of bugs that the compilers normally fail to detect.
     The goal is no false positives.</P
 ><P
@@ -206,26 +206,26 @@ NAME="AEN5"
 ></LI
 ><LI
 ><P
->Cppcheck should be compilable by any C++ compiler that handles
+>Seccheck should be compilable by any C++ compiler that handles
         the latest C++ standard.</P
 ></LI
 ><LI
 ><P
->Cppcheck should work on any platform that has sufficient cpu and
+>Seccheck should work on any platform that has sufficient cpu and
         memory.</P
 ></LI
 ></UL
 ><P
 >Accuracy</P
 ><P
->Please understand that there are limits of Cppcheck. Cppcheck is
+>Please understand that there are limits of Seccheck. Seccheck is
     rarely wrong about reported errors. But there are many bugs that it
     doesn't detect.</P
 ><P
 >You will find more bugs in your software by testing your software
-    carefully, than by using Cppcheck. You will find more bugs in your
-    software by instrumenting your software, than by using Cppcheck. But
-    Cppcheck can still detect some of the bugs that you miss when testing and
+    carefully, than by using Seccheck. You will find more bugs in your
+    software by instrumenting your software, than by using Seccheck. But
+    Seccheck can still detect some of the bugs that you miss when testing and
     instrumenting your software.</P
 ></DIV
 ><DIV
@@ -279,7 +279,7 @@ NAME="AEN30"
 ></H2
 ><P
 >Normally a program has many sourcefiles. And you want to check
-      them all. Cppcheck can check all sourcefiles in a directory:</P
+      them all. Seccheck can check all sourcefiles in a directory:</P
 ><PRE
 CLASS="programlisting"
 >cppcheck path</PRE
@@ -419,14 +419,14 @@ CLASS="programlisting"
     }
 }</PRE
 ><P
->There are no bugs in that code so Cppcheck won't report anything
+>There are no bugs in that code so Seccheck won't report anything
         by default. To enable the stylistic messages, use the --enable=style
         command:</P
 ><PRE
 CLASS="programlisting"
 >cppcheck --enable=style file3.c</PRE
 ><P
->The output from Cppcheck is now:</P
+>The output from Seccheck is now:</P
 ><P
 ><PRE
 CLASS="programlisting"
@@ -509,7 +509,7 @@ NAME="AEN101"
 ></A
 >Chapter 3. Preprocessor configurations</H1
 ><P
->By default Cppcheck will check all preprocessor configurations
+>By default Seccheck will check all preprocessor configurations
     (except those that have #error in them). This is the recommended
     behaviour.</P
 ><P
@@ -539,7 +539,7 @@ NAME="AEN109"
 ></A
 >Chapter 4. XML output</H1
 ><P
->Cppcheck can generate the output in XML format.</P
+>Seccheck can generate the output in XML format.</P
 ><P
 >Use the --xml flag when you execute cppcheck:</P
 ><PRE
@@ -715,7 +715,7 @@ NAME="AEN172"
 >Chapter 7. Leaks</H1
 ><P
 >Looking for memory leaks and resource leaks is a key feature of
-    Cppcheck. Cppcheck can detect many common mistakes by default. But through
+    Seccheck. Seccheck can detect many common mistakes by default. But through
     some tweaking you can improve the checking.</P
 ><DIV
 CLASS="section"
@@ -728,7 +728,7 @@ NAME="AEN175"
 ><P
 ><TT
 CLASS="literal"
->Cppcheck</TT
+>Seccheck</TT
 > understands many common allocation and
       deallocation functions. But not all.</P
 ><P
@@ -745,7 +745,7 @@ CLASS="programlisting"
 }</PRE
 ></P
 ><P
->If you analyse that with Cppcheck it won't find any leaks:</P
+>If you analyse that with Seccheck it won't find any leaks:</P
 ><PRE
 CLASS="programlisting"
 >cppcheck --enable=possibleError fred1.cpp</PRE
@@ -765,12 +765,12 @@ void DestroyFred(void *p)
     free(p);
 }</PRE
 ><P
->When Cppcheck see this it understands that CreateFred will return
+>When Seccheck see this it understands that CreateFred will return
       allocated memory and that DestroyFred will deallocate memory.</P
 ><P
 >Now, execute <TT
 CLASS="literal"
->Cppcheck</TT
+>Seccheck</TT
 > this way:</P
 ><PRE
 CLASS="programlisting"
@@ -791,7 +791,7 @@ NAME="AEN192"
 ></A
 >Chapter 8. Exception safety</H1
 ><P
->Cppcheck has a few checks that ensure that you don't break the basic
+>Seccheck has a few checks that ensure that you don't break the basic
     guarantee of exception safety. It doesn't have any checks for the strong
     guarantee yet.</P
 ><P
@@ -841,12 +841,12 @@ int a(int sz)
     p = new int[sz];
 }</PRE
 ><P
->Check that with Cppcheck:</P
+>Check that with Seccheck:</P
 ><PRE
 CLASS="programlisting"
 >cppcheck --enable=exceptNew --enable=exceptRealloc except2.cpp</PRE
 ><P
->The output from Cppcheck is:</P
+>The output from Seccheck is:</P
 ><PRE
 CLASS="programlisting"
 >[except2.cpp:7]: (error) Throwing exception in invalid state, p points at deallocated memory</PRE
@@ -864,9 +864,9 @@ NAME="AEN212"
     (<FONT
 COLOR="RED"
 >http://pygments.org/</FONT
->) for this to work. In the Cppcheck source
+>) for this to work. In the Seccheck source
     tree there is a folder "htmlreport" that contains a script that transforms
-    a Cppcheck xml file into html output.</P
+    a Seccheck xml file into html output.</P
 ><P
 >This command generates the help screen:</P
 ><P
@@ -913,7 +913,7 @@ NAME="AEN226"
 >10.1. Introduction</A
 ></H2
 ><P
->A Cppcheck GUI is available.</P
+>A Seccheck GUI is available.</P
 ><P
 >The main screen is shown immediately when the GUI is
       started.</P
@@ -1008,12 +1008,12 @@ NAME="AEN249"
 ></UL
 ><P
 >It isn't recommended to provide the paths to the standard C/C++
-      headers - Cppcheck has internal knowledge about ANSI C/C++ and it isn't
+      headers - Seccheck has internal knowledge about ANSI C/C++ and it isn't
       recommended that this known functionality is redefined. But feel free to
       try it.</P
 ><P
 >As you can read in chapter 3 in this manual the default is that
-      Cppcheck checks all configurations. So only provide preprocessor defines
+      Seccheck checks all configurations. So only provide preprocessor defines
       if you want to limit the checking.</P
 ></DIV
 ></DIV

@@ -211,7 +211,7 @@ void ResultsView::CheckingFinished()
         //Tell user that we found no errors
         if (!mErrorsFound) {
             QMessageBox msg(QMessageBox::Information,
-                            tr("Cppcheck"),
+                            tr("Seccheck"),
                             tr("No errors found."),
                             QMessageBox::Ok,
                             this);
@@ -222,7 +222,7 @@ void ResultsView::CheckingFinished()
             QString text = tr("Errors were found, but they are configured to be hidden.\n"\
                               "To toggle what kind of errors are shown, open view menu.");
             QMessageBox msg(QMessageBox::Information,
-                            tr("Cppcheck"),
+                            tr("Seccheck"),
                             text,
                             QMessageBox::Ok,
                             this);

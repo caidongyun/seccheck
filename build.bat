@@ -1,11 +1,11 @@
 @echo off
-REM A simple script to build different cppcheck targets from project root
+REM A simple script to build different seccheck targets from project root
 REM folder. This script can be run from VS prompt or Qt prompt.
 REM
 REM Usage: build <target> [release|debug]
-REM  where <target> is any of cppcheck/gui/tests/all
+REM  where <target> is any of seccheck/gui/tests/all
 REM        release or debug is the configuration
-REM  all-target builds both cppcheck and gui.
+REM  all-target builds both seccheck and gui.
 REM
 REM Run the command before build.bat to enable rules using pcre:
 REM   set HAVE_RULES=yes
@@ -33,13 +33,13 @@ if "%2" == ""        set TARGET=release
 if "%2" == "debug"   set TARGET=debug
 if "%2" == "release" set TARGET=release
 
-if "%1" == "all"      goto cppcheck
-if "%1" == "cppcheck" goto cppcheck
+if "%1" == "all"      goto seccheck
+if "%1" == "cppcheck" goto seccheck
 if "%1" == "gui"      goto gui
 if "%1" == "tests"    goto tests
 goto help
 
-:cppcheck
+:seccheck
 pushd cli
 qmake -config %TARGET% HAVE_RULES=%HAVE_RULES%
 %MAKE%
@@ -65,8 +65,8 @@ goto end
 
 :help
 echo Syntax: build ^<target^> [debug^|release]
-echo   where ^<target^> is any of cppcheck/gui/tests/all
+echo   where ^<target^> is any of seccheck/gui/tests/all
 echo         debug or release define used configuration
-echo   all- target builds both cppcheck and gui.
+echo   all- target builds both seccheck and gui.
 
 :end

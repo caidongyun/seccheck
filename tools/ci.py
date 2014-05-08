@@ -166,7 +166,7 @@ def daca2():
     subprocess.call(
         ['nice', 'make', 'SRCDIR=build', 'CFGDIR='+os.path.expanduser('~/cppcheck/cfg'), 'CXXFLAGS=-O2', 'CPPFLAGS=-DMAXTIME=600'])
     subprocess.call(
-        ['mv', 'cppcheck', os.path.expanduser('~/daca2/cppcheck-O2')])
+        ['mv', 'seccheck', os.path.expanduser('~/daca2/cppcheck-O2')])
 
     subprocess.call(['python', 'tools/daca2.py', folder, '--rev=' + rev])
     daca2report()

@@ -29,7 +29,7 @@
 #include "cppcheck.h"
 
 static const char ResultElementName[] = "results";
-static const char CppcheckElementName[] = "cppcheck";
+static const char CppcheckElementName[] = "seccheck";
 static const char ErrorElementName[] = "error";
 static const char ErrorsElementName[] = "errors";
 static const char LocationElementName[] = "location";

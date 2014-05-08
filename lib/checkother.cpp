@@ -1957,7 +1957,7 @@ void CheckOther::variableScopeError(const Token *tok, const std::string &varname
                 "The scope of the variable '" + varname + "' can be reduced.\n"
                 "The scope of the variable '" + varname + "' can be reduced. Warning: Be careful "
                 "when fixing this message, especially when there are inner loops. Here is an "
-                "example where cppcheck will write that the scope for 'i' can be reduced:\n"
+                "example where seccheck will write that the scope for 'i' can be reduced:\n"
                 "void f(int x)\n"
                 "{\n"
                 "    int i = 0;\n"
@@ -2012,7 +2012,7 @@ void CheckOther::commaSeparatedReturnError(const Token *tok)
                 "    if (x)\n"
                 "        return a + 1,\n"
                 "    b++;\n"
-                "However it can be useful to use comma in macros. Cppcheck does not warn when such a "
+                "However it can be useful to use comma in macros. Seccheck does not warn when such a "
                 "macro is then used in a return statement, it is less likely such code is misunderstood.");
 }
 

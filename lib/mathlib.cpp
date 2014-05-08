@@ -398,7 +398,7 @@ std::string MathLib::calculate(const std::string &first, const std::string &seco
         return MathLib::toString(MathLib::toLongNumber(first) ^ MathLib::toLongNumber(second));
 
     default:
-        throw InternalError(0, std::string("Unexpected action '") + action + "' in MathLib::calculate(). Please report this to Cppcheck developers.");
+        throw InternalError(0, std::string("Unexpected action '") + action + "' in MathLib::calculate(). Please report this to Seccheck developers.");
     }
 }
 

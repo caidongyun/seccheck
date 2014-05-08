@@ -342,7 +342,7 @@ int main(int argc, char **argv)
     fout << "# For 'make man': sudo apt-get install xsltproc docbook-xsl docbook-xml on Linux\n";
     fout << "DB2MAN=/usr/share/sgml/docbook/stylesheet/xsl/nwalsh/manpages/docbook.xsl\n";
     fout << "XP=xsltproc -''-nonet -''-param man.charmap.use.subset \"0\"\n";
-    fout << "MAN_SOURCE=man/cppcheck.1.xml\n\n";
+    fout << "MAN_SOURCE=man/seccheck.1.xml\n\n";
 
     fout << "\n###### Object Files\n\n";
     fout << "LIBOBJ =      " << objfile(libfiles[0]);
@@ -361,9 +361,9 @@ int main(int argc, char **argv)
     makeExtObj(fout, externalfiles);
 
     fout << "\n###### Targets\n\n";
-    fout << "cppcheck: $(LIBOBJ) $(CLIOBJ) $(EXTOBJ)\n";
-    fout << "\t$(CXX) $(CPPFLAGS) $(CXXFLAGS) -std=c++0x -o cppcheck $(CLIOBJ) $(LIBOBJ) $(EXTOBJ) $(LIBS) $(LDFLAGS)\n\n";
-    fout << "all:\tcppcheck testrunner\n\n";
+    fout << "seccheck: $(LIBOBJ) $(CLIOBJ) $(EXTOBJ)\n";
+    fout << "\t$(CXX) $(CPPFLAGS) $(CXXFLAGS) -std=c++0x -o seccheck $(CLIOBJ) $(LIBOBJ) $(EXTOBJ) $(LIBS) $(LDFLAGS)\n\n";
+    fout << "all:\tseccheck testrunner\n\n";
     fout << "testrunner: $(TESTOBJ) $(LIBOBJ) $(EXTOBJ) cli/threadexecutor.o cli/cmdlineparser.o cli/cppcheckexecutor.o cli/filelister.o cli/pathmatch.o\n";
     fout << "\t$(CXX) $(CPPFLAGS) $(CXXFLAGS) -std=c++0x -o testrunner $(TESTOBJ) $(LIBOBJ) cli/threadexecutor.o cli/cppcheckexecutor.o cli/cmdlineparser.o cli/filelister.o cli/pathmatch.o $(EXTOBJ) $(LIBS) $(LDFLAGS)\n\n";
     fout << "test:\tall\n";
@@ -375,15 +375,15 @@ int main(int argc, char **argv)
     fout << "reduce:\ttools/reduce.cpp\n";
     fout << "\t$(CXX) -std=c++0x -g -o reduce tools/reduce.cpp -Ilib -Iexternals/tinyxml lib/*.cpp externals/tinyxml/tinyxml2.cpp\n\n";
     fout << "clean:\n";
-    fout << "\trm -f build/*.o lib/*.o cli/*.o test/*.o externals/tinyxml/*.o testrunner reduce cppcheck cppcheck.1\n\n";
-    fout << "man:\tman/cppcheck.1\n\n";
-    fout << "man/cppcheck.1:\t$(MAN_SOURCE)\n\n";
+    fout << "\trm -f build/*.o lib/*.o cli/*.o test/*.o externals/tinyxml/*.o testrunner reduce seccheck seccheck.1\n\n";
+    fout << "man:\tman/seccheck.1\n\n";
+    fout << "man/seccheck.1:\t$(MAN_SOURCE)\n\n";
     fout << "\t$(XP) $(DB2MAN) $(MAN_SOURCE)\n\n";
     fout << "tags:\n";
     fout << "\tctags -R --exclude=doxyoutput .\n\n";
-    fout << "install: cppcheck\n";
+    fout << "install: seccheck\n";
     fout << "\tinstall -d ${BIN}\n";
-    fout << "\tinstall cppcheck ${BIN}\n";
+    fout << "\tinstall seccheck ${BIN}\n";
     fout << "\tinstall htmlreport/cppcheck-htmlreport ${BIN}\n\n";
 
     fout << "\n###### Build\n\n";

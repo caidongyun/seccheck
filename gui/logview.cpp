@@ -70,7 +70,7 @@ void LogView::SaveButtonClicked()
     if (!fileName.isEmpty()) {
         QFile file(fileName);
         if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            QMessageBox::warning(this, tr("Cppcheck"),
+            QMessageBox::warning(this, tr("Seccheck"),
                                  tr("Could not open file for writing: \"%1\"").arg(fileName));
             return;
         }

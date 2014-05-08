@@ -573,7 +573,7 @@ static bool cleanupStatements(const ReduceSettings &settings, std::vector<std::s
 
 int main(int argc, char *argv[])
 {
-    std::cout << "cppcheck tool that reduce code for a hang / false positive" << std::endl;
+    std::cout << "seccheck tool that reduce code for a hang / false positive" << std::endl;
 
     bool print = false;
     ReduceSettings settings;

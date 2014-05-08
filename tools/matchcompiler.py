@@ -157,7 +157,7 @@ class MatchCompiler:
             # if varid is provided, check that it's non-zero on first use
             if varid and tok.find('%varid%') != -1 and checked_varid is False:
                 ret += '    if (varid==0U)\n'
-                ret += '        throw InternalError(tok, "Internal error. Token::Match called with varid 0. Please report this to Cppcheck developers");\n'
+                ret += '        throw InternalError(tok, "Internal error. Token::Match called with varid 0. Please report this to Seccheck developers");\n'
                 checked_varid = True
 
             # [abc]
@@ -635,7 +635,7 @@ def main():
 
     # Check if we are invoked from the right place
     if not os.path.exists('lib') and not os.path.exists('samples'):
-        print('Please invoke from the top level cppcheck source dir. Example: tools/matchcompiler.py')
+        print('Please invoke from the top level seccheck source dir. Example: tools/matchcompiler.py')
         sys.exit(-1)
 
     # Create build directory if needed

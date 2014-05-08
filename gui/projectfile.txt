@@ -1,15 +1,15 @@
 Project files
 -------------
 
-cppcheck GUI handles per-project settings in project files instead of global
-program settings. This allows customizing cppcheck for each project's needs.
+seccheck GUI handles per-project settings in project files instead of global
+program settings. This allows customizing seccheck for each project's needs.
 
 The project file is simple XML file easy to edit with your favourite editor
 program. The format is:
 
 <?xml version="1.0"?>
 <project version="1">
-    <root name="c:/projects/cppcheck/" />
+    <root name="c:/projects/seccheck/" />
     <paths>
         <dir name="lib/" />
     </paths>
@@ -44,5 +44,5 @@ where:
 -  exclude element contains list of paths to exclude from the check. The path
    can be a directory (must end with path separator) or a file.
 
-For real life examples see the cppcheck.cppcheck-file in the Cppcheck sources
+For real life examples see the cppcheck.cppcheck-file in the Seccheck sources
 root-directory or gui.cppcheck file in gui-directory.

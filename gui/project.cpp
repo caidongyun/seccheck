@@ -68,7 +68,7 @@ bool Project::Open()
     if (QFile::exists(mFilename)) {
         if (!mPFile->Read()) {
             QMessageBox msg(QMessageBox::Critical,
-                            tr("Cppcheck"),
+                            tr("Seccheck"),
                             tr("Could not read the project file."),
                             QMessageBox::Ok,
                             mParentWidget);
@@ -120,7 +120,7 @@ bool Project::Edit()
         bool writeSuccess = mPFile->Write();
         if (!writeSuccess) {
             QMessageBox msg(QMessageBox::Critical,
-                            tr("Cppcheck"),
+                            tr("Seccheck"),
                             tr("Could not write the project file."),
                             QMessageBox::Ok,
                             mParentWidget);

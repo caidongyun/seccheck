@@ -2,8 +2,8 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-  <title>Online Demo - Cppcheck</title>
-  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Orbitron&amp;text=Cppcheck" />
+  <title>Online Demo - Seccheck</title>
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Orbitron&amp;text=Seccheck" />
   <link rel="stylesheet" type="text/css" href="/site/css/pack.css" />
   <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js" type="text/javascript"></script>
@@ -26,8 +26,8 @@
 <body>
 <div id="header">
   <div class="wrap">
-    <h1><a href="/">Cppcheck</a></h1>
-    <p>A tool for static C/C++ code analysis</p>
+    <h1><a href="/">Seccheck</a></h1>
+    <p>A tool for security C/C++ code analysis</p>
   </div> <!-- .wrap -->
 </div> <!-- #header -->
 <div id="tabs">

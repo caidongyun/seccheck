@@ -2,14 +2,14 @@
 #
 # A script for creating release packages. The release packages are create in the home directory.
 #
-# Test cppcheck on itself.
-#   cppcheck -q -j2 --inconclusive --enable=all lib
+# Test seccheck on itself.
+#   seccheck -q -j2 --inconclusive --enable=all lib
 #
-# Make sure "cppcheck --errorlist" works. For example with:
+# Make sure "seccheck --errorlist" works. For example with:
 # make test
-# cppcheck --errorlist > errlist.xml
+# seccheck --errorlist > errlist.xml
 # xmllint --noout errlist.xml
-# cppcheck --xml-version=2 --errorlist > errlist.xml
+# seccheck --xml-version=2 --errorlist > errlist.xml
 # xmllint --noout errlist.xml
 #
 # Update AUTHORS using output from:
@@ -47,14 +47,14 @@
 #
 # Generate the manual.pdf, manual.html and version.txt
 # make
-# ./cppcheck --version > version.txt
+# ./seccheck --version > version.txt
 # docbook2pdf man/manual.docbook
 # xsltproc -o manual.html /usr/share/xml/docbook/stylesheet/nwalsh/xhtml/docbook.xsl man/manual.docbook
 #
 # Upload manual.pdf , manual.html and version.txt...
 # sftp danielmarjamaki,cppcheck@web.sourceforge.net
 #
-# save "cppcheck --doc" output on wiki
+# save "seccheck --doc" output on wiki
 #
 # compile new democlient:
 # ssh -t danielmarjamaki,cppcheck@shell.sourceforge.net
@@ -64,7 +64,7 @@
 tag=$1
 
 # Name of release
-releasename=cppcheck-$tag
+releasename=seccheck-$tag
 
 # Create archives..
 git archive --format=tar --prefix=$releasename/ $tag | gzip > ~/$releasename.tar.gz

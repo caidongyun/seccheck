@@ -110,7 +110,7 @@ BIN=$(DESTDIR)$(PREFIX)/bin
 # For 'make man': sudo apt-get install xsltproc docbook-xsl docbook-xml on Linux
 DB2MAN=/usr/share/sgml/docbook/stylesheet/xsl/nwalsh/manpages/docbook.xsl
 XP=xsltproc -''-nonet -''-param man.charmap.use.subset "0"
-MAN_SOURCE=man/cppcheck.1.xml
+MAN_SOURCE=man/seccheck.1.xml
 
 
 ###### Object Files
@@ -229,10 +229,10 @@ EXTOBJ += $(TINYXML)
 
 ###### Targets
 
-cppcheck: $(LIBOBJ) $(CLIOBJ) $(EXTOBJ)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -std=c++0x -o cppcheck $(CLIOBJ) $(LIBOBJ) $(EXTOBJ) $(LIBS) $(LDFLAGS) $(RDYNAMIC)
+seccheck: $(LIBOBJ) $(CLIOBJ) $(EXTOBJ)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -std=c++0x -o seccheck $(CLIOBJ) $(LIBOBJ) $(EXTOBJ) $(LIBS) $(LDFLAGS) $(RDYNAMIC)
 
-all:	cppcheck testrunner
+all:	seccheck testrunner
 
 testrunner: $(TESTOBJ) $(LIBOBJ) $(EXTOBJ) cli/threadexecutor.o cli/cmdlineparser.o cli/cppcheckexecutor.o cli/filelister.o cli/pathmatch.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -std=c++0x -o testrunner $(TESTOBJ) $(LIBOBJ) cli/threadexecutor.o cli/cppcheckexecutor.o cli/cmdlineparser.o cli/filelister.o cli/pathmatch.o $(EXTOBJ) $(LIBS) $(LDFLAGS) $(RDYNAMIC)
@@ -251,21 +251,21 @@ reduce:	tools/reduce.o externals/tinyxml/tinyxml2.o $(LIBOBJ)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -std=c++0x -g -o reduce tools/reduce.o -Ilib -Iexternals/tinyxml $(LIBOBJ) $(LIBS) externals/tinyxml/tinyxml2.o $(LDFLAGS) $(RDYNAMIC)
 
 clean:
-	rm -f build/*.o lib/*.o cli/*.o test/*.o externals/tinyxml/*.o testrunner reduce cppcheck cppcheck.1
+	rm -f build/*.o lib/*.o cli/*.o test/*.o externals/tinyxml/*.o testrunner reduce seccheck seccheck.1
 
-man:	man/cppcheck.1
+man:	man/seccheck.1
 
-man/cppcheck.1:	$(MAN_SOURCE)
+man/seccheck.1:	$(MAN_SOURCE)
 
 	$(XP) $(DB2MAN) $(MAN_SOURCE)
 
 tags:
 	ctags -R --exclude=doxyoutput .
 
-install: cppcheck
+install: seccheck
 	install -d ${BIN}
-	install cppcheck ${BIN}
-	install htmlreport/cppcheck-htmlreport ${BIN}
+	install seccheck ${BIN}
+	install htmlreport/seccheck-htmlreport ${BIN}
 
 
 ###### Build

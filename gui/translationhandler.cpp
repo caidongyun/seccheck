@@ -125,7 +125,7 @@ bool TranslationHandler::SetLanguage(const QString &code)
                              "the Preferences-dialog to select any of the available "
                              "languages.").arg(error));
         QMessageBox msgBox(QMessageBox::Warning,
-                           tr("Cppcheck"),
+                           tr("Seccheck"),
                            msg,
                            QMessageBox::Ok);
         msgBox.exec();
