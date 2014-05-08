@@ -58,7 +58,6 @@ public:
 private:
     /* function name / error message */
     std::map<std::string, std::string> _unsafeFunctions;
-    //std::map<std::string, std::string> _unsafeIntegerFunctions;
 
     /** init unsafe functions list ' */
     void initUnsafeFunctions() {
@@ -66,6 +65,7 @@ private:
 		const char* unsafe_int_function_tips = "[CERT INT06-CPP] string token to integer";
 		const char* raw_memory_function_tips = "[CERT MEM08-CPP] Raw memory";
 		const char* cstyle_fio_function_tips = "[CERT FIO17-CPP] C-style input and output";
+		const char* cstyle_fio_stream_func_tips = "[CERT FIO12-CPP] Unsafe stream";
         // Unsafe functions, which messages suggest only one alternative and doesn't contain additional information.
         const struct {
             const char* bad;
@@ -87,6 +87,7 @@ private:
 			{"fscanf", "C++ streams", cstyle_fio_function_tips},
 			{"printf", "C++ streams", cstyle_fio_function_tips},
 			{"scanf", "C++ streams", cstyle_fio_function_tips},
+			{"setbuf", "setvbuf", cstyle_fio_stream_func_tips},
 			{"system", "POSIX execve or other exec family", "[CERT ENV04-CPP] Unsafe C99 Command interpreter"},
 			{"atol", "strtol", unsafe_int_function_tips},
 			{"atoi", "strtol", unsafe_int_function_tips},

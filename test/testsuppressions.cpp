@@ -250,7 +250,7 @@ private:
         // suppress uninitvar inline
         (this->*check)("void f() {\n"
                        "    int a;\n"
-                       "    // cppcheck-suppress uninitvar\n"
+                       "    // seccheck-suppress uninitvar\n"
                        "    a++;\n"
                        "}\n",
                        "");
@@ -259,7 +259,7 @@ private:
         // suppress uninitvar inline
         (this->*check)("void f() {\n"
                        "    int a;\n"
-                       "    // cppcheck-suppress uninitvar\n"
+                       "    // seccheck-suppress uninitvar\n"
                        "\n"
                        "    a++;\n"
                        "}\n",
@@ -269,7 +269,7 @@ private:
         // suppress uninitvar inline
         (this->*check)("void f() {\n"
                        "    int a;\n"
-                       "    /* cppcheck-suppress uninitvar */\n"
+                       "    /* seccheck-suppress uninitvar */\n"
                        "    a++;\n"
                        "}\n",
                        "");
@@ -278,7 +278,7 @@ private:
         // suppress uninitvar inline
         (this->*check)("void f() {\n"
                        "    int a;\n"
-                       "    /* cppcheck-suppress uninitvar */\n"
+                       "    /* seccheck-suppress uninitvar */\n"
                        "\n"
                        "    a++;\n"
                        "}\n",
@@ -288,7 +288,7 @@ private:
         // suppress uninitvar inline, without error present
         (this->*check)("void f() {\n"
                        "    int a;\n"
-                       "    // cppcheck-suppress uninitvar\n"
+                       "    // seccheck-suppress uninitvar\n"
                        "    b++;\n"
                        "}\n",
                        "");
@@ -343,9 +343,9 @@ private:
         const char code[] =
             "struct Point\n"
             "{\n"
-            "    // cppcheck-suppress unusedStructMember\n"
+            "    // seccheck-suppress unusedStructMember\n"
             "    int x;\n"
-            "    // cppcheck-suppress unusedStructMember\n"
+            "    // seccheck-suppress unusedStructMember\n"
             "    int y;\n"
             "};";
         cppCheck.check("/somewhere/test.cpp", code);

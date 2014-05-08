@@ -175,7 +175,8 @@ private:
 			  "    system(\"rm ~/.config\");\n"
               "}\n");
 		std::string result = errout.str();
-        ASSERT_EQUALS("", result);
+        ASSERT_EQUALS("[test.cpp:3]: (style) [CERT ENV04-CPP] Unsafe C99 Command interpreter function 'system' called. "
+			"It is recommended to use the function 'POSIX execve or other exec family' instead.\n", result);
     }
 };
 
