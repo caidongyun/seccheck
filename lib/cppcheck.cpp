@@ -138,7 +138,7 @@ unsigned int CppCheck::processFile(const std::string& filename, const std::strin
         return exitcode;
 
     if (_settings._errorsOnly == false) {
-        std::string fixedpath = Path::simplifyPath(filename.c_str());
+        std::string fixedpath = Path::simplifyPath(filename);
         fixedpath = Path::toNativeSeparators(fixedpath);
         _errorLogger.reportOut(std::string("Checking ") + fixedpath + std::string("..."));
     }
@@ -209,7 +209,7 @@ unsigned int CppCheck::processFile(const std::string& filename, const std::strin
 
             // If only errors are printed, print filename after the check
             if (_settings._errorsOnly == false && it != configurations.begin()) {
-                std::string fixedpath = Path::simplifyPath(filename.c_str());
+                std::string fixedpath = Path::simplifyPath(filename);
                 fixedpath = Path::toNativeSeparators(fixedpath);
                 _errorLogger.reportOut(std::string("Checking ") + fixedpath + ": " + cfg + std::string("..."));
             }
@@ -282,9 +282,42 @@ void CppCheck::checkFunctionUsage()
         if (_settings._errorsOnly == false)
             _errorLogger.reportOut("Checking usage of global functions..");
 
-        _checkUnusedFunctions.check(this);
+        CheckUnusedFunctions::instance.check(this);
 
         _settings._verbose = verbose_orig;
+    }
+}
+
+void CppCheck::analyseFile(std::istream &fin, const std::string &filename)
+{
+    // Preprocess file..
+    Preprocessor preprocessor(&_settings, this);
+    std::list<std::string> configurations;
+    std::string filedata = "";
+    preprocessor.preprocess(fin, filedata, configurations, filename, _settings._includePaths);
+    const std::string code = preprocessor.getcode(filedata, "", filename);
+
+    if (_settings.checkConfiguration) {
+        return;
+    }
+
+    // Tokenize..
+    Tokenizer tokenizer(&_settings, this);
+    std::istringstream istr(code);
+    tokenizer.tokenize(istr, filename.c_str(), "");
+    tokenizer.simplifyTokenList2();
+
+    // Analyse the tokens..
+    std::set<std::string> data;
+    for (std::list<Check *>::const_iterator it = Check::instances().begin(); it != Check::instances().end(); ++it) {
+        (*it)->analyse(tokenizer.tokens(), data);
+    }
+
+    // Save analysis results..
+    // TODO: This loop should be protected by a mutex or something like that
+    //       The saveAnalysisData must _not_ be called from many threads at the same time.
+    for (std::list<Check *>::const_iterator it = Check::instances().begin(); it != Check::instances().end(); ++it) {
+        (*it)->saveAnalysisData(data);
     }
 }
 
@@ -335,7 +368,7 @@ void CppCheck::checkFile(const std::string &code, const char FileName[])
         }
 
         if (_settings.isEnabled("unusedFunction") && _settings._jobs == 1)
-            _checkUnusedFunctions.parseTokens(_tokenizer, FileName, &_settings);
+            CheckUnusedFunctions::instance.parseTokens(_tokenizer, FileName, &_settings);
 
         executeRules("normal", _tokenizer);
 
@@ -366,22 +399,22 @@ void CppCheck::checkFile(const std::string &code, const char FileName[])
             return;
     } catch (const InternalError &e) {
         std::list<ErrorLogger::ErrorMessage::FileLocation> locationList;
-        ErrorLogger::ErrorMessage::FileLocation loc2;
-        loc2.setfile(Path::toNativeSeparators(FileName));
-        locationList.push_back(loc2);
         ErrorLogger::ErrorMessage::FileLocation loc;
         if (e.token) {
             loc.line = e.token->linenr();
             const std::string fixedpath = Path::toNativeSeparators(_tokenizer.list.file(e.token));
             loc.setfile(fixedpath);
         } else {
+            ErrorLogger::ErrorMessage::FileLocation loc2;
+            loc2.setfile(Path::toNativeSeparators(FileName));
+            locationList.push_back(loc2);
             loc.setfile(_tokenizer.getSourceFilePath());
         }
         locationList.push_back(loc);
         const ErrorLogger::ErrorMessage errmsg(locationList,
                                                Severity::error,
                                                e.errorMessage,
-                                               "cppcheckError",
+                                               e.id,
                                                false);
 
         _errorLogger.reportErr(errmsg);

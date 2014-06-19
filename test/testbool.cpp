@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -92,6 +92,21 @@ private:
               "}");
         ASSERT_EQUALS("[test.cpp:2]: (error) Boolean value assigned to pointer.\n", errout.str());
 
+        check("void foo(bool *p) {\n"
+              "    p = (x<y);\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:2]: (error) Boolean value assigned to pointer.\n", errout.str());
+
+        check("void foo(bool *p) {\n"
+              "    p = (x||y);\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:2]: (error) Boolean value assigned to pointer.\n", errout.str());
+
+        check("void foo(bool *p) {\n"
+              "    p = (x&&y);\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:2]: (error) Boolean value assigned to pointer.\n", errout.str());
+
         // check against potential false positives
         check("void foo(bool *p) {\n"
               "    *p = false;\n"
@@ -116,6 +131,12 @@ private:
               "    s.p = true;\n"
               "}\n");
         ASSERT_EQUALS("[test.cpp:6]: (error) Boolean value assigned to pointer.\n", errout.str());
+
+        // ticket #5627 - false positive: template
+        check("void f() {\n"
+              "    X *p = new ::std::pair<int,int>[rSize];\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
     }
 
     void comparisonOfBoolExpressionWithInt1() {
@@ -408,7 +429,7 @@ private:
         ASSERT_EQUALS("",errout.str());
 
         check("void f(int a, int b, int c) { if (1 < !(a+b)) {} }");
-        TODO_ASSERT_EQUALS("error","",errout.str());
+        ASSERT_EQUALS("[test.cpp:1]: (warning) Comparison of a boolean expression with an integer other than 0 or 1.\n",errout.str());
     }
 
     void comparisonOfBoolExpressionWithInt3() {
@@ -423,12 +444,12 @@ private:
         check("void f() {\n"
               "  for(int i = 4; i > -1 < 5 ; --i) {}\n"
               "}");
-        ASSERT_EQUALS("[test.cpp:2]: (warning) Comparison of a boolean value using relational operator (<, >, <= or >=).\n", errout.str());
+        ASSERT_EQUALS("[test.cpp:2]: (warning) Comparison of a boolean expression with an integer other than 0 or 1.\n", errout.str());
 
         check("void f(int a, int b, int c) {\n"
               "  return (a > b) < c;\n"
               "}");
-        TODO_ASSERT_EQUALS("error", "", errout.str());
+        ASSERT_EQUALS("[test.cpp:2]: (warning) Comparison of a boolean expression with an integer.\n", errout.str());
 
         check("void f(int a, int b, int c) {\n"
               "  return x(a > b) < c;\n"

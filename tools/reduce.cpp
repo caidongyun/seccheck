@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,7 +70,7 @@ public:
             cppcheck.terminate();
         }
     }
-    void reportProgress(const std::string &filename, const char stage[], const std::size_t value) {
+    void reportProgress(const std::string &/*filename*/, const char /*stage*/[], const std::size_t /*value*/) {
         if (std::time(0) > stopTime) {
             if (pattern.empty())
                 foundLine = true;
@@ -581,7 +581,7 @@ int main(int argc, char *argv[])
     bool def = false;
     bool maxconfigs = false;
 
-    for (int i = 1, includePathIndex = 0; i < argc; i++) {
+    for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--stdout") == 0)
             print = true;
         else if (strcmp(argv[i], "--hang") == 0)

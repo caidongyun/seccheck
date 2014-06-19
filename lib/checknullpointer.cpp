@@ -278,7 +278,7 @@ void CheckNullPointer::parseFunctionCall(const Token &tok, std::list<const Token
                     percent = false;
 
                     bool _continue = false;
-                    while (!std::isalpha(*i)) {
+                    while (!std::isalpha((unsigned char)*i)) {
                         if (*i == '*') {
                             if (scan)
                                 _continue = true;
@@ -410,7 +410,7 @@ bool CheckNullPointer::isPointerDeRef(const Token *tok, bool &unknown)
             return false;
 
         // OK to delete a null
-        if (Token::Match(prev, "delete") || Token::Match(prev->tokAt(-2), "delete [ ]"))
+        if (Token::simpleMatch(prev, "delete") || Token::Match(prev->tokAt(-2), "delete [ ]"))
             return false;
 
         // OK to check if pointer is null
@@ -565,6 +565,9 @@ void CheckNullPointer::nullPointerByDeRefAndChec()
         // Can pointer be NULL?
         const ValueFlow::Value *value = tok->getValue(0);
         if (!value)
+            continue;
+
+        if (!_settings->inconclusive && value->inconclusive)
             continue;
 
         // Is pointer used as function parameter?
@@ -732,7 +735,7 @@ void CheckNullPointer::nullPointerByCheckAndDeRef()
                             nullPointerError(tok2, pointerName, vartok, inconclusive);
                         else if (unknown)
                             nullPointerError(tok2, pointerName, vartok, true);
-                        if (Token::Match(tok2, "%var% ?"))
+                        if (Token::Match(tok2, "%var% %oror%|&&|?"))
                             break;
                     }
                 }
@@ -785,7 +788,7 @@ void CheckNullPointer::nullPointerByCheckAndDeRef()
                 }
 
                 // init function (global variables)
-                if (!var || !(var->isLocal() || var->isArgument()))
+                if (!(var->isLocal() || var->isArgument()))
                     break;
             }
 

@@ -78,7 +78,7 @@ bool CheckAutoVariables::isAutoVarArray(const Token *tok)
 {
     const Variable *var = tok->variable();
 
-    return (var && var->isLocal() && !var->isStatic() && var->isArray());
+    return (var && var->isLocal() && !var->isStatic() && var->isArray() && !var->isPointer());
 }
 
 // Verification that we really take the address of a local variable
@@ -107,7 +107,7 @@ static bool variableIsUsedInScope(const Token* start, unsigned int varId, const 
     if (!start) // Ticket #5024
         return false;
 
-    for (const Token *tok = start; tok != scope->classEnd; tok = tok->next()) {
+    for (const Token *tok = start; tok && tok != scope->classEnd; tok = tok->next()) {
         if (tok->varId() == varId)
             return true;
         if (tok->scope()->type == Scope::eFor || tok->scope()->type == Scope::eDo || tok->scope()->type == Scope::eWhile) // In case of loops, better checking would be necessary
@@ -196,9 +196,13 @@ void CheckAutoVariables::autoVariables()
                     errorReturnAddressOfFunctionParameter(tok, tok->strAt(2));
             }
             // Invalid pointer deallocation
-            else if (Token::Match(tok, "free ( %var% ) ;") || Token::Match(tok, "delete [| ]| (| %var% !![")) {
+            else if (Token::Match(tok, "free ( %var% ) ;") || (_tokenizer->isCPP() && Token::Match(tok, "delete [| ]| (| %var% !!["))) {
                 tok = Token::findmatch(tok->next(), "%var%");
                 if (isAutoVarArray(tok))
+                    errorInvalidDeallocation(tok);
+            } else if (Token::Match(tok, "free ( & %var% ) ;") || (_tokenizer->isCPP() && Token::Match(tok, "delete [| ]| (| & %var% !!["))) {
+                tok = Token::findmatch(tok->next(), "%var%");
+                if (tok && tok->variable() && tok->variable()->isLocal())
                     errorInvalidDeallocation(tok);
             }
         }
@@ -292,6 +296,9 @@ bool CheckAutoVariables::returnTemporary(const Token *tok) const
 
     const Function *function = tok->function();
     if (function) {
+        // Ticket #5478: Only functions or operator equal might return a temporary
+        if (function->type != Function::eOperatorEqual && function->type != Function::eFunction)
+            return false;
         retref = function->tokenDef->strAt(-1) == "&";
         if (!retref) {
             const Token *start = function->retDef;

@@ -34,7 +34,7 @@ private:
 
 
 
-    void check(const char code[], bool inconclusive=false, bool runSimpleChecks=true) {
+    void check(const char code[], bool inconclusive=false, bool runSimpleChecks=true, const char* filename=nullptr) {
         // Clear the error buffer..
         errout.str("");
 
@@ -45,7 +45,7 @@ private:
         // Tokenize..
         Tokenizer tokenizer(&settings, this);
         std::istringstream istr(code);
-        tokenizer.tokenize(istr, "test.cpp");
+        tokenizer.tokenize(istr, (filename)?filename:"test.cpp");
 
         CheckAutoVariables checkAutoVariables(&tokenizer, &settings, this);
         checkAutoVariables.returnReference();
@@ -80,6 +80,7 @@ private:
         TEST_CASE(testautovar10); // ticket #2930 - void f(char *p) { p = '\0'; }
         TEST_CASE(testautovar11); // ticket #4641 - fp, assign local struct member address to function parameter
         TEST_CASE(testautovar12); // ticket #5024 - crash
+        TEST_CASE(testautovar13); // ticket #5537 - crash
         TEST_CASE(testautovar_array1);
         TEST_CASE(testautovar_array2);
         TEST_CASE(testautovar_return1);
@@ -88,6 +89,7 @@ private:
         TEST_CASE(testautovar_return4); // ticket #3030
         TEST_CASE(testautovar_extern);
         TEST_CASE(testinvaliddealloc);
+        TEST_CASE(testinvaliddealloc_C);
         TEST_CASE(testassign1);  // Ticket #1819
         TEST_CASE(testassign2);  // Ticket #2765
 
@@ -107,6 +109,10 @@ private:
         TEST_CASE(testglobalnamespace);
 
         TEST_CASE(returnParameterAddress);
+
+        TEST_CASE(testconstructor); // ticket #5478 - crash
+
+        TEST_CASE(variableIsUsedInScope); // ticket #5599 crash in variableIsUsedInScope()
     }
 
 
@@ -357,6 +363,16 @@ private:
               "UNKNOWN_MACRO_EXPANDING_TO_SIGNATURE { custom_type a(var); }");
     }
 
+    void testautovar13() { // Ticket #5537
+        check("class FileManager {\n"
+              "  FileManager() : UniqueRealDirs(*new UniqueDirContainer())\n"
+              "  {}\n"
+              "  ~FileManager() {\n"
+              "    delete &UniqueRealDirs;\n"
+              "   }\n"
+              "};\n");
+    }
+
     void testautovar_array1() {
         check("void func1(int* arr[2])\n"
               "{\n"
@@ -470,7 +486,44 @@ private:
               "        free(psz_title);\n"
               "    }\n"
               "}");
-        ASSERT_EQUALS(std::string(""), errout.str());
+        ASSERT_EQUALS("", errout.str());
+
+        // #2298 new check: passing stack-address to free()
+        check("int main() {\n"
+              "   int *p = malloc(4);\n"
+              "   free(&p);\n"
+              "   return 0;\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:3]: (error) Deallocation of an auto-variable results in undefined behaviour.\n", errout.str());
+        check("int main() {\n"
+              "   int i;\n"
+              "   free(&i);\n"
+              "   return 0;\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:3]: (error) Deallocation of an auto-variable results in undefined behaviour.\n", errout.str());
+
+        // #5732
+        check("int main() {\n"
+              "   long (*pKoeff)[256] = new long[9][256];\n"
+              "   delete[] pKoeff;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("int main() {\n"
+              "   long *pKoeff[256];\n"
+              "   delete[] pKoeff;\n"
+              "}");
+        TODO_ASSERT_EQUALS("[test.cpp:3]: (error) Deallocation of an auto-variable results in undefined behaviour.\n", "", errout.str());
+
+    }
+
+    void testinvaliddealloc_C() {
+        // #5691
+        check("void svn_repos_dir_delta2() {\n"
+              "  struct context c;\n"
+              "      SVN_ERR(delete(&c, root_baton, src_entry, pool));\n"
+              "}\n", false, true, "test.c");
+        ASSERT_EQUALS("", errout.str());
     }
 
     void testassign1() { // Ticket #1819
@@ -812,6 +865,25 @@ private:
               "}");
 
         ASSERT_EQUALS("", errout.str());
+    }
+
+    void testconstructor() { // Ticket #5478 - crash while checking a constructor
+        check("class const_tree_iterator {\n"
+              "  const_tree_iterator(bool (*_incream)(node_type*&)) {}\n"
+              "  const_tree_iterator& parent() {\n"
+              "    return const_tree_iterator(foo);\n"
+              "  }\n"
+              "};");
+    }
+
+    void variableIsUsedInScope() {
+        check("void removed_cb (GList *uids) {\n"
+              "for (; uids; uids = uids->next) {\n"
+              "}\n"
+              "}\n"
+              "void opened_cb () {\n"
+              "	g_signal_connect (G_CALLBACK (removed_cb));\n"
+              "}");
     }
 
 };

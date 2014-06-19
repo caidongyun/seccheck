@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -108,6 +108,29 @@ protected:
 
 private:
 
+    /**
+     * Wrapper around check_internal
+     *   - installs optional platform dependent signal handling
+     *
+     * * @param cppcheck cppcheck instance
+    * @param argc from main()
+    * @param argv from main()
+     **/
+    int check_wrapper(CppCheck& cppcheck, int argc, const char* const argv[]);
+
+    /**
+    * Starts the checking.
+    *
+    * @param cppcheck cppcheck instance
+    * @param argc from main()
+    * @param argv from main()
+    * @return EXIT_FAILURE if arguments are invalid or no input files
+    *         were found.
+    *         If errors are found and --error-exitcode is used,
+    *         given value is returned instead of default 0.
+    *         If no errors are found, 0 is returned.
+    */
+    int check_internal(CppCheck& cppcheck, int argc, const char* const argv[]);
     /**
      * Pointer to current settings; set while check() is running.
      */

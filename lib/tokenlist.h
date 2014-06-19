@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ public:
      */
     static void deleteTokens(Token *tok);
 
-    void addtoken(const char str[], const unsigned int lineno, const unsigned int fileno, bool split = false);
+    void addtoken(const std::string & str, const unsigned int lineno, const unsigned int fileno, bool split = false);
     void addtoken(const Token *tok, const unsigned int lineno, const unsigned int fileno);
 
     static void insertTokens(Token *dest, const Token *src, unsigned int n);

@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include "config.h"
 #include "path.h"
 #include "mathlib.h"
+#include "token.h"
 
 #include <map>
 #include <set>
@@ -50,13 +51,23 @@ public:
     bool loadxmldata(const char xmldata[], std::size_t len);
     bool load(const tinyxml2::XMLDocument &doc);
 
-    /** get allocation id for function (by name) */
-    int alloc(const std::string &name) const {
+    /** get allocation id for function by name */
+    int alloc(const char name[]) const {
         return getid(_alloc, name);
     }
 
-    /** get deallocation id for function (by name) */
-    int dealloc(const std::string &name) const {
+    /** get allocation id for function */
+    int alloc(const Token *tok) const {
+        return tok->function() ? 0 : getid(_alloc, tok->str());
+    }
+
+    /** get deallocation id for function */
+    int dealloc(const Token *tok) const {
+        return tok->function() ? 0 : getid(_dealloc, tok->str());
+    }
+
+    /** get deallocation id for function by name */
+    int dealloc(const char name[]) const {
         return getid(_dealloc, name);
     }
 
@@ -98,6 +109,8 @@ public:
 
     std::set<std::string> use;
     std::set<std::string> leakignore;
+    std::set<std::string> functionconst;
+    std::set<std::string> functionpure;
 
     bool isnoreturn(const std::string &name) const {
         auto it = _noreturn.find(name);
@@ -248,22 +261,18 @@ public:
         return (it != _importers.end() && it->second.count(importer) > 0);
     }
 
-    bool isreflection(const std::string& file, const std::string &token) const {
+    bool isreflection(const std::string &token) const {
         const auto it
-            = _reflection.find(Path::getFilenameExtensionInLowerCase(file));
-        return (it != _reflection.end() && it->second.count(token));
+            = _reflection.find(token);
+        return it != _reflection.end();
     }
 
-    int reflectionArgument(const std::string& file, const std::string &token) const {
+    int reflectionArgument(const std::string &token) const {
         int argIndex = -1;
         const auto it
-            = _reflection.find(Path::getFilenameExtensionInLowerCase(file));
+            = _reflection.find(token);
         if (it != _reflection.end()) {
-            const auto it2 =
-                it->second.find(token);
-            if (it2 != it->second.end()) {
-                argIndex = it2->second;
-            }
+            argIndex = it->second;
         }
         return argIndex;
     }
@@ -307,10 +316,10 @@ private:
         void addBlock(const std::string& blockName) {
             _blocks.insert(blockName);
         }
-        std::string start() const {
+        const std::string& start() const {
             return _start;
         }
-        std::string end() const {
+        const std::string& end() const {
             return _end;
         }
         int offset() const {
@@ -338,19 +347,11 @@ private:
     std::map<std::string, CodeBlock> _executableblocks; // keywords for blocks of executable code
     std::map<std::string, ExportedFunctions> _exporters; // keywords that export variables/functions to libraries (meta-code/macros)
     std::map<std::string, std::set<std::string> > _importers; // keywords that import variables/functions
-    std::map<std::string, std::map<std::string,int> > _reflection; // invocation of reflection
+    std::map<std::string,int> _reflection; // invocation of reflection
     std::map<std::string, std::pair<bool, bool> > _formatstr; // Parameters for format string checking
 
 
-    const ArgumentChecks * getarg(const std::string &functionName, int argnr) const {
-        auto it1 = argumentChecks.find(functionName);
-        if (it1 != argumentChecks.end()) {
-            const auto it2 = it1->second.find(argnr);
-            if (it2 != it1->second.end())
-                return &it2->second;
-        }
-        return NULL;
-    }
+    const ArgumentChecks * getarg(const std::string &functionName, int argnr) const;
 
     static int getid(const std::map<std::string,int> &data, const std::string &name) {
         const auto it = data.find(name);

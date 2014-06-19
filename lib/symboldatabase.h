@@ -24,6 +24,7 @@
 #include <string>
 #include <list>
 #include <vector>
+#include <deque>
 #include <set>
 #include <algorithm>
 
@@ -65,7 +66,8 @@ public:
         Unknown, True, False
     } needInitialization;
 
-    struct BaseInfo {
+    class BaseInfo {
+    public:
         BaseInfo() :
             type(NULL), nameTok(NULL), access(Public), isVirtual(false) {
         }
@@ -75,6 +77,10 @@ public:
         const Token* nameTok;
         AccessControl access;  // public/protected/private
         bool isVirtual;
+        // allow ordering within containers
+        bool operator<(const BaseInfo& rhs) const {
+            return this->type < rhs.type;
+        }
     };
 
     struct FriendInfo {
@@ -106,6 +112,13 @@ public:
     const Token *initBaseInfo(const Token *tok, const Token *tok1);
 
     const Function* getFunction(const std::string& funcName) const;
+
+    /**
+    * Check for circulare dependencies, i.e. loops within the class hierarchie
+    * @param anchestors list of anchestors. For internal usage only, clients should not supply this argument.
+    * @return true if there is a circular dependency
+    */
+    bool hasCircularDependencies(std::set<BaseInfo>* anchestors = 0) const;
 };
 
 /** @brief Information about a member variable. */
@@ -121,7 +134,8 @@ class CPPCHECKLIB Variable {
         fIsPointer   = (1 << 6), /** @brief pointer variable */
         fIsReference = (1 << 7), /** @brief reference variable */
         fIsRValueRef = (1 << 8), /** @brief rvalue reference variable */
-        fHasDefault  = (1 << 9)  /** @brief function argument with default value */
+        fHasDefault  = (1 << 9), /** @brief function argument with default value */
+        fIsStlType   = (1 << 10) /** @brief STL type ('std::') */
     };
 
     /**
@@ -161,8 +175,7 @@ public:
           _access(access_),
           _flags(0),
           _type(type_),
-          _scope(scope_),
-          _stlType(false) {
+          _scope(scope_) {
         evaluate();
     }
 
@@ -441,7 +454,7 @@ public:
      * @return true if it is an stl type and its type matches any of the types in 'stlTypes'
      */
     bool isStlType() const {
-        return _stlType;
+        return getFlag(fIsStlType);
     }
 
     /**
@@ -456,7 +469,7 @@ public:
      */
     template <std::size_t array_length>
     bool isStlType(const char* const(&stlTypes)[array_length]) const {
-        return _stlType && std::binary_search(stlTypes, stlTypes + array_length, _start->strAt(2));
+        return isStlType() && std::binary_search(stlTypes, stlTypes + array_length, _start->strAt(2));
     }
 
 private:
@@ -498,14 +511,10 @@ private:
     /** @brief array dimensions */
     std::vector<Dimension> _dimensions;
 
-    /** @brief true if variable is of STL type */
-    bool _stlType;
-
     /** @brief fill in information, depending on Tokens given at instantiation */
     void evaluate();
 };
 
-/** @brief Information about a function (class members or function). */
 class CPPCHECKLIB Function {
 public:
     enum Type { eConstructor, eCopyConstructor, eMoveConstructor, eOperatorEqual, eDestructor, eFunction };
@@ -532,15 +541,13 @@ public:
           isExplicit(false),
           isDefault(false),
           isDelete(false),
+          isNoExcept(false),
+          isThrow(false),
           isOperator(false),
-          retFuncPtr(false) {
+          noexceptArg(nullptr),
+          throwArg(nullptr) {
     }
 
-	/**
-     * Get function name
-     * @return function name (not include class name or other prefix, nor () )
-	 * eg: class A{public: void func(){}; }; returns func
-     */
     const std::string &name() const {
         return tokenDef->str();
     }
@@ -568,6 +575,24 @@ public:
     bool isDestructor() const {
         return type==eDestructor;
     }
+    bool isAttributeConstructor() const {
+        return tokenDef->isAttributeConstructor();
+    }
+    bool isAttributeDestructor() const {
+        return tokenDef->isAttributeDestructor();
+    }
+    bool isAttributePure() const {
+        return tokenDef->isAttributePure();
+    }
+    bool isAttributeConst() const {
+        return tokenDef->isAttributeConst();
+    }
+    bool isAttributeNothrow() const {
+        return tokenDef->isAttributeNothrow();
+    }
+    bool isDeclspecNothrow() const {
+        return tokenDef->isDeclspecNothrow();
+    }
 
     const Token *tokenDef; // function name token in class definition
     const Token *argDef;   // function argument start '(' in class definition
@@ -591,8 +616,11 @@ public:
     bool isExplicit;       // is explicit
     bool isDefault;        // is default
     bool isDelete;         // is delete
+    bool isNoExcept;       // is noexcept
+    bool isThrow;          // is throw
     bool isOperator;       // is operator
-    bool retFuncPtr;       // returns function pointer
+    const Token *noexceptArg;
+    const Token *throwArg;
 
     static bool argsMatch(const Scope *info, const Token *first, const Token *second, const std::string &path, unsigned int depth);
 
@@ -695,7 +723,7 @@ public:
     /**
      * @brief get the number of nested scopes that are not functions
      *
-     * This returns the number of user defined types (class, struct, union)
+     * @return the number of user defined types (class, struct, union)
      * that are defined in this user defined type or namespace.
      */
     unsigned int getNestedNonFunctions() const;
@@ -809,6 +837,9 @@ private:
     void addNewFunction(Scope **info, const Token **tok);
     static bool isFunction(const Token *tok, const Scope* outerScope, const Token **funcStart, const Token **argStart);
     const Type *findTypeInNested(const Token *tok, const Scope *startScope) const;
+    const Scope *findNamespace(const Token * tok, const Scope * scope) const;
+    Function *findFunctionInScope(const Token *func, const Scope *ns);
+
 
     const Tokenizer *_tokenizer;
     const Settings *_settings;

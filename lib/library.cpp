@@ -92,19 +92,35 @@ bool Library::load(const tinyxml2::XMLDocument &doc)
 
     for (const tinyxml2::XMLElement *node = rootnode->FirstChildElement(); node; node = node->NextSiblingElement()) {
         if (strcmp(node->Name(),"memory")==0 || strcmp(node->Name(),"resource")==0) {
-            if (strcmp(node->Name(), "memory")==0)
-                while (!ismemory(++allocid));
-            else
-                while (!isresource(++allocid));
+            // get allocationId to use..
+            int allocationId = 0;
+            for (const tinyxml2::XMLElement *memorynode = node->FirstChildElement(); memorynode; memorynode = memorynode->NextSiblingElement()) {
+                if (strcmp(memorynode->Name(),"dealloc")==0) {
+                    const std::map<std::string,int>::const_iterator it = _dealloc.find(memorynode->GetText());
+                    if (it != _dealloc.end()) {
+                        allocationId = it->second;
+                        break;
+                    }
+                }
+            }
+            if (allocationId == 0) {
+                if (strcmp(node->Name(), "memory")==0)
+                    while (!ismemory(++allocid));
+                else
+                    while (!isresource(++allocid));
+                allocationId = allocid;
+            }
+
+            // add alloc/dealloc/use functions..
             for (const tinyxml2::XMLElement *memorynode = node->FirstChildElement(); memorynode; memorynode = memorynode->NextSiblingElement()) {
                 if (strcmp(memorynode->Name(),"alloc")==0) {
-                    _alloc[memorynode->GetText()] = allocid;
+                    _alloc[memorynode->GetText()] = allocationId;
                     const char *init = memorynode->Attribute("init");
                     if (init && strcmp(init,"false")==0) {
                         returnuninitdata.insert(memorynode->GetText());
                     }
                 } else if (strcmp(memorynode->Name(),"dealloc")==0)
-                    _dealloc[memorynode->GetText()] = allocid;
+                    _dealloc[memorynode->GetText()] = allocationId;
                 else if (strcmp(memorynode->Name(),"use")==0)
                     use.insert(memorynode->GetText());
                 else
@@ -134,10 +150,16 @@ bool Library::load(const tinyxml2::XMLDocument &doc)
             for (const tinyxml2::XMLElement *functionnode = node->FirstChildElement(); functionnode; functionnode = functionnode->NextSiblingElement()) {
                 if (strcmp(functionnode->Name(),"noreturn")==0)
                     _noreturn[name] = (strcmp(functionnode->GetText(), "true") == 0);
-                else if (strcmp(functionnode->Name(),"leak-ignore")==0)
+                else if (strcmp(functionnode->Name(), "pure") == 0)
+                    functionpure.insert(name);
+                else if (strcmp(functionnode->Name(), "const") == 0) {
+                    functionconst.insert(name);
+                    functionpure.insert(name); // a constant function is pure
+                } else if (strcmp(functionnode->Name(),"leak-ignore")==0)
                     leakignore.insert(name);
                 else if (strcmp(functionnode->Name(), "arg") == 0 && functionnode->Attribute("nr") != nullptr) {
-                    const int nr = atoi(functionnode->Attribute("nr"));
+                    const bool bAnyArg = strcmp(functionnode->Attribute("nr"),"any")==0;
+                    const int nr = (bAnyArg) ? -1 : atoi(functionnode->Attribute("nr"));
                     bool notbool = false;
                     bool notnull = false;
                     bool notuninit = false;
@@ -194,6 +216,19 @@ bool Library::load(const tinyxml2::XMLDocument &doc)
             }
         }
 
+        else if (strcmp(node->Name(), "reflection") == 0) {
+            for (const tinyxml2::XMLElement *reflectionnode = node->FirstChildElement(); reflectionnode; reflectionnode = reflectionnode->NextSiblingElement()) {
+                if (strcmp(reflectionnode->Name(), "call") != 0)
+                    return false;
+
+                const char * const argString = reflectionnode->Attribute("arg");
+                if (!argString)
+                    return false;
+
+                _reflection[reflectionnode->GetText()] = atoi(argString);
+            }
+        }
+
         else if (strcmp(node->Name(), "markup") == 0) {
             const char * const extension = node->Attribute("ext");
             if (!extension)
@@ -241,19 +276,6 @@ bool Library::load(const tinyxml2::XMLDocument &doc)
                             _importers[extension].insert(librarynode->GetText());
                         else
                             return false;
-                    }
-                }
-
-                else if (strcmp(markupnode->Name(), "reflection") == 0) {
-                    for (const tinyxml2::XMLElement *reflectionnode = markupnode->FirstChildElement(); reflectionnode; reflectionnode = reflectionnode->NextSiblingElement()) {
-                        if (strcmp(reflectionnode->Name(), "call") != 0)
-                            return false;
-
-                        const char * const argString = reflectionnode->Attribute("arg");
-                        if (!argString)
-                            return false;
-
-                        _reflection[extension][reflectionnode->GetText()] = atoi(argString);
                     }
                 }
 
@@ -309,4 +331,19 @@ bool Library::isargvalid(const std::string &functionName, int argnr, const MathL
             return true;
     }
     return false;
+}
+
+const Library::ArgumentChecks * Library::getarg(const std::string &functionName, int argnr) const
+{
+    std::map<std::string, std::map<int, ArgumentChecks> >::const_iterator it1;
+    it1 = argumentChecks.find(functionName);
+    if (it1 == argumentChecks.end())
+        return nullptr;
+    const std::map<int,ArgumentChecks>::const_iterator it2 = it1->second.find(argnr);
+    if (it2 != it1->second.end())
+        return &it2->second;
+    const std::map<int,ArgumentChecks>::const_iterator it3 = it1->second.find(-1);
+    if (it3 != it1->second.end())
+        return &it3->second;
+    return nullptr;
 }

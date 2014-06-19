@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -74,10 +74,7 @@ void Check64BitPortability::pointerassignment()
                         type = INT;
                     else if (type == PTR && Token::Match(tok2, "- %var%") && isaddr(tok2->next()->variable()))
                         type = PTRDIFF;
-                    else if (Token::Match(tok2, "(")) {
-                        type = NO;
-                        break;
-                    } else if (tok2->str() == "(") {
+                    else if (tok2->str() == "(") {
                         // TODO: handle parentheses
                         type = NO;
                         break;

@@ -143,6 +143,9 @@
     <ClCompile Include="checkclasssecurity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="checkintegers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="checkbufferoverrun.h">
@@ -284,6 +287,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="checkclasssecurity.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="checkintegers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -122,9 +122,9 @@ public:
     void getErrorMessages();
 
     /**
-     * Deprecated
+     * @brief Analyse file - It's public so unit tests can be written
      */
-    //void analyseFile(std::istream &f, const std::string &filename);
+    void analyseFile(std::istream &f, const std::string &filename);
 
     void tooManyConfigsError(const std::string &file, const std::size_t numberOfConfigurations);
 
@@ -194,7 +194,6 @@ private:
      */
     virtual void reportInfo(const ErrorLogger::ErrorMessage &msg);
 
-    CheckUnusedFunctions _checkUnusedFunctions;
     ErrorLogger &_errorLogger;
 
     /** @brief Current preprocessor configuration */

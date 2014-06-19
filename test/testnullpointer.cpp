@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,9 +29,11 @@ public:
     }
 
 private:
-
+    Settings settings;
 
     void run() {
+        LOAD_LIB_2(settings.library, "std.cfg");
+
         TEST_CASE(nullpointerAfterLoop);
         TEST_CASE(nullpointer1);
         TEST_CASE(nullpointer2);
@@ -56,6 +58,9 @@ private:
         TEST_CASE(nullpointer21); // #4038 (fp: if (x) p=q; else return;)
         TEST_CASE(nullpointer23); // #4665 (false positive)
         TEST_CASE(nullpointer24); // #5082 fp: chained assignment
+        TEST_CASE(nullpointer25); // #5061
+        TEST_CASE(nullpointer26); // #3589
+        TEST_CASE(nullpointerSwitch); // #2626
         TEST_CASE(nullpointer_cast); // #4692
         TEST_CASE(nullpointer_castToVoid); // #3771
         TEST_CASE(pointerCheckAndDeRef);     // check if pointer is null and then dereference it
@@ -77,21 +82,25 @@ private:
         TEST_CASE(crash1);
         TEST_CASE(functioncallDefaultArguments);
         TEST_CASE(nullpointer_internal_error); // #5080
+        TEST_CASE(nullpointerFputc);     //  #5645 FP: Null pointer dereference in fputc argument
+        TEST_CASE(nullpointerMemchr);
+        TEST_CASE(nullpointerPutchar);
 
         // Test that std.cfg is configured correctly
         TEST_CASE(stdcfg);
+
+        // Load posix library file
+        LOAD_LIB_2(settings.library, "posix.cfg");
+        // Test that posix.cfg is configured correctly
+        TEST_CASE(posixcfg);
     }
 
     void check(const char code[], bool inconclusive = false, const char filename[] = "test.cpp", bool verify=true) {
         // Clear the error buffer..
         errout.str("");
 
-        Settings settings;
         settings.addEnabled("warning");
         settings.inconclusive = inconclusive;
-        _lib = Library();
-        LOAD_LIB("std.cfg");
-        settings.library = _lib;
 
         // Tokenize..
         Tokenizer tokenizer(&settings, this);
@@ -1283,6 +1292,49 @@ private:
         ASSERT_EQUALS("", errout.str());
     }
 
+    void nullpointer25() { // #5061
+        check("void f(int *data, int i)\n"
+              "{\n"
+              "    int *array = NULL;\n"
+              "    if (data == 1 && array[i] == 0)\n"
+              "        std::cout << \"test\";\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:4]: (error) Possible null pointer dereference: array\n", errout.str());
+    }
+
+    void nullpointer26() { // #3589
+        check("double foo() {\n"
+              "    sk *t1 = foo();\n"
+              "    sk *t2 = foo();\n"
+              "    if ((!t1) && (!t2))\n"
+              "        return 0.0;\n"
+              "    if (t1 && (!t2))\n"
+              "        return t1->Inter();\n"
+              "    if (t2->GetT() == t)\n"
+              "        return t2->Inter();\n"
+              "    if (t2 && (!t1))\n"
+              "        return 0.0;\n"
+              "    return 0;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+    }
+
+    void nullpointerSwitch() { // #2626
+        check("char *f(int x) {\n"
+              "    char *p = do_something();\n"
+              "    switch (x) {\n"
+              "      case 1:\n"
+              "        p = 0;\n"
+              "      case 2:\n"
+              "        *p = 0;\n"
+              "        break;\n"
+              "    }\n"
+              "    return p;\n"
+              "}", true, "test.cpp", false);
+        ASSERT_EQUALS("[test.cpp:7]: (error) Possible null pointer dereference: p\n"
+                      "[test.cpp:7]: (error) Null pointer dereference\n", errout.str());
+    }
+
     void nullpointer_cast() { // #4692
         check("char *nasm_skip_spaces(const char *p) {\n"
               "    if (p)\n"
@@ -1379,7 +1431,7 @@ private:
             ASSERT_EQUALS("", errout.str());
 
             check(code, true);
-            ASSERT_EQUALS("[test.cpp:5] -> [test.cpp:2]: (warning, inconclusive) Possible null pointer dereference: p - otherwise it is redundant to check it against null.\n", errout.str());
+            ASSERT_EQUALS("", errout.str());
         }
 
         check("void foo(char *p) {\n"
@@ -1682,6 +1734,12 @@ private:
               "    return q ? p->x : 0;\n"
               "}");
         ASSERT_EQUALS("[test.cpp:3] -> [test.cpp:2]: (warning) Possible null pointer dereference: p - otherwise it is redundant to check it against null.\n", errout.str());
+
+        check("int f(ABC *p) {\n" // FP : return &&
+              "    if (!p) {}\n"
+              "    return p && p->x;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
     }
 
     // Test CheckNullPointer::nullConstantDereference
@@ -2023,8 +2081,7 @@ private:
 
     void nullpointerStdStream() {
         // TODO: Refactor these tests and re-enable them
-        return;
-
+#if 0
         check("void f(std::ifstream& is) {\n"
               "    char* p = 0;\n"
               "    is >> p;\n"
@@ -2078,6 +2135,10 @@ private:
               "    std::cout << i;\n" // Its no char* (#4240)
               "}", true);
         ASSERT_EQUALS("", errout.str());
+#else
+        return;
+#endif
+
     }
 
     void functioncall() {    // #3443 - function calls
@@ -2171,8 +2232,8 @@ private:
     }
 
     void functioncalllibrary() {
-        Settings settings;
-        Tokenizer tokenizer(&settings,this);
+        Settings settings1;
+        Tokenizer tokenizer(&settings1,this);
         std::istringstream code("void f() { int a,b; x(a,b); }");
         tokenizer.tokenize(code,"test.c");
         const Token *xtok = Token::findsimplematch(tokenizer.tokens(), "x");
@@ -2374,9 +2435,9 @@ private:
 
 
     void crash1() {
-        check("int f() {\n"
-              "    return if\n"
-              "}");
+        ASSERT_THROW(check("int f() {\n"
+                           "    return if\n"
+                           "}"), InternalError);
     }
 
     void nullpointer_internal_error() { // ticket #5080
@@ -2396,46 +2457,169 @@ private:
         const char errpq[] = "[test.cpp:1] -> [test.cpp:1]: (warning) Possible null pointer dereference: p - otherwise it is redundant to check it against null.\n"
                              "[test.cpp:1] -> [test.cpp:1]: (warning) Possible null pointer dereference: q - otherwise it is redundant to check it against null.\n";
 
-        // str..
-        check("void f(char*p){ strchr (p,c);if(!p){}}");
+        check("void f(FILE *p){ clearerr (p);if(!p){}}");
         ASSERT_EQUALS(errp,errout.str());
 
-        check("void f(char*p){ strdup (p);if(!p){}}");
+        check("void f(FILE *p){ feof (p);if(!p){}}");
         ASSERT_EQUALS(errp,errout.str());
 
-        check("void f(char*p){ strlen (p);if(!p){}}");
+        check("void f(FILE *p){ fgetc (p);if(!p){}}");
         ASSERT_EQUALS(errp,errout.str());
 
-        check("void f(char*p,char*q){ strcpy (p,q);if(!p||!q){}}");
+        check("void f(FILE *p){ fclose (p);if(!p){}}");
+        ASSERT_EQUALS(errp,errout.str());
+
+        check("void f(FILE *p){ ferror (p);if(!p){}}");
+        ASSERT_EQUALS(errp,errout.str());
+
+        check("void f(FILE *p){ ftell (p);if(!p){}}");
+        ASSERT_EQUALS(errp,errout.str());
+
+        check("void f(char *p){ puts (p);if(!p){}}");
+        ASSERT_EQUALS(errp,errout.str());
+
+        check("void f(char * p,char * q){ fopen (p,q);if(!p||!q){}}");
         ASSERT_EQUALS(errpq,errout.str());
 
-        check("void f(char*p,char*q){ strcat (p,q);if(!p||!q){}}");
+        check("void f(char * p,FILE * q){ fputc (*p,q);if(!p||!q){}}");
         ASSERT_EQUALS(errpq,errout.str());
 
-        check("void f(char*p,char*q){ strcmp (p,q);if(!p||!q){}}");
+        check("void f(char * p,FILE * q){ fputs (p,q);if(!p||!q){}}");
         ASSERT_EQUALS(errpq,errout.str());
 
-        check("void f(char*p,char*q){ strncpy (p,q,1);if(!p||!q){}}");
+        check("void f(FILE * p,fpos_t * q){ fgetpos (p,q);if(!p||!q){}}");
         ASSERT_EQUALS(errpq,errout.str());
 
-        check("void f(char*p,char*q){ strncat (p,q,1);if(!p||!q){}}");
+        check("void f(FILE * p,fpos_t * q){ fsetpos (p,q);if(!p||!q){}}");
         ASSERT_EQUALS(errpq,errout.str());
 
-        check("void f(char*p,char*q){ strncmp (p,q,1);if(!p||!q){}}");
+        check("void f(char * p){ strchr (p,c);if(!p){}}");
+        ASSERT_EQUALS(errp,errout.str());
+
+        check("void f(char * p){ putchar (*p);if(!p){}}");
+        ASSERT_EQUALS(errp,errout.str());
+
+        check("void f(char * p){ strdup (p);if(!p){}}");
+        ASSERT_EQUALS(errp,errout.str());
+
+        check("void f(char * p){ strlen (p);if(!p){}}");
+        ASSERT_EQUALS(errp,errout.str());
+
+        check("void f(char * p,char * q){ strcpy (p,q);if(!p||!q){}}");
         ASSERT_EQUALS(errpq,errout.str());
 
-        check("void f(char*p,char*q){ strstr (p,q);if(!p||!q){}}");
+        check("void f(char * p,char * q){ strspn (p,q);if(!p||!q){}}");
+        ASSERT_EQUALS(errpq,errout.str());
+
+        check("void f(char * p,char * q){ strcspn (p,q);if(!p||!q){}}");
+        ASSERT_EQUALS(errpq,errout.str());
+
+        check("void f(char * p,char * q){ strcoll (p,q);if(!p||!q){}}");
+        ASSERT_EQUALS(errpq,errout.str());
+
+        check("void f(char * p,char * q){ strcat (p,q);if(!p||!q){}}");
+        ASSERT_EQUALS(errpq,errout.str());
+
+        check("void f(char * p,char * q){ strcmp (p,q);if(!p||!q){}}");
+        ASSERT_EQUALS(errpq,errout.str());
+
+        check("void f(char * p,char * q){ strncpy (p,q,1);if(!p||!q){}}");
+        ASSERT_EQUALS(errpq,errout.str());
+
+        check("void f(char * p,char * q){ strncat (p,q,1);if(!p||!q){}}");
+        ASSERT_EQUALS(errpq,errout.str());
+
+        check("void f(char * p,char * q){ strncmp (p,q,1);if(!p||!q){}}");
+        ASSERT_EQUALS(errpq,errout.str());
+
+        check("void f(char * p,char * q){ strstr (p,q);if(!p||!q){}}");
         ASSERT_EQUALS(errpq,errout.str());
 
         // strtol etc
-        check("void f(char*p,char*q){ strtoul (p,q,0);if(!p){}}");
+        check("void f(char * p,char * q){ strtoul (p,q,0);if(!p){}}");
         ASSERT_EQUALS(errp,errout.str());
 
-        check("void f(char*p,char*q){ strtoull (p,q,0);if(!p){}}");
+        check("void f(char * p,char * q){ strtoull (p,q,0);if(!p){}}");
         ASSERT_EQUALS(errp,errout.str());
 
-        check("void f(char*p,char*q){ strtol (p,q,0);if(!p){}}");
+        check("void f(char * p,char * q){ strtol (p,q,0);if(!p){}}");
         ASSERT_EQUALS(errp,errout.str());
+    }
+
+    void nullpointerFputc() {
+        check("int main () {\n"
+              "FILE *fp = fopen(\"file.txt\", \"w+\");\n"
+              "fputc(000, fp);   \n"
+              "fclose(fp);\n"
+              "return 0 ;\n"
+              "}\n");
+        ASSERT_EQUALS("", errout.str());
+
+        check("int main () {\n"
+              "FILE *fp = fopen(\"file.txt\", \"w+\");\n"
+              "char *nullstring=0;"
+              "fputc(*nullstring, fp);   \n"
+              "fclose(fp);\n"
+              "return 0 ;\n"
+              "}\n");
+        ASSERT_EQUALS("[test.cpp:3]: (error) Possible null pointer dereference: nullstring\n", errout.str());
+    }
+
+    void nullpointerMemchr() {
+        check("void f (char *p, char *s) {\n"
+              "  p = memchr (s, 'p', strlen(s));\n"
+              "}\n");
+        ASSERT_EQUALS("", errout.str());
+
+        check("void f (char *p, char *s) {\n"
+              "  p = memchr (s, 0, strlen(s));\n"
+              "}\n");
+        ASSERT_EQUALS("", errout.str());
+
+        check("void f (char *p) {\n"
+              "  char *s = 0;\n"
+              "  p = memchr (s, 0, strlen(s));\n"
+              "}\n");
+        ASSERT_EQUALS("[test.cpp:3]: (error) Possible null pointer dereference: s\n", errout.str());
+    }
+
+    void nullpointerPutchar() {
+        check("void f (char *c) {\n"
+              "  putchar(c);\n"
+              "}\n");
+        ASSERT_EQUALS("", errout.str());
+
+        check("void f () {\n"
+              "  putchar(0);\n"
+              "}\n");
+        ASSERT_EQUALS("", errout.str());
+
+        check("void f () {\n"
+              "  putchar(*0);\n"
+              "}\n");
+        ASSERT_EQUALS("[test.cpp:2]: (error) Null pointer dereference\n", errout.str());
+    }
+
+    void posixcfg() {
+        const char errp[] = "[test.cpp:1] -> [test.cpp:1]: (warning) Possible null pointer dereference: p - otherwise it is redundant to check it against null.\n";
+
+        check("void f(FILE *p){ isatty (*p);if(!p){}}");
+        ASSERT_EQUALS(errp,errout.str());
+
+        check("void f(){ isatty (0);}");
+        ASSERT_EQUALS("",errout.str());
+
+        check("void f(char *p){ mkdir (p, 0);}");
+        ASSERT_EQUALS("",errout.str());
+
+        check("void f(char *p){ int i = 0; mkdir (p, i);}");
+        ASSERT_EQUALS("",errout.str());
+
+        check("void f(){ getcwd (0, 0);}");
+        ASSERT_EQUALS("",errout.str());
+
+        check("void f(char *p){ mkdir (p, *0);}");
+        ASSERT_EQUALS("[test.cpp:1]: (error) Null pointer dereference\n",errout.str());
     }
 };
 

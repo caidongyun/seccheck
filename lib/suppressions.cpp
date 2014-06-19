@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -169,7 +169,7 @@ std::string Suppressions::FileMatcher::addFile(const std::string &name, unsigned
     } else if (name.empty()) {
         _globs["*"][0U] = false;
     } else {
-        _files[Path::simplifyPath(name.c_str())][line] = false;
+        _files[Path::simplifyPath(name)][line] = false;
     }
     return "";
 }

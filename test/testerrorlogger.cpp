@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,6 +46,7 @@ private:
         TEST_CASE(ToVerboseXmlLocations);
         TEST_CASE(ToXmlV2);
         TEST_CASE(ToXmlV2Locations);
+        TEST_CASE(ToXmlV2Encoding);
 
         // Inconclusive results in xml reports..
         TEST_CASE(InconclusiveXml);
@@ -212,6 +213,13 @@ private:
         message += " msg=\"Programming error.\" verbose=\"Verbose error\">\n";
         message += "            <location file=\"bar.cpp\" line=\"8\"/>\n";
         message += "            <location file=\"foo.cpp\" line=\"5\"/>\n        </error>";
+        ASSERT_EQUALS(message, msg.toXML(false, 2));
+    }
+
+    void ToXmlV2Encoding() const {
+        std::list<ErrorLogger::ErrorMessage::FileLocation> locs;
+        ErrorMessage msg(locs, Severity::error, "Programming error.\nComparing \"\203\" with \"\003\"", "errorId", false);
+        const std::string message("        <error id=\"errorId\" severity=\"error\" msg=\"Programming error.\" verbose=\"Comparing &quot;\\203&quot; with &quot;\\003&quot;\"/>");
         ASSERT_EQUALS(message, msg.toXML(false, 2));
     }
 

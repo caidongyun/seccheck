@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -135,15 +135,17 @@ void TestFixture::assertEquals(const char *filename, unsigned int linenr, const 
                    << writestr(actual, true)
                    << '.'
                    << std::endl;
+            if (!msg.empty())
+                errmsg << msg << std::endl;
         } else {
             errmsg << "Assertion failed in " << filename << " at line " << linenr << std::endl
                    << "Expected:" << std::endl
                    << writestr(expected) << std::endl
                    << "Actual:" << std::endl
-                   << writestr(actual) << std::endl << "_____" << std::endl;
-        }
-        if (!msg.empty()) {
-            errmsg << msg << std::endl;
+                   << writestr(actual) << std::endl;
+            if (!msg.empty())
+                errmsg << "Hint:" << std::endl << msg << std::endl;
+            errmsg << "_____" << std::endl;
         }
     }
 }

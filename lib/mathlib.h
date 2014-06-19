@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #define mathlibH
 //---------------------------------------------------------------------------
 
+#include <cstdlib>
 #include <string>
 #include <sstream>
 #include "config.h"
@@ -33,30 +34,28 @@
 class CPPCHECKLIB MathLib {
 public:
     typedef long long bigint;
+    typedef unsigned long long biguint;
 
-	/*
-	* string to long long number
-	*/
     static bigint toLongNumber(const std::string & str);
+    static biguint toULongNumber(const std::string & str);
 
     template<class T> static std::string toString(T value) {
         std::ostringstream result;
         result << value;
         return result.str();
     }
-
-	/*
-	* string to double number
-	*/
     static double toDoubleNumber(const std::string & str);
 
     static bool isInt(const std::string & str);
     static bool isFloat(const std::string &str);
     static bool isNegative(const std::string &str);
     static bool isPositive(const std::string &str);
+    static bool isDec(const std::string & str);
     static bool isHex(const std::string& str);
     static bool isOct(const std::string& str);
     static bool isBin(const std::string& str);
+
+    static bool isValidSuffix(std::string::const_iterator it, std::string::const_iterator end);
 
     static std::string add(const std::string & first, const std::string & second);
     static std::string subtract(const std::string & first, const std::string & second);

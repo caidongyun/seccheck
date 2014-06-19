@@ -117,7 +117,7 @@ def removeLargeFiles(path):
             removeLargeFiles(g + '/')
         elif os.path.isfile(g) and g[-4:] != '.txt':
             statinfo = os.stat(g)
-            if statinfo.st_size > 100000:
+            if path.find('/clang/INPUTS/') > 0 or statinfo.st_size > 100000:
                 os.remove(g)
 
 
@@ -144,7 +144,7 @@ def scanarchive(filepath):
     elif filename[-4:] == '.bz2':
         subprocess.call(['tar', 'xjvf', filename])
 
-    if filename[:5] == 'flite' or filename[:5] == 'boost' or filename[:6] == 'iceowl':
+    if filename[:5] == 'flite' or filename[:5] == 'boost' or filename[:6] == 'iceowl' or filename[:7] == 'insight':
         results = open('results.txt', 'at')
         results.write('fixme: skipped package to avoid hang\n')
         results.close()
