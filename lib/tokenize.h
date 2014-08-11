@@ -48,14 +48,15 @@ public:
         m_timerResults = tr;
     }
 
-    /** @return the source file path. e.g. "file.cpp" */
-    const std::string& getSourceFilePath() const;
-
     /** Is the code C. Used for bailouts */
-    bool isC() const;
+    bool isC() const {
+        return list.isC();
+    }
 
     /** Is the code CPP. Used for bailouts */
-    bool isCPP() const;
+    bool isCPP() const {
+        return list.isCPP();
+    }
 
     /**
      * Check if inner scope ends with a call to a noreturn function
@@ -84,12 +85,13 @@ public:
      *
      * @param FileName The filename
      * @param configuration E.g. "A" for code where "#ifdef A" is true
+     * @param noSymbolDB_AST Disable creation of SymbolDatabase and AST
      * @return false if source code contains syntax errors
      */
     bool tokenize(std::istream &code,
                   const char FileName[],
-                  const std::string &configuration = "");
-
+                  const std::string &configuration = emptyString,
+                  bool noSymbolDB_AST = false);
     /**
      * tokenize condition and run simple simplifications on it
      * @param code code
@@ -257,6 +259,14 @@ public:
     void simplifyCompoundAssignment();
 
     /**
+     * Simplify the location of "static" and "const" qualifiers in
+     * a variable declaration or definition.
+     * Example: "int static const a;" => "static const a;"
+     * Example: "long long const static b;" => "static const long long b;"
+     */
+    void simplifyStaticConst();
+
+    /**
      * Simplify assignments in "if" and "while" conditions
      * Example: "if(a=b);" => "a=b;if(a);"
      * Example: "while(a=b) { f(a); }" => "a = b; while(a){ f(a); a = b; }"
@@ -383,11 +393,6 @@ public:
 
     /** Simplify "if else" */
     void elseif();
-
-    /**
-     * Simplify the operator "?:"
-     */
-    void simplifyConditionOperator();
 
     /** Simplify conditions
      * @return true if something is modified
@@ -714,6 +719,8 @@ public:
 
     void printDebugOutput() const;
 
+    void dump(std::ostream &out) const;
+
     Token *deleteInvalidTypedef(Token *typeDef);
 
     /**
@@ -796,11 +803,14 @@ private:
         return const_cast<Token*>(startOfExecutableScope(const_cast<const Token *>(tok)));
     }
 
+    /** Set pod types */
+    void setPodTypes();
+
     /** settings */
     const Settings * _settings;
 
     /** errorlogger */
-    ErrorLogger * const _errorLogger;
+    ErrorLogger* const _errorLogger;
 
     /** Symbol database that all checks etc can use */
     SymbolDatabase *_symbolDatabase;

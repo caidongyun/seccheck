@@ -152,11 +152,11 @@ def scanarchive(filepath):
 
     removeLargeFiles('')
 
-    print('seccheck ' + filename)
+    print('cppcheck ' + filename)
 
     p = subprocess.Popen(
         ['nice',
-         '../seccheck-O2',
+         '../cppcheck-O2',
          '-D__GCC__',
          '--enable=style',
          '--error-exitcode=0',
@@ -169,7 +169,7 @@ def scanarchive(filepath):
     results = open('results.txt', 'at')
     if p.returncode == 0:
         results.write(comm[1])
-    elif comm[0].find('seccheck: error: could not find or open any of the paths given.') < 0:
+    elif comm[0].find('cppcheck: error: could not find or open any of the paths given.') < 0:
         results.write('Exit code is not zero! Crash?\n')
     results.write('\n')
     results.close()

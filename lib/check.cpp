@@ -16,32 +16,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TestUtilsH
-#define TestUtilsH
+//---------------------------------------------------------------------------
+// 64-bit portability
+//---------------------------------------------------------------------------
 
-#include "settings.h"
-#include "tokenize.h"
+#include "check.h"
 
-class Token;
+#include <iostream>
 
-class givenACodeSampleToTokenize {
-private:
-    Settings _settings;
-    Tokenizer _tokenizer;
+//---------------------------------------------------------------------------
 
-public:
-    givenACodeSampleToTokenize(const char sample[], bool createOnly = false, bool cpp = true)
-        : _tokenizer(&_settings, 0) {
-        std::istringstream iss(sample);
-        if (createOnly)
-            _tokenizer.list.createTokens(iss, cpp ? "test.cpp" : "test.c");
-        else
-            _tokenizer.tokenize(iss, cpp ? "test.cpp" : "test.c");
+Check::Check(const std::string &aname)
+    : _tokenizer(0), _settings(0), _errorLogger(0), _name(aname)
+{
+    for (std::list<Check*>::iterator i = instances().begin(); i != instances().end(); ++i) {
+        if ((*i)->name() > aname) {
+            instances().insert(i, this);
+            return;
+        }
     }
+    instances().push_back(this);
+}
 
-    const Token* tokens() const {
-        return _tokenizer.tokens();
-    }
-};
-
-#endif // TestUtilsH
+void Check::reportError(const ErrorLogger::ErrorMessage &errmsg)
+{
+    std::cout << errmsg.toXML(true, 1) << std::endl;
+}

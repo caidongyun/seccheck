@@ -25,7 +25,11 @@
 
 Settings::Settings()
     : _terminate(false),
-      debug(false), debugwarnings(false), debugFalsePositive(false), exceptionHandling(false),
+      debug(false),
+      debugwarnings(false),
+      debugFalsePositive(false),
+      dump(false),
+      exceptionHandling(false),
       inconclusive(false), experimental(false),
       _errorsOnly(false),
       _inlineSuppressions(false),
@@ -84,7 +88,7 @@ std::string Settings::addEnabled(const std::string &str)
         id.insert("information");
         id.insert("missingInclude");
         id.insert("unusedFunction");
-#ifndef NDEBUG
+#ifdef CHECK_INTERNAL
         id.insert("internal");
 #endif
     }

@@ -218,13 +218,11 @@ void CheckBool::checkComparisonOfFuncReturningBool()
         for (const Token* tok = scope->classStart->next(); tok != scope->classEnd; tok = tok->next()) {
             if (tok->type() != Token::eComparisonOp || tok->str() == "==" || tok->str() == "!=")
                 continue;
-            const Token *first_token;
-            bool first_token_func_of_type_bool = false;
+            const Token *first_token = tok->previous();
             if (tok->strAt(-1) == ")") {
-                first_token = tok->previous()->link()->previous();
-            } else {
-                first_token = tok->previous();
+                first_token = first_token->link()->previous();
             }
+            bool first_token_func_of_type_bool = false;
             if (Token::Match(first_token, "%var% (") && !Token::Match(first_token->previous(), "::|.")) {
                 const Function* func = first_token->function();
                 if (func && func->tokenDef && func->tokenDef->strAt(-1) == "bool") {
@@ -233,10 +231,10 @@ void CheckBool::checkComparisonOfFuncReturningBool()
             }
 
             Token *second_token = tok->next();
-            bool second_token_func_of_type_bool = false;
             while (second_token->str()=="!") {
                 second_token = second_token->next();
             }
+            bool second_token_func_of_type_bool = false;
             if (Token::Match(second_token, "%var% (") && !Token::Match(second_token->previous(), "::|.")) {
                 const Function* func = second_token->function();
                 if (func && func->tokenDef && func->tokenDef->strAt(-1) == "bool") {
@@ -299,7 +297,6 @@ void CheckBool::checkComparisonOfBoolWithBool()
             if (tok->type() != Token::eComparisonOp || tok->str() == "==" || tok->str() == "!=")
                 continue;
             bool first_token_bool = false;
-            bool second_token_bool = false;
 
             const Token *first_token = tok->previous();
             if (first_token->varId()) {
@@ -307,13 +304,17 @@ void CheckBool::checkComparisonOfBoolWithBool()
                     first_token_bool = true;
                 }
             }
+            if (!first_token_bool)
+                continue;
+
+            bool second_token_bool = false;
             const Token *second_token = tok->next();
             if (second_token->varId()) {
                 if (isBool(second_token->variable())) {
                     second_token_bool = true;
                 }
             }
-            if ((first_token_bool == true) && (second_token_bool == true)) {
+            if (second_token_bool) {
                 comparisonOfBoolWithBoolError(first_token->next(), first_token->str());
             }
         }
@@ -374,7 +375,7 @@ void CheckBool::checkComparisonOfBoolExpressionWithInt()
                 continue;
 
             // Skip template parameters
-            if (tok->str() == "<" && tok->link()) {
+            if (tok->link() && tok->str() == "<") {
                 tok = tok->link();
                 continue;
             }
@@ -394,11 +395,11 @@ void CheckBool::checkComparisonOfBoolExpressionWithInt()
                 continue;
             }
 
-            if (Token::Match(boolExpr,"%bool%"))
-                // The CheckBool::checkComparisonOfBoolWithInt warns about this.
+            if (!numTok || !boolExpr)
                 continue;
 
-            if (!numTok || !boolExpr)
+            if (Token::Match(boolExpr,"%bool%"))
+                // The CheckBool::checkComparisonOfBoolWithInt warns about this.
                 continue;
 
             if (boolExpr->isOp() && numTok->isName() && Token::Match(tok, "==|!="))
@@ -471,4 +472,30 @@ void CheckBool::pointerArithBoolError(const Token *tok)
                 "pointerArithBool",
                 "Converting pointer arithmetic result to bool. The bool is always true unless there is undefined behaviour.\n"
                 "Converting pointer arithmetic result to bool. The boolean result is always true unless there is pointer arithmetic overflow, and overflow is undefined behaviour. Probably a dereference is forgotten.");
+}
+
+void CheckBool::checkAssignBoolToFloat()
+{
+    if (!_tokenizer->isCPP())
+        return;
+    if (!_settings->isEnabled("style"))
+        return;
+    const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
+    const std::size_t functions = symbolDatabase->functionScopes.size();
+    for (std::size_t i = 0; i < functions; ++i) {
+        const Scope * scope = symbolDatabase->functionScopes[i];
+        for (const Token* tok = scope->classStart; tok != scope->classEnd; tok = tok->next()) {
+            if (Token::Match(tok, "%var% =")) {
+                const Variable * const var = symbolDatabase->getVariableFromVarId(tok->varId());
+                if (var && var->isFloatingType() && astIsBool(tok->next()->astOperand2()))
+                    assignBoolToFloatError(tok->next());
+            }
+        }
+    }
+}
+
+void CheckBool::assignBoolToFloatError(const Token *tok)
+{
+    reportError(tok, Severity::style, "assignBoolToFloat",
+                "Boolean value assigned to floating point variable.");
 }

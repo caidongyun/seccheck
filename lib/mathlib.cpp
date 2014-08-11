@@ -64,7 +64,13 @@ MathLib::biguint MathLib::toULongNumber(const std::string & str)
     }
 
     if (isFloat(str)) {
-        return static_cast<biguint>(std::atof(str.c_str()));
+        // Things are going to be less precise now: the value can't b represented in the biguint type.
+        // Use min/max values as an approximation. See #5843
+        const double doubleval = std::atof(str.c_str());
+        if (doubleval > (double)std::numeric_limits<biguint>::max())
+            return std::numeric_limits<biguint>::max();
+        else
+            return static_cast<biguint>(doubleval);
     }
 
     biguint ret = 0;
@@ -112,7 +118,15 @@ MathLib::bigint MathLib::toLongNumber(const std::string & str)
     }
 
     if (isFloat(str)) {
-        return static_cast<bigint>(std::atof(str.c_str()));
+        // Things are going to be less precise now: the value can't be represented in the bigint type.
+        // Use min/max values as an approximation. See #5843
+        const double doubleval = std::atof(str.c_str());
+        if (doubleval > (double)std::numeric_limits<bigint>::max())
+            return std::numeric_limits<bigint>::max();
+        else if (doubleval < (double)std::numeric_limits<bigint>::min())
+            return std::numeric_limits<bigint>::min();
+        else
+            return static_cast<bigint>(doubleval);
     }
 
     bigint ret = 0;
@@ -525,6 +539,16 @@ std::string MathLib::subtract(const std::string &first, const std::string &secon
     return toString(d1 - d2);
 }
 
+std::string MathLib::incdec(const std::string & var, const std::string & op)
+{
+    if (op == "++")
+        return MathLib::add(var, "1");
+    else if (op == "--")
+        return MathLib::subtract(var, "1");
+
+    throw InternalError(0, std::string("Unexpected operation '") + op + "' in MathLib::incdec(). Please report this to Cppcheck developers.");
+}
+
 std::string MathLib::divide(const std::string &first, const std::string &second)
 {
     if (MathLib::isInt(first) && MathLib::isInt(second)) {
@@ -535,12 +559,12 @@ std::string MathLib::divide(const std::string &first, const std::string &second)
         if (b == 0)
             throw InternalError(0, "Internal Error: Division by zero");
         return toString(toLongNumber(first) / b);
-    } else if (second == "0.0") {
-        if (first=="0.0" || first=="+0.0")
+    } else if (isNullValue(second)) {
+        if (isNullValue(first))
             return "nan.0";
-        if (first=="-0.0")
-            return "-nan.0";
-        return (first[0] == '-') ? "-inf.0" : "inf.0";
+        const int sign_first = (isPositive(first)) ? 1 : -1;
+        const int sign_second = (isPositive(second)) ? 1 : -1;
+        return (sign_first*sign_second == 1) ? "inf.0" : "-inf.0";
     }
     return toString(toDoubleNumber(first) / toDoubleNumber(second));
 }

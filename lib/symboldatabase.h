@@ -24,7 +24,6 @@
 #include <string>
 #include <list>
 #include <vector>
-#include <deque>
 #include <set>
 #include <algorithm>
 
@@ -105,8 +104,10 @@ public:
     }
 
     const std::string& name() const {
-        static const std::string empty;
-        return classDef->next()->isName() ? classDef->strAt(1) : empty;
+        const Token* next = classDef->next();
+        if (next->isName())
+            return next->str();
+        return emptyString;
     }
 
     const Token *initBaseInfo(const Token *tok, const Token *tok1);
@@ -216,13 +217,11 @@ public:
      * @return name string
      */
     const std::string &name() const {
-        static const std::string noname;
-
         // name may not exist for function arguments
         if (_name)
             return _name->str();
 
-        return noname;
+        return emptyString;
     }
 
     /**
@@ -472,6 +471,23 @@ public:
         return isStlType() && std::binary_search(stlTypes, stlTypes + array_length, _start->strAt(2));
     }
 
+    /**
+    * Determine whether it's a floating number type
+    * @return true if the type is known and it's a floating type (float, double and long double)
+    */
+    bool isFloatingType() const {
+        return (typeStartToken()->str() == "float" || typeStartToken()->str() == "double") && !isArrayOrPointer() ;
+    }
+
+    /**
+     * Determine whether it's an integral number type
+     * @return true if the type is known and it's an integral type (bool, char, short, int, long long and their unsigned counter parts)
+     */
+    bool isIntegralType() const {
+        return typeStartToken()->str() == "bool" || typeStartToken()->str() == "char" || typeStartToken()->str() == "short" || typeStartToken()->str() == "int" || typeStartToken()->str() == "long";
+    }
+
+
 private:
     // only symbol database can change the type
     friend class SymbolDatabase;
@@ -638,7 +654,7 @@ public:
         const Scope *scope;
     };
 
-    enum ScopeType { eGlobal, eClass, eStruct, eUnion, eNamespace, eFunction, eIf, eElse, eElseIf, eFor, eWhile, eDo, eSwitch, eUnconditional, eTry, eCatch };
+    enum ScopeType { eGlobal, eClass, eStruct, eUnion, eNamespace, eFunction, eIf, eElse, eFor, eWhile, eDo, eSwitch, eUnconditional, eTry, eCatch };
 
     Scope(const SymbolDatabase *check_, const Token *classDef_, const Scope *nestedIn_);
     Scope(const SymbolDatabase *check_, const Token *classDef_, const Scope *nestedIn_, ScopeType type_, const Token *start_);
@@ -672,7 +688,7 @@ public:
     }
 
     bool isLocal() const {
-        return (type == eIf || type == eElse || type == eElseIf ||
+        return (type == eIf || type == eElse ||
                 type == eFor || type == eWhile || type == eDo ||
                 type == eSwitch || type == eUnconditional ||
                 type == eTry || type == eCatch);
@@ -823,12 +839,11 @@ public:
 
     void printOut(const char * title = NULL) const;
     void printVariable(const Variable *var, const char *indent) const;
+    void printXml(std::ostream &out) const;
 
     bool isCPP() const;
 
 private:
-
-    // Needed by Borland C++:
     friend class Scope;
 
     void addClassFunction(Scope **info, const Token **tok, const Token *argStart);

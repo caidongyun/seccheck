@@ -104,6 +104,8 @@ private:
         TEST_CASE(returnReference5);
         TEST_CASE(returnReference6);
         TEST_CASE(returnReference7);
+        TEST_CASE(returnReferenceLiteral);
+        TEST_CASE(returnReferenceCalculation);
 
         // global namespace
         TEST_CASE(testglobalnamespace);
@@ -515,6 +517,24 @@ private:
               "}");
         TODO_ASSERT_EQUALS("[test.cpp:3]: (error) Deallocation of an auto-variable results in undefined behaviour.\n", "", errout.str());
 
+        check("int main() {\n"
+              "   long *pKoeff[256];\n"
+              "   free (pKoeff);\n"
+              "}");
+        TODO_ASSERT_EQUALS("[test.cpp:3]: (error) Deallocation of an auto-variable results in undefined behaviour.\n", "", errout.str());
+
+        check("void foo() {\n"
+              "   const intPtr& intref = Getter();\n"
+              "   delete intref;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("void test() {\n"
+              "   MyObj& obj = *new MyObj;\n"
+              "   delete &obj;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
     }
 
     void testinvaliddealloc_C() {
@@ -825,6 +845,55 @@ private:
               "std::string a();\n"
               "std::string &b() {\n"
               "    return a(12);\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+    }
+
+    void returnReferenceLiteral() {
+        check("const std::string &a() {\n"
+              "    return \"foo\";\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:2]: (error) Reference to temporary returned.\n", errout.str());
+
+        check("const std::string a() {\n"
+              "    return \"foo\";\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+    }
+
+    void returnReferenceCalculation() {
+        check("const std::string &a(const std::string& str) {\n"
+              "    return \"foo\" + str;\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:2]: (error) Reference to temporary returned.\n", errout.str());
+
+        check("std::ostream& operator<<(std::ostream& out, const std::string& path) {\n"
+              "    return out << path;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("Unknown1& operator<<(Unknown1 out, Unknown2 path) {\n"
+              "    return out << path;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("int& a(int b) {\n"
+              "    return 2*(b+1);\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:2]: (error) Reference to temporary returned.\n", errout.str());
+
+        check("const std::string &a(const std::string& str) {\n"
+              "    return str;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("const std::string &a(int bar) {\n"
+              "    return foo(bar + 1);\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("const std::string a(const std::string& str) {\n"
+              "    return \"foo\" + str;\n"
               "}");
         ASSERT_EQUALS("", errout.str());
     }

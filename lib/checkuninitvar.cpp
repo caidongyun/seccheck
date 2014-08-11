@@ -65,9 +65,6 @@ private:
         return new UninitVar(*this);
     }
 
-    /** no implementation => compiler error if used */
-    void operator=(const UninitVar &);
-
     /** internal constructor for creating extra checks */
     UninitVar(Check *c, const Variable* v, const SymbolDatabase* db, const Library *lib, bool isc)
         : ExecutionPath(c, v->declarationId()), symbolDatabase(db), library(lib), isC(isc), var(v), alloc(false), strncpy_(false), memset_nonzero(false) {
@@ -278,7 +275,7 @@ private:
                         if (!Token::Match(c->var->typeStartToken(), "char|wchar_t")) {
                             continue;
                         }
-                        if (Token::Match(tok->next(), "[")) { // Check if it's not being accesed like: 'str[1]'
+                        if (Token::Match(tok->next(), "[")) { // Check if it's not being accessed like: 'str[1]'
                             continue;
                         }
                         checkUninitVar->uninitstringError(tok, c->var->name(), c->strncpy_);
@@ -1863,6 +1860,9 @@ bool CheckUninitVar::isMemberVariableAssignment(const Token *tok, const std::str
                 if (Token::Match(argStart, "const struct| %type% * const| %var% [,)]"))
                     return false;
             }
+
+            else if (Token::simpleMatch(ftok ? ftok->previous() : nullptr, "= * ("))
+                return false;
         }
         return true;
     }
@@ -1877,6 +1877,17 @@ bool CheckUninitVar::isMemberVariableUsage(const Token *tok, bool isPointer, boo
     if (Token::Match(tok, "%var% . %var%") && tok->strAt(2) == membervar)
         return true;
     else if (!isPointer && Token::Match(tok->previous(), "[(,] %var% [,)]") && isVariableUsage(tok, isPointer, alloc, _tokenizer->isCPP()))
+        return true;
+
+    else if (!isPointer && Token::Match(tok->previous(), "= %var% ;"))
+        return true;
+
+    // = *(&var);
+    else if (!isPointer &&
+             Token::simpleMatch(tok->astParent(),"&") &&
+             Token::simpleMatch(tok->astParent()->astParent(),"*") &&
+             Token::Match(tok->astParent()->astParent()->astParent(), "= * (| &") &&
+             tok->astParent()->astParent()->astParent()->astOperand2() == tok->astParent()->astParent())
         return true;
 
     else if (_settings->experimental &&

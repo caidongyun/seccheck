@@ -46,7 +46,9 @@ private:
         TEST_CASE(multiCompare2);                   // #3294 - false negative multi compare between "=" and "=="
         TEST_CASE(multiCompare3);                   // false positive for %or% on code using "|="
         TEST_CASE(multiCompare4);
+        TEST_CASE(multiCompare5);
         TEST_CASE(getStrLength);
+        TEST_CASE(getStrSize);
         TEST_CASE(strValue);
 
         TEST_CASE(deleteLast);
@@ -126,52 +128,52 @@ private:
         // Test for found
         Token one(0);
         one.str("one");
-        ASSERT_EQUALS(1, Token::multiCompare(&one, "one|two", "one"));
+        ASSERT_EQUALS(1, Token::multiCompare(&one, "one|two", 0));
 
         Token two(0);
         two.str("two");
-        ASSERT_EQUALS(1, Token::multiCompare(&two, "one|two", "two"));
-        ASSERT_EQUALS(1, Token::multiCompare(&two, "verybig|two|", "two"));
+        ASSERT_EQUALS(1, Token::multiCompare(&two, "one|two", 0));
+        ASSERT_EQUALS(1, Token::multiCompare(&two, "verybig|two|", 0));
 
         // Test for empty string found
         Token notfound(0);
         notfound.str("notfound");
-        ASSERT_EQUALS(0, Token::multiCompare(&notfound, "|one|two", "notfound"));
-        ASSERT_EQUALS(0, Token::multiCompare(&notfound, "one||two", "notfound"));
-        ASSERT_EQUALS(0, Token::multiCompare(&notfound, "one|two|", "notfound"));
+        ASSERT_EQUALS(0, Token::multiCompare(&notfound, "|one|two", 0));
+        ASSERT_EQUALS(0, Token::multiCompare(&notfound, "one||two", 0));
+        ASSERT_EQUALS(0, Token::multiCompare(&notfound, "one|two|", 0));
 
         // Test for not found
-        ASSERT_EQUALS(static_cast<unsigned int>(-1), static_cast<unsigned int>(Token::multiCompare(&notfound, "one|two", "notfound")));
+        ASSERT_EQUALS(static_cast<unsigned int>(-1), static_cast<unsigned int>(Token::multiCompare(&notfound, "one|two", 0)));
 
         Token s(0);
         s.str("s");
-        ASSERT_EQUALS(static_cast<unsigned int>(-1), static_cast<unsigned int>(Token::multiCompare(&s, "verybig|two", "s")));
+        ASSERT_EQUALS(static_cast<unsigned int>(-1), static_cast<unsigned int>(Token::multiCompare(&s, "verybig|two", 0)));
 
         Token ne(0);
         ne.str("ne");
-        ASSERT_EQUALS(static_cast<unsigned int>(-1), static_cast<unsigned int>(Token::multiCompare(&ne, "one|two", "ne")));
+        ASSERT_EQUALS(static_cast<unsigned int>(-1), static_cast<unsigned int>(Token::multiCompare(&ne, "one|two", 0)));
 
         Token a(0);
         a.str("a");
-        ASSERT_EQUALS(static_cast<unsigned int>(-1), static_cast<unsigned int>(Token::multiCompare(&a, "abc|def", "a")));
+        ASSERT_EQUALS(static_cast<unsigned int>(-1), static_cast<unsigned int>(Token::multiCompare(&a, "abc|def", 0)));
 
         Token abcd(0);
         abcd.str("abcd");
-        ASSERT_EQUALS(static_cast<unsigned int>(-1), static_cast<unsigned int>(Token::multiCompare(&abcd, "abc|def", "abcd")));
+        ASSERT_EQUALS(static_cast<unsigned int>(-1), static_cast<unsigned int>(Token::multiCompare(&abcd, "abc|def", 0)));
 
         Token def(0);
         def.str("default");
-        ASSERT_EQUALS(static_cast<unsigned int>(-1), static_cast<unsigned int>(Token::multiCompare(&def, "abc|def", "default")));
+        ASSERT_EQUALS(static_cast<unsigned int>(-1), static_cast<unsigned int>(Token::multiCompare(&def, "abc|def", 0)));
 
         // %op%
         Token plus(0);
         plus.str("+");
-        ASSERT_EQUALS(1, Token::multiCompare(&plus, "one|%op%", "+"));
-        ASSERT_EQUALS(1, Token::multiCompare(&plus, "%op%|two", "+"));
+        ASSERT_EQUALS(1, Token::multiCompare(&plus, "one|%op%", 0));
+        ASSERT_EQUALS(1, Token::multiCompare(&plus, "%op%|two", 0));
         Token x(0);
         x.str("x");
-        ASSERT_EQUALS(-1, Token::multiCompare(&x, "one|%op%", "x"));
-        ASSERT_EQUALS(-1, Token::multiCompare(&x, "%op%|two", "x"));
+        ASSERT_EQUALS(-1, Token::multiCompare(&x, "one|%op%", 0));
+        ASSERT_EQUALS(-1, Token::multiCompare(&x, "%op%|two", 0));
     }
 
     void multiCompare2() const { // #3294
@@ -197,8 +199,8 @@ private:
         ASSERT_EQUALS(false, Token::Match(toks3.tokens(), "return %var% xyz|%or% %var% ;"));
         ASSERT_EQUALS(false, Token::Match(toks3.tokens(), "return %var% %or%|xyz %var% ;"));
 
-        ASSERT_EQUALS(true, Token::Match(toks3.tokens(),  "return %var% xyz|%oror% %var% ;"));
-        ASSERT_EQUALS(true, Token::Match(toks3.tokens(),  "return %var% %oror%|xyz %var% ;"));
+        ASSERT_EQUALS(true, Token::Match(toks3.tokens(), "return %var% xyz|%oror% %var% ;"));
+        ASSERT_EQUALS(true, Token::Match(toks3.tokens(), "return %var% %oror%|xyz %var% ;"));
 
         givenACodeSampleToTokenize toks4("a % b ;", true);
         ASSERT_EQUALS(true, Token::Match(toks4.tokens(), "%var% >>|<<|&|%or%|^|% %var% ;"));
@@ -243,6 +245,12 @@ private:
         ASSERT_EQUALS(false, Token::Match(var.tokens(), "std :: queue %op%|x"));
     }
 
+    void multiCompare5() const {
+        Token tok(0);
+        tok.str("||");
+        ASSERT_EQUALS(true, Token::multiCompare(&tok, "+|%or%|%oror%", 0) >= 0);
+    }
+
     void getStrLength() const {
         Token tok(0);
 
@@ -257,6 +265,19 @@ private:
 
         tok.str("\"a\\0\"");
         ASSERT_EQUALS(1, (int)Token::getStrLength(&tok));
+    }
+
+    void getStrSize() const {
+        Token tok(0);
+
+        tok.str("\"abc\"");
+        ASSERT_EQUALS(sizeof("abc"), Token::getStrSize(&tok));
+
+        tok.str("\"\\0abc\"");
+        ASSERT_EQUALS(sizeof("\0abc"), Token::getStrSize(&tok));
+
+        tok.str("\"\\\\\"");
+        ASSERT_EQUALS(sizeof("\\"), Token::getStrSize(&tok));
     }
 
     void strValue() const {
@@ -302,10 +323,10 @@ private:
 
     void matchAny() const {
         givenACodeSampleToTokenize varBitOrVar("abc|def", true);
-        ASSERT_EQUALS(true, Token::Match(varBitOrVar.tokens(), "%var% | %var%"));
+        ASSERT_EQUALS(true, Token::Match(varBitOrVar.tokens(), "%var% %or% %var%"));
 
         givenACodeSampleToTokenize varLogOrVar("abc||def", true);
-        ASSERT_EQUALS(true, Token::Match(varLogOrVar.tokens(), "%var% || %var%"));
+        ASSERT_EQUALS(true, Token::Match(varLogOrVar.tokens(), "%var% %oror% %var%"));
     }
 
     void matchSingleChar() const {
@@ -319,9 +340,9 @@ private:
     }
 
     void matchNothingOrAnyNotElse() const {
-        givenACodeSampleToTokenize emptyString("", true);
-        ASSERT_EQUALS(true, Token::Match(emptyString.tokens(), "!!else"));
-        ASSERT_EQUALS(false, Token::Match(emptyString.tokens(), "!!else something"));
+        givenACodeSampleToTokenize empty_String("", true);
+        ASSERT_EQUALS(true, Token::Match(empty_String.tokens(), "!!else"));
+        ASSERT_EQUALS(false, Token::Match(empty_String.tokens(), "!!else something"));
 
         givenACodeSampleToTokenize ifSemicolon("if ;", true);
         ASSERT_EQUALS(true, Token::Match(ifSemicolon.tokens(), "if ; !!else"));
@@ -345,8 +366,11 @@ private:
         ASSERT_EQUALS(true, Token::Match(isVar.tokens(), "%type% %var%"));
         ASSERT_EQUALS(false, Token::Match(isVar.tokens(), "%type% %type%"));
 
-        givenACodeSampleToTokenize noType("delete", true);
-        ASSERT_EQUALS(false, Token::Match(noType.tokens(), "%type%"));
+        givenACodeSampleToTokenize noType1_cpp("delete", true, true);
+        ASSERT_EQUALS(false, Token::Match(noType1_cpp.tokens(), "%type%"));
+
+        givenACodeSampleToTokenize noType1_c("delete", true, false);
+        ASSERT_EQUALS(true, Token::Match(noType1_c.tokens(), "%type%"));
 
         givenACodeSampleToTokenize noType2("void delete", true);
         ASSERT_EQUALS(false, Token::Match(noType2.tokens(), "!!foo %type%"));

@@ -30,7 +30,6 @@
 #include <set>
 #include <string>
 #include <list>
-#include <algorithm>
 
 class TokenList;
 namespace tinyxml2 {
@@ -47,9 +46,22 @@ class CPPCHECKLIB Library {
 public:
     Library();
 
-    bool load(const char exename [], const char path []);
+    enum ErrorCode { OK, FILE_NOT_FOUND, BAD_XML, BAD_ELEMENT, MISSING_ATTRIBUTE, BAD_ATTRIBUTE, BAD_ATTRIBUTE_VALUE };
+
+    class Error {
+    public:
+        Error() : errorcode(OK) , reason("") {}
+        explicit Error(ErrorCode e) : errorcode(e) , reason("") {}
+        Error(ErrorCode e, const std::string &r) : errorcode(e), reason(r) {}
+        ErrorCode     errorcode;
+        std::string   reason;
+    };
+
+    Error load(const char exename [], const char path []);
+    Error load(const tinyxml2::XMLDocument &doc);
+
+    /** this is primarily meant for unit tests. it only returns true/false */
     bool loadxmldata(const char xmldata[], std::size_t len);
-    bool load(const tinyxml2::XMLDocument &doc);
 
     /** get allocation id for function by name */
     int alloc(const char name[]) const {
@@ -113,14 +125,16 @@ public:
     std::set<std::string> functionpure;
 
     bool isnoreturn(const std::string &name) const {
-        auto it = _noreturn.find(name);
+        std::map<std::string, bool>::const_iterator it = _noreturn.find(name);
         return (it != _noreturn.end() && it->second);
     }
 
     bool isnotnoreturn(const std::string &name) const {
-        auto it = _noreturn.find(name);
+        std::map<std::string, bool>::const_iterator it = _noreturn.find(name);
         return (it != _noreturn.end() && !it->second);
     }
+
+    bool isScopeNoReturn(const Token *end, std::string *unknownFunc) const;
 
     class ArgumentChecks {
     public:
@@ -138,6 +152,16 @@ public:
         bool         formatstr;
         bool         strz;
         std::string  valid;
+
+        class MinSize {
+        public:
+            enum Type {NONE,STRLEN,ARGVALUE,SIZEOF,MUL};
+            MinSize(Type t, int a) : type(t), arg(a), arg2(0) {}
+            Type type;
+            int arg;
+            int arg2;
+        };
+        std::list<MinSize> minsizes;
     };
 
     // function name, argument nr => argument data
@@ -170,9 +194,27 @@ public:
 
     bool isargvalid(const std::string &functionName, int argnr, const MathLib::bigint argvalue) const;
 
-    std::string validarg(const std::string &functionName, int argnr) const {
+    const std::string& validarg(const std::string &functionName, int argnr) const {
         const ArgumentChecks *arg = getarg(functionName, argnr);
-        return arg ? arg->valid : std::string("");
+        return arg ? arg->valid : emptyString;
+    }
+
+    bool hasminsize(const std::string &functionName) const {
+        std::map<std::string, std::map<int, ArgumentChecks> >::const_iterator it1;
+        it1 = argumentChecks.find(functionName);
+        if (it1 == argumentChecks.end())
+            return false;
+        std::map<int,ArgumentChecks>::const_iterator it2;
+        for (it2 = it1->second.begin(); it2 != it1->second.end(); ++it2) {
+            if (!it2->second.minsizes.empty())
+                return true;
+        }
+        return false;
+    }
+
+    const std::list<ArgumentChecks::MinSize> *argminsizes(const std::string &functionName, int argnr) const {
+        const ArgumentChecks *arg = getarg(functionName, argnr);
+        return arg ? &arg->minsizes : nullptr;
     }
 
     bool markupFile(const std::string &path) const {
@@ -213,15 +255,14 @@ public:
         return offset;
     }
 
-    std::string blockstart(const std::string &file) const {
-        std::string start;
+    const std::string& blockstart(const std::string &file) const {
         const auto map_it
             = _executableblocks.find(Path::getFilenameExtensionInLowerCase(file));
 
         if (map_it != _executableblocks.end()) {
-            start = map_it->second.start();
+            return map_it->second.start();
         }
-        return start;
+        return emptyString;
     }
 
     std::string blockend(const std::string &file) const {
@@ -230,9 +271,9 @@ public:
             = _executableblocks.find(Path::getFilenameExtensionInLowerCase(file));
 
         if (map_it != _executableblocks.end()) {
-            end = map_it->second.end();
+            return map_it->second.end();
         }
-        return end;
+        return emptyString;
     }
 
     bool iskeyword(const std::string &file, const std::string &keyword) const {
@@ -279,6 +320,15 @@ public:
 
     std::set<std::string> returnuninitdata;
     std::vector<std::string> defines; // to provide some library defines
+
+    struct PodType {
+        unsigned int   size;
+        char           sign;
+    };
+    const struct PodType *podtype(const std::string &name) const {
+        const std::map<std::string, struct PodType>::const_iterator it = podtypes.find(name);
+        return (it != podtypes.end()) ? &(it->second) : nullptr;
+    }
 
 private:
     class ExportedFunctions {
@@ -349,7 +399,7 @@ private:
     std::map<std::string, std::set<std::string> > _importers; // keywords that import variables/functions
     std::map<std::string,int> _reflection; // invocation of reflection
     std::map<std::string, std::pair<bool, bool> > _formatstr; // Parameters for format string checking
-
+    std::map<std::string, struct PodType> podtypes; // pod types
 
     const ArgumentChecks * getarg(const std::string &functionName, int argnr) const;
 

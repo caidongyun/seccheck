@@ -38,36 +38,34 @@ private:
         TEST_CASE(compare);            // mismatching LHS/RHS in comparison
         TEST_CASE(multicompare);       // mismatching comparisons
         TEST_CASE(duplicateIf);        // duplicate conditions in if and else-if
+        TEST_CASE(invalidMissingSemicolon); // crash as of #5867
     }
 
-    void check(const char code[]) {
+    void check(const char code[], bool validate=true) {
         // Clear the error buffer..
         errout.str("");
 
         Settings settings;
         settings.addEnabled("style");
 
+        CheckAssignIf checkAssignIf;
+
         // Tokenize..
         Tokenizer tokenizer(&settings, this);
         std::istringstream istr(code);
         tokenizer.tokenize(istr, "test.cpp");
+        checkAssignIf.runChecks(&tokenizer, &settings, this);
         const std::string str1(tokenizer.tokens()->stringifyList(0,true));
         tokenizer.simplifyTokenList2();
         const std::string str2(tokenizer.tokens()->stringifyList(0,true));
+        checkAssignIf.runSimplifiedChecks(&tokenizer, &settings, this);
 
         // Ensure that the test case is not bad.
-        if (str1 != str2) {
+        if (validate && str1 != str2) {
             warn(("Unsimplified code in test case. It looks like this test "
                   "should either be cleaned up or moved to TestTokenizer or "
                   "TestSimplifyTokens instead.\nstr1="+str1+"\nstr2="+str2).c_str());
         }
-
-
-        // Check char variable usage..
-        CheckAssignIf checkAssignIf(&tokenizer, &settings, this);
-        checkAssignIf.assignIf();
-        checkAssignIf.comparison();
-        checkAssignIf.multiCondition();
     }
 
     void assignAndCompare() {
@@ -338,8 +336,8 @@ private:
         ASSERT_EQUALS("", errout.str());
 
         check("void f(int a, int &b) {\n"
-              "    if (!strtok(NULL," ")) { b = 1; }\n"
-              "    else { if (!strtok(NULL," ")) { b = 2; } }\n"
+              "    if (!strtok(NULL, \" \")) { b = 1; }\n"
+              "    else { if (!strtok(NULL, \" \")) { b = 2; } }\n"
               "}");
         ASSERT_EQUALS("", errout.str());
 
@@ -376,6 +374,20 @@ private:
               "        }\n"
               "    }\n"
               "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("void f(WIDGET *widget) {\n"
+              "  if (dynamic_cast<BUTTON*>(widget)){}\n"
+              "  else if (dynamic_cast<LABEL*>(widget)){}\n"
+              "}",false);
+        ASSERT_EQUALS("", errout.str());
+    }
+
+    void invalidMissingSemicolon() {
+        // simply survive - a syntax error would be even better
+        check("void f(int x) {\n"
+              " x = 42\n"
+              "}\n");
         ASSERT_EQUALS("", errout.str());
     }
 };

@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef NDEBUG
+#ifdef CHECK_INTERNAL
 
 #include "checkinternal.h"
 #include "symboldatabase.h"
@@ -77,6 +77,8 @@ void CheckInternal::checkTokenMatchPatterns()
                 }
             }
         }
+        if (pattern.find("||") != std::string::npos || pattern.find(" | ") != std::string::npos || pattern[0] == '|' || (pattern[pattern.length() - 1] == '|' && pattern[pattern.length() - 2] == ' '))
+            orInComplexPattern(tok, pattern, funcname);
 
         // Check for signs of complex patterns
         if (pattern.find_first_of("[|%") != std::string::npos)
@@ -142,8 +144,14 @@ void CheckInternal::checkTokenSimpleMatchPatterns()
         }
 
         // Check for real errors
-        if (pattern.find_first_of("%") != std::string::npos || pattern.find("!!") != std::string::npos)
-            complexPatternError(tok, pattern, funcname);
+        if (pattern.length() > 1) {
+            for (size_t i = 0; i < pattern.length() - 1; i++) {
+                if (pattern[i] == '%' && pattern[i + 1] != ' ')
+                    complexPatternError(tok, pattern, funcname);
+                else if (pattern[i] == '!' && pattern[i + 1] == '!')
+                    complexPatternError(tok, pattern, funcname);
+            }
+        }
     }
 }
 
@@ -315,4 +323,10 @@ void CheckInternal::redundantNextPreviousError(const Token* tok, const std::stri
                 "Call to 'Token::" + func1 + "()' followed by 'Token::" + func2 + "()' can be simplified.");
 }
 
-#endif // #ifndef NDEBUG
+void CheckInternal::orInComplexPattern(const Token* tok, const std::string& pattern, const std::string &funcname)
+{
+    reportError(tok, Severity::error, "orInComplexPattern",
+                "Token::" + funcname + "() pattern \"" + pattern + "\" contains \"||\" or \"|\". Replace it by \"%oror%\" or \"%or%\".");
+}
+
+#endif // #ifdef CHECK_INTERNAL

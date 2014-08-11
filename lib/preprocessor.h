@@ -95,7 +95,7 @@ public:
     std::string read(std::istream &istr, const std::string &filename);
 
     /** read preprocessor statements into a string. */
-    std::string readpreprocessor(std::istream &istr, const unsigned int bom) const;
+    static std::string readpreprocessor(std::istream &istr, const unsigned int bom);
 
     /** should __cplusplus be defined? */
     static bool cplusplus(const Settings *settings, const std::string &filename);
@@ -251,6 +251,10 @@ public:
         file0 = f;
     }
 
+    bool foundUnhandledChars() const {
+        return _foundUnhandledChars;
+    }
+
 private:
     void missingInclude(const std::string &filename, unsigned int linenr, const std::string &header, HeaderTypes headerType);
 
@@ -274,6 +278,11 @@ private:
 
     /** filename for cpp/c file - useful when reporting errors */
     std::string file0;
+
+    /** set to true if unhandled chars are found in code. any char is ok
+     *  in comments and string literals, but variable/type names must
+     *  have plain ascii characters. */
+    bool _foundUnhandledChars;
 };
 
 /// @}

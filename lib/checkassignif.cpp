@@ -55,7 +55,7 @@ void CheckAssignIf::assignIf()
                 const Token *endToken = Token::findsimplematch(tok, ";");
 
                 // Casting address
-                if (Token::Match(endToken->tokAt(-4), "* ) & %any% ;"))
+                if (endToken && Token::Match(endToken->tokAt(-4), "* ) & %any% ;"))
                     endToken = nullptr;
 
                 if (endToken && Token::Match(endToken->tokAt(-2), "[&|] %num% ;")) {
@@ -302,7 +302,7 @@ void CheckAssignIf::multiCondition()
 
     for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         if (i->type != Scope::eIf || !Token::simpleMatch(i->classDef, "if ("))
-                continue;
+            continue;
 
         const Token * const cond1 = i->classDef->next()->astOperand2();
 

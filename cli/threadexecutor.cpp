@@ -19,9 +19,12 @@
 #include "threadexecutor.h"
 #include "cppcheck.h"
 #include "cppcheckexecutor.h"
+#include <iostream>
+#ifdef __SVR4  // Solaris
+#include <sys/loadavg.h>
+#endif
 #ifdef THREADING_MODEL_FORK
 #include <algorithm>
-#include <iostream>
 #include <sys/select.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -457,8 +460,14 @@ unsigned int __stdcall ThreadExecutor::threadProc(void *args)
 
         LeaveCriticalSection(&threadExecutor->_fileSync);
     };
-
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning( disable : 4702 )
+#endif
     return result;
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 }
 
 void ThreadExecutor::reportOut(const std::string &outmsg)

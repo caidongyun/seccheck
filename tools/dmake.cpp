@@ -27,6 +27,11 @@
 
 #include "../cli/filelister.h"
 
+static std::string builddir(std::string filename);
+static std::string objfile(std::string cppfile);
+static void getDeps(const std::string &filename, std::vector<std::string> &depfiles);
+
+
 std::string builddir(std::string filename)
 {
     if (filename.compare(0,4,"lib/") == 0)
@@ -337,6 +342,8 @@ int main(int argc, char **argv)
                                 "-Wshadow "
 //                                "-Wsign-conversion "
                                 "-Wsign-promo "
+                                "-Wno-missing-field-initializers "
+                                "-Wno-missing-braces "
 //                                "-Wunreachable-code "
                                 "-Wno-sign-compare "  // danmar: I don't like this warning, it's very rarelly a bug
                                 "$(CPPCHK_GLIBCXX_DEBUG) "
@@ -362,7 +369,7 @@ int main(int argc, char **argv)
     fout << "# For 'make man': sudo apt-get install xsltproc docbook-xsl docbook-xml on Linux\n";
     fout << "DB2MAN=/usr/share/sgml/docbook/stylesheet/xsl/nwalsh/manpages/docbook.xsl\n";
     fout << "XP=xsltproc -''-nonet -''-param man.charmap.use.subset \"0\"\n";
-    fout << "MAN_SOURCE=man/seccheck.1.xml\n\n";
+    fout << "MAN_SOURCE=man/cppcheck.1.xml\n\n";
 
     fout << "\n###### Object Files\n\n";
     fout << "LIBOBJ =      " << objfile(libfiles[0]);
@@ -382,9 +389,9 @@ int main(int argc, char **argv)
 
     fout << ".PHONY: dmake\n\n";
     fout << "\n###### Targets\n\n";
-    fout << "seccheck: $(LIBOBJ) $(CLIOBJ) $(EXTOBJ)\n";
-    fout << "\t$(CXX) $(CPPFLAGS) $(CXXFLAGS) -std=c++0x -o seccheck $(CLIOBJ) $(LIBOBJ) $(EXTOBJ) $(LIBS) $(LDFLAGS) $(RDYNAMIC)\n\n";
-    fout << "all:\tseccheck testrunner\n\n";
+    fout << "cppcheck: $(LIBOBJ) $(CLIOBJ) $(EXTOBJ)\n";
+    fout << "\t$(CXX) $(CPPFLAGS) $(CXXFLAGS) -std=c++0x -o cppcheck $(CLIOBJ) $(LIBOBJ) $(EXTOBJ) $(LIBS) $(LDFLAGS) $(RDYNAMIC)\n\n";
+    fout << "all:\tcppcheck testrunner\n\n";
     fout << "testrunner: $(TESTOBJ) $(LIBOBJ) $(EXTOBJ) cli/threadexecutor.o cli/cmdlineparser.o cli/cppcheckexecutor.o cli/filelister.o cli/pathmatch.o\n";
     fout << "\t$(CXX) $(CPPFLAGS) $(CXXFLAGS) -std=c++0x -o testrunner $(TESTOBJ) $(LIBOBJ) cli/threadexecutor.o cli/cppcheckexecutor.o cli/cmdlineparser.o cli/filelister.o cli/pathmatch.o $(EXTOBJ) $(LIBS) $(LDFLAGS) $(RDYNAMIC)\n\n";
     fout << "test:\tall\n";
@@ -397,16 +404,20 @@ int main(int argc, char **argv)
     fout << "reduce:\ttools/reduce.o externals/tinyxml/tinyxml2.o $(LIBOBJ)\n";
     fout << "\t$(CXX) $(CPPFLAGS) $(CXXFLAGS) -std=c++0x -g -o reduce tools/reduce.o -Ilib -Iexternals/tinyxml $(LIBOBJ) $(LIBS) externals/tinyxml/tinyxml2.o $(LDFLAGS) $(RDYNAMIC)\n\n";
     fout << "clean:\n";
-    fout << "\trm -f build/*.o lib/*.o cli/*.o test/*.o externals/tinyxml/*.o testrunner reduce dmake seccheck seccheck.1\n\n";
-    fout << "man:\tman/seccheck.1\n\n";
-    fout << "man/seccheck.1:\t$(MAN_SOURCE)\n\n";
+    fout << "\trm -f build/*.o lib/*.o cli/*.o test/*.o tools/*.o externals/tinyxml/*.o testrunner reduce dmake cppcheck cppcheck.1\n\n";
+    fout << "man:\tman/cppcheck.1\n\n";
+    fout << "man/cppcheck.1:\t$(MAN_SOURCE)\n\n";
     fout << "\t$(XP) $(DB2MAN) $(MAN_SOURCE)\n\n";
     fout << "tags:\n";
     fout << "\tctags -R --exclude=doxyoutput .\n\n";
-    fout << "install: seccheck\n";
+    fout << "install: cppcheck\n";
     fout << "\tinstall -d ${BIN}\n";
-    fout << "\tinstall seccheck ${BIN}\n";
-    fout << "\tinstall htmlreport/cppcheck-htmlreport ${BIN}\n\n";
+    fout << "\tinstall cppcheck ${BIN}\n";
+    fout << "\tinstall htmlreport/cppcheck-htmlreport ${BIN}\n";
+    fout << "ifdef CFGDIR \n";
+    fout << "\tinstall -d ${CFGDIR}\n";
+    fout << "\tinstall -m 644 cfg/* ${CFGDIR}\n";
+    fout << "endif\n\n";
 
     fout << "\n###### Build\n\n";
 

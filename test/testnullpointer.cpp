@@ -43,7 +43,6 @@ private:
         TEST_CASE(nullpointerExecutionPaths);
         TEST_CASE(nullpointerExecutionPathsLoop);
         TEST_CASE(nullpointer7);
-        TEST_CASE(nullpointer8);
         TEST_CASE(nullpointer9);
         TEST_CASE(nullpointer10);
         TEST_CASE(nullpointer11); // ticket #2812
@@ -207,20 +206,13 @@ private:
         ASSERT_EQUALS("", errout.str());
 
         // dereference in outer scope..
-        {
-            const char code[] = "void foo(int x, const Token *tok) {\n"
-                                "    if (x == 123) {\n"
-                                "        while (tok) tok = tok->next();\n"
-                                "    }\n"
-                                "    tok->str();\n"
-                                "}\n";
-
-            check(code, false);
-            ASSERT_EQUALS("", errout.str());
-
-            check(code, true);
-            ASSERT_EQUALS("[test.cpp:5] -> [test.cpp:3]: (warning, inconclusive) Possible null pointer dereference: tok - otherwise it is redundant to check it against null.\n", errout.str());
-        }
+        check("void foo(int x, const Token *tok) {\n"
+              "    if (x == 123) {\n"
+              "        while (tok) tok = tok->next();\n"
+              "    }\n"
+              "    tok->str();\n"
+              "}\n");
+        TODO_ASSERT_EQUALS("[test.cpp:5] -> [test.cpp:3]: (warning, inconclusive) Possible null pointer dereference: tok - otherwise it is redundant to check it against null.\n", "", errout.str());
 
         check("int foo(const Token *tok)\n"
               "{\n"
@@ -295,10 +287,14 @@ private:
 
         check("void foo(struct ABC *abc) {\n"
               "    bar(abc->a);\n"
+              "    bar(x, abc->a);\n"
+              "    bar(x, y, abc->a);\n"
               "    if (!abc)\n"
               "        ;\n"
               "}");
-        ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:3]: (warning) Possible null pointer dereference: abc - otherwise it is redundant to check it against null.\n", errout.str());
+        ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:5]: (warning) Possible null pointer dereference: abc - otherwise it is redundant to check it against null.\n"
+                      "[test.cpp:3] -> [test.cpp:5]: (warning) Possible null pointer dereference: abc - otherwise it is redundant to check it against null.\n"
+                      "[test.cpp:4] -> [test.cpp:5]: (warning) Possible null pointer dereference: abc - otherwise it is redundant to check it against null.\n", errout.str());
 
         check("void foo(ABC *abc) {\n"
               "    if (abc->a == 3) {\n"
@@ -619,7 +615,7 @@ private:
               "    if (!p)\n"
               "        ;\n"
               "}");
-        TODO_ASSERT_EQUALS("error", "", errout.str());
+        ASSERT_EQUALS("[test.cpp:3] -> [test.cpp:4]: (warning) Possible null pointer dereference: p - otherwise it is redundant to check it against null.\n", errout.str());
 
         // while
         check("void f(int *p) {\n"
@@ -1055,7 +1051,7 @@ private:
                   "        p = q;\n"
                   "    if (p || *p) { }\n"
                   "}");
-            TODO_ASSERT_EQUALS("error", "", errout.str());
+            ASSERT_EQUALS("[test.cpp:5] -> [test.cpp:5]: (warning) Possible null pointer dereference: p - otherwise it is redundant to check it against null.\n", errout.str());
         }
     }
 
@@ -1115,15 +1111,6 @@ private:
               "  int y = x.GetValue();\n"
               "}", true);
         ASSERT_EQUALS("", errout.str());
-    }
-
-    void nullpointer8() {
-        check("void foo()\n"
-              "{\n"
-              "  char const * x = 0;\n"
-              "  strdup(x);\n"
-              "}");
-        ASSERT_EQUALS("[test.cpp:4]: (error) Possible null pointer dereference: x\n", errout.str());
     }
 
     void nullpointer9() { //#ticket 1778
@@ -2080,13 +2067,11 @@ private:
     }
 
     void nullpointerStdStream() {
-        // TODO: Refactor these tests and re-enable them
-#if 0
         check("void f(std::ifstream& is) {\n"
               "    char* p = 0;\n"
               "    is >> p;\n"
               "}");
-        ASSERT_EQUALS("[test.cpp:3]: (error) Possible null pointer dereference: p\n", errout.str());
+        TODO_ASSERT_EQUALS("[test.cpp:3]: (error) Possible null pointer dereference: p\n", "", errout.str());
 
         check("void f(const std::ostringstream& oss, char* q) {\n"
               "    char const* p = 0;\n" // Simplification makes detection of bug difficult
@@ -2095,10 +2080,9 @@ private:
               "    if(q == 0)\n"
               "        oss << foo << q;\n"
               "}", false, "test.cpp", false);
-        TODO_ASSERT_EQUALS("[test.cpp:3]: (error) Possible null pointer dereference: p\n"
-                           "[test.cpp:4]: (error) Possible null pointer dereference: p\n"
-                           "[test.cpp:6] -> [test.cpp:5]: (warning) Possible null pointer dereference: q - otherwise it is redundant to check it against null.\n",
-                           "[test.cpp:6] -> [test.cpp:5]: (warning) Possible null pointer dereference: q - otherwise it is redundant to check it against null.\n", errout.str());
+        ASSERT_EQUALS("[test.cpp:3]: (error) Possible null pointer dereference: p\n"
+                      "[test.cpp:4]: (error) Possible null pointer dereference: p\n"
+                      "[test.cpp:6] -> [test.cpp:5]: (warning) Possible null pointer dereference: q - otherwise it is redundant to check it against null.\n", errout.str());
 
         check("void f(const char* p) {\n"
               "    if(p == 0) {\n"
@@ -2108,10 +2092,13 @@ private:
               "        std::cout << abc << p;\n"
               "    }\n"
               "}");
-        ASSERT_EQUALS("[test.cpp:3] -> [test.cpp:2]: (warning) Possible null pointer dereference: p - otherwise it is redundant to check it against null.\n"
-                      "[test.cpp:4] -> [test.cpp:2]: (warning) Possible null pointer dereference: p - otherwise it is redundant to check it against null.\n"
-                      "[test.cpp:5] -> [test.cpp:2]: (warning) Possible null pointer dereference: p - otherwise it is redundant to check it against null.\n"
-                      "[test.cpp:6] -> [test.cpp:2]: (warning) Possible null pointer dereference: p - otherwise it is redundant to check it against null.\n", errout.str());
+        TODO_ASSERT_EQUALS("[test.cpp:3] -> [test.cpp:2]: (warning) Possible null pointer dereference: p - otherwise it is redundant to check it against null.\n"
+                           "[test.cpp:4] -> [test.cpp:2]: (warning) Possible null pointer dereference: p - otherwise it is redundant to check it against null.\n"
+                           "[test.cpp:5] -> [test.cpp:2]: (warning) Possible null pointer dereference: p - otherwise it is redundant to check it against null.\n"
+                           "[test.cpp:6] -> [test.cpp:2]: (warning) Possible null pointer dereference: p - otherwise it is redundant to check it against null.\n",
+                           "[test.cpp:3] -> [test.cpp:2]: (warning) Possible null pointer dereference: p - otherwise it is redundant to check it against null.\n"
+                           "[test.cpp:4] -> [test.cpp:2]: (warning) Possible null pointer dereference: p - otherwise it is redundant to check it against null.\n",
+                           errout.str());
 
         check("void f() {\n"
               "    void* p1 = 0;\n"
@@ -2135,9 +2122,23 @@ private:
               "    std::cout << i;\n" // Its no char* (#4240)
               "}", true);
         ASSERT_EQUALS("", errout.str());
-#else
-        return;
-#endif
+
+        // #5811 false postive: (error) Null pointer dereference
+        check("using namespace std;\n"
+              "std::string itoip(int ip) {\n"
+              "    stringstream out;\n"
+              "    out << ((ip >> 0) & 0xFF);\n"
+              "    return out.str();\n"
+              "}n", true, "test.cpp", false);
+        ASSERT_EQUALS("", errout.str());
+        // avoid regression from first fix attempt for #5811...
+        check("void deserialize(const std::string &data) {\n"
+              "std::istringstream iss(data);\n"
+              "unsigned int len = 0;\n"
+              "if (!(iss >> len))\n"
+              "    return;\n"
+              "}\n", true, "test.cpp", false);
+        ASSERT_EQUALS("", errout.str());
 
     }
 
@@ -2366,7 +2367,22 @@ private:
         ASSERT_EQUALS("", errout.str());
 
         check("void f(int *p = 0) {\n"
-              "    std::cout << p ? *p : 0;\n"
+              "    std::cout << p ? *p : 0;\n" // Due to operator precedence, this is equivalent to: (std::cout << p) ? *p : 0;
+              "}");
+        TODO_ASSERT_EQUALS("[test.cpp:2]: (warning) Possible null pointer dereference if the default parameter value is used: p\n", "", errout.str()); // Check the first branch of ternary
+
+        check("void f(char *p = 0) {\n"
+              "    std::cout << p ? *p : 0;\n" // Due to operator precedence, this is equivalent to: (std::cout << p) ? *p : 0;
+              "}");
+        ASSERT_EQUALS("[test.cpp:2]: (warning) Possible null pointer dereference if the default parameter value is used: p\n", errout.str());
+
+        check("void f(int *p = 0) {\n"
+              "    std::cout << (p ? *p : 0);\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("void f(int *p = 0) {\n"
+              "    std::cout << p;\n"
               "}");
         ASSERT_EQUALS("", errout.str());
 
@@ -2431,6 +2447,11 @@ private:
               "    *p = 0;\n"
               "}");
         ASSERT_EQUALS("", errout.str());
+
+        check("void foo(int *p = 0) {\n"
+              "    int var1 = x ? *p : 5;\n"
+              "}");
+        TODO_ASSERT_EQUALS("[test.cpp:2]: (warning) Possible null pointer dereference if the default parameter value is used: p\n", "", errout.str());
     }
 
 
@@ -2497,9 +2518,6 @@ private:
         ASSERT_EQUALS(errp,errout.str());
 
         check("void f(char * p){ putchar (*p);if(!p){}}");
-        ASSERT_EQUALS(errp,errout.str());
-
-        check("void f(char * p){ strdup (p);if(!p){}}");
         ASSERT_EQUALS(errp,errout.str());
 
         check("void f(char * p){ strlen (p);if(!p){}}");
@@ -2620,6 +2638,13 @@ private:
 
         check("void f(char *p){ mkdir (p, *0);}");
         ASSERT_EQUALS("[test.cpp:1]: (error) Null pointer dereference\n",errout.str());
+
+        check("void foo()\n"
+              "{\n"
+              "  char const * x = 0;\n"
+              "  strdup(x);\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:4]: (error) Possible null pointer dereference: x\n", errout.str());
     }
 };
 

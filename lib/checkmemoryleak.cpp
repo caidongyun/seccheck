@@ -425,14 +425,12 @@ CheckMemoryLeak::AllocType CheckMemoryLeak::functionReturnType(const Function* f
     if (varid == 0)
         return No;
 
-    if (this != nullptr) {
-        // If variable is not local then alloctype shall be "No"
-        // Todo: there can be false negatives about mismatching allocation/deallocation.
-        //       => Generate "alloc ; use ;" if variable is not local?
-        const Variable *var = tokenizer->getSymbolDatabase()->getVariableFromVarId(varid);
-        if (!var || !var->isLocal() || var->isStatic())
-            return No;
-    }
+    // If variable is not local then alloctype shall be "No"
+    // Todo: there can be false negatives about mismatching allocation/deallocation.
+    //       => Generate "alloc ; use ;" if variable is not local?
+    const Variable *var = tokenizer->getSymbolDatabase()->getVariableFromVarId(varid);
+    if (!var || !var->isLocal() || var->isStatic())
+        return No;
 
     // Check if return pointer is allocated..
     AllocType allocType = No;
@@ -525,8 +523,8 @@ void CheckMemoryLeakInFunction::parse_noreturn()
     }
 
     // only check functions
-    const std::size_t functions = symbolDatabase->functionScopes.size();
-    for (std::size_t i = 0; i < functions; ++i) {
+    const std::size_t functionsCount = symbolDatabase->functionScopes.size();
+    for (std::size_t i = 0; i < functionsCount; ++i) {
         const Scope * scope = symbolDatabase->functionScopes[i];
 
         // parse this function to check if it contains an "exit" call..
@@ -2758,7 +2756,7 @@ void CheckMemoryLeakNoVar::check()
 void CheckMemoryLeakNoVar::checkForUnusedReturnValue(const Scope *scope)
 {
     for (const Token *tok = scope->classStart; tok != scope->classEnd; tok = tok->next()) {
-        if (Token::Match(tok, "{|}|; %var% (")) {
+        if (Token::Match(tok, "{|}|; %var% (") && tok->strAt(-1) != "=") {
             tok = tok->next();
             const int allocationId = _settings->library.alloc(tok);
             if (allocationId > 0)

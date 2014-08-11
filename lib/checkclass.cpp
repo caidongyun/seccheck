@@ -75,8 +75,8 @@ CheckClass::CheckClass(const Tokenizer *tokenizer, const Settings *settings, Err
 
 void CheckClass::constructors()
 {
-    bool style = _settings->isEnabled("style");
-    bool warnings = _settings->isEnabled("warning");
+    const bool style = _settings->isEnabled("style");
+    const bool warnings = _settings->isEnabled("warning");
     if (!style && !warnings)
         return;
 
@@ -131,10 +131,10 @@ void CheckClass::constructors()
             unsigned int count = 0;
             for (auto var = scope->varlist.begin(); var != scope->varlist.end(); ++var, ++count) {
                 // check for C++11 initializer
-                if (var->hasDefault())
+                if (var->hasDefault()) {
                     usage[count].init = true;
-
-                bool inconclusive = false;
+                    continue;
+                }
 
                 if (usage[count].assign || usage[count].init || var->isStatic())
                     continue;
@@ -165,14 +165,19 @@ void CheckClass::constructors()
                     }
                 }
 
+                bool inconclusive = false;
                 // Don't warn about unknown types in copy constructors since we
                 // don't know if they can be copied or not..
                 if (!var->isPointer() &&
                     !(var->type() && var->type()->needInitialization != Type::True) &&
                     (func->type == Function::eCopyConstructor || func->type == Function::eOperatorEqual)) {
                     bool stdtype = false;
-                    for (const Token *type = var->typeStartToken(); type && type->isName(); type = type->next())
-                        stdtype |= type->isStandardType();
+                    for (const Token *type = var->typeStartToken(); type && type->isName(); type = type->next()) {
+                        if (type->isStandardType()) {
+                            stdtype = true;
+                            break;
+                        }
+                    }
                     if (!stdtype) {
                         if (_settings->inconclusive)
                             inconclusive = true;
@@ -864,30 +869,31 @@ void CheckClass::privateFunctions()
         if (Token::findsimplematch(scope->classStart, "; __property ;", scope->classEnd))
             continue;
 
-        std::list<const Function*> FuncList;
+        std::list<const Function*> privateFunctions;
         for (auto func = scope->functionList.begin(); func != scope->functionList.end(); ++func) {
             // Get private functions..
             if (func->type == Function::eFunction && func->access == Private && !func->isOperator) // TODO: There are smarter ways to check private operator usage
-                FuncList.push_back(&*func);
+                privateFunctions.push_back(&*func);
         }
 
         // Bailout for overridden virtual functions of base classes
         if (!scope->definedType->derivedFrom.empty()) {
             // Check virtual functions
-            for (auto it = FuncList.begin(); it != FuncList.end();) {
+            for (std::list<const Function*>::iterator it = privateFunctions.begin(); it != privateFunctions.end();) {
                 if ((*it)->isImplicitlyVirtual(true)) // Give true as default value to be returned if we don't see all base classes
-                    FuncList.erase(it++);
+                    privateFunctions.erase(it++);
                 else
                     ++it;
             }
         }
 
-        while (!FuncList.empty()) {
-            const std::string& funcName = FuncList.front()->tokenDef->str();
+        while (!privateFunctions.empty()) {
+            const std::string& funcName = privateFunctions.front()->tokenDef->str();
             // Check that all private functions are used
             bool used = checkFunctionUsage(funcName, &*scope); // Usage in this class
             // Check in friend classes
-            for (auto it = scope->definedType->friendList.begin(); !used && it != scope->definedType->friendList.end(); ++it) {
+            const std::list<Type::FriendInfo>& friendList = scope->definedType->friendList;
+            for (std::list<Type::FriendInfo>::const_iterator it = friendList.begin(); !used && it != friendList.end(); ++it) {
                 if (it->type)
                     used = checkFunctionUsage(funcName, it->type->classScope);
                 else
@@ -895,9 +901,9 @@ void CheckClass::privateFunctions()
             }
 
             if (!used)
-                unusedPrivateFunctionError(FuncList.front()->tokenDef, scope->className, funcName);
+                unusedPrivateFunctionError(privateFunctions.front()->tokenDef, scope->className, funcName);
 
-            FuncList.pop_front();
+            privateFunctions.pop_front();
         }
     }
 }
@@ -929,9 +935,9 @@ void CheckClass::checkMemset()
         for (const Token *tok = scope->classStart; tok && tok != scope->classEnd; tok = tok->next()) {
             if (Token::Match(tok, "memset|memcpy|memmove ( %any%")) {
                 const Token* arg1 = tok->tokAt(2);
-                const Token* arg3 = arg1;
-                arg3 = arg3->nextArgument();
-                arg3 = (arg3 != nullptr) ? arg3->nextArgument() : nullptr;
+                const Token* arg3 = arg1->nextArgument();
+                if (arg3)
+                    arg3 = arg3->nextArgument();
                 if (!arg3)
                     // weird, shouldn't happen: memset etc should have
                     // 3 arguments.
@@ -979,7 +985,7 @@ void CheckClass::checkMemset()
                         for (const Token *typetok2 = var->typeStartToken(); typetok2 && typetok2 != var->typeEndToken(); typetok2 = typetok2->next()) {
                             if (typetok2->str() == "::")
                                 bailout = true;
-                            if (typetok2->str() == "{") {
+                            else if (typetok2->str() == "{") {
                                 bailout = false;
                                 break;
                             }
@@ -1026,8 +1032,9 @@ void CheckClass::checkMemsetType(const Scope *start, const Token *tok, const Sco
 
     // recursively check all parent classes
     for (std::size_t i = 0; i < type->definedType->derivedFrom.size(); i++) {
-        if (type->definedType->derivedFrom[i].type && type->definedType->derivedFrom[i].type->classScope)
-            checkMemsetType(start, tok, type->definedType->derivedFrom[i].type->classScope, allocation, parsedTypes);
+        const Type* derivedFrom = type->definedType->derivedFrom[i].type;
+        if (derivedFrom && derivedFrom->classScope)
+            checkMemsetType(start, tok, derivedFrom->classScope, allocation, parsedTypes);
     }
 
     // Warn if type is a class that contains any virtual functions
@@ -1052,7 +1059,7 @@ void CheckClass::checkMemsetType(const Scope *start, const Token *tok, const Sco
             const Scope *typeScope = var->typeScope();
 
             // check for std:: type
-            if (var->isStlType() && tok1->strAt(2) != "array")
+            if (var->isStlType() && tok1->strAt(2) != "array" && !_settings->library.podtype(tok1->strAt(2)))
                 if (allocation)
                     mallocOnClassError(tok, tok->str(), type->classDef, "'std::" + tok1->strAt(2) + "'");
                 else
@@ -1167,6 +1174,12 @@ void CheckClass::operatorEqRetRefThis()
 
 void CheckClass::checkReturnPtrThis(const Scope *scope, const Function *func, const Token *tok, const Token *last)
 {
+    std::set<const Function*> analyzedFunctions;
+    checkReturnPtrThis(scope, func, tok, last, analyzedFunctions);
+}
+
+void CheckClass::checkReturnPtrThis(const Scope *scope, const Function *func, const Token *tok, const Token *last, std::set<const Function*>& analyzedFunctions)
+{
     bool foundReturn = false;
 
     for (; tok && tok != last; tok = tok->next()) {
@@ -1193,10 +1206,12 @@ void CheckClass::checkReturnPtrThis(const Scope *scope, const Function *func, co
                             // make sure it's not a const function
                             if (!it->isConst) {
                                 /** @todo make sure argument types match */
-                                // make sure it's not the same function
-                                if (&*it != func)
-                                    checkReturnPtrThis(scope, &*it, it->arg->link()->next(), it->arg->link()->next()->link());
-
+                                // avoid endless recursions
+                                if (analyzedFunctions.find(&*it) == analyzedFunctions.end()) {
+                                    analyzedFunctions.insert(&*it);
+                                    checkReturnPtrThis(scope, &*it, it->arg->link()->next(), it->arg->link()->next()->link(),
+                                                       analyzedFunctions);
+                                }
                                 // just bail for now
                                 else
                                     return;
@@ -1246,7 +1261,6 @@ void CheckClass::operatorEqToSelf()
     const std::size_t classes = symbolDatabase->classAndStructScopes.size();
     for (std::size_t i = 0; i < classes; ++i) {
         const Scope * scope = symbolDatabase->classAndStructScopes[i];
-
         // skip classes with multiple inheritance
         if (scope->definedType->derivedFrom.size() > 1)
             continue;
@@ -1355,14 +1369,31 @@ void CheckClass::virtualDestructor()
     // * base class doesn't have virtual destructor
     // * derived class has non-empty destructor
     // * base class is deleted
+    // unless inconclusive in which case:
+    // * base class has virtual members but doesn't have virtual destructor
+
+    std::list<const Function *> inconclusive_errors;
 
     const std::size_t classes = symbolDatabase->classAndStructScopes.size();
     for (std::size_t i = 0; i < classes; ++i) {
         const Scope * scope = symbolDatabase->classAndStructScopes[i];
 
-        // Skip base classes
-        if (scope->definedType->derivedFrom.empty())
+        // Skip base classes (unless inconclusive)
+        if (scope->definedType->derivedFrom.empty()) {
+            if (_settings->inconclusive) {
+                const Function *destructor = scope->getDestructor();
+                if (destructor && !destructor->isVirtual) {
+                    std::list<Function>::const_iterator func;
+                    for (func = scope->functionList.begin(); func != scope->functionList.end(); ++func) {
+                        if (func->isVirtual) {
+                            inconclusive_errors.push_back(destructor);
+                            break;
+                        }
+                    }
+                }
+            }
             continue;
+        }
 
         // Find the destructor
         const Function *destructor = scope->getDestructor();
@@ -1379,7 +1410,7 @@ void CheckClass::virtualDestructor()
         const Token *derivedClass = derived->next();
 
         // Iterate through each base class...
-        for (unsigned int j = 0; j < scope->definedType->derivedFrom.size(); ++j) {
+        for (std::size_t j = 0; j < scope->definedType->derivedFrom.size(); ++j) {
             // Check if base class is public and exists in database
             if (scope->definedType->derivedFrom[j].access != Private && scope->definedType->derivedFrom[j].type) {
                 const Type *derivedFrom = scope->definedType->derivedFrom[j].type;
@@ -1440,8 +1471,13 @@ void CheckClass::virtualDestructor()
 
                 // Check that there is a destructor..
                 if (!base_destructor) {
-                    if (derivedFrom->derivedFrom.empty())
-                        virtualDestructorError(derivedFrom->classDef, derivedFrom->name(), derivedClass->str());
+                    if (derivedFrom->derivedFrom.empty()) {
+                        virtualDestructorError(derivedFrom->classDef, derivedFrom->name(), derivedClass->str(), false);
+                        // check for duplicate error and remove if if found
+                        std::list<const Function *>::iterator found = find(inconclusive_errors.begin(), inconclusive_errors.end(), base_destructor);
+                        if (found != inconclusive_errors.end())
+                            inconclusive_errors.erase(found);
+                    }
                 } else if (!base_destructor->isVirtual) {
                     // TODO: This is just a temporary fix, better solution is needed.
                     // Skip situations where base class has base classes of its own, because
@@ -1453,22 +1489,33 @@ void CheckClass::virtualDestructor()
                         // Make sure that the destructor is public (protected or private
                         // would not compile if inheritance is used in a way that would
                         // cause the bug we are trying to find here.)
-                        if (base_destructor->access == Public)
-                            virtualDestructorError(base, derivedFrom->name(), derivedClass->str());
+                        if (base_destructor->access == Public) {
+                            virtualDestructorError(base, derivedFrom->name(), derivedClass->str(), false);
+                            // check for duplicate error and remove if if found
+                            std::list<const Function *>::iterator found = find(inconclusive_errors.begin(), inconclusive_errors.end(), base_destructor);
+                            if (found != inconclusive_errors.end())
+                                inconclusive_errors.erase(found);
+                        }
                     }
                 }
             }
         }
     }
+
+    for (std::list<const Function *>::const_iterator i = inconclusive_errors.begin(); i != inconclusive_errors.end(); ++i)
+        virtualDestructorError((*i)->tokenDef, (*i)->name(), "", true);
 }
 
-void CheckClass::virtualDestructorError(const Token *tok, const std::string &Base, const std::string &Derived)
+void CheckClass::virtualDestructorError(const Token *tok, const std::string &Base, const std::string &Derived, bool inconclusive)
 {
-    reportError(tok, Severity::error, "virtualDestructor", "Class '" + Base + "' which is inherited by class '" + Derived + "' does not have a virtual destructor.\n"
-                "Class '" + Base + "' which is inherited by class '" + Derived + "' does not have a virtual destructor. "
-                "If you destroy instances of the derived class by deleting a pointer that points to the base class, only "
-                "the destructor of the base class is executed. Thus, dynamic memory that is managed by the derived class "
-                "could leak. This can be avoided by adding a virtual destructor to the base class.");
+    if (inconclusive)
+        reportError(tok, Severity::warning, "virtualDestructor", "Class '" + Base + "' which has virtual members does not have a virtual destructor.", true);
+    else
+        reportError(tok, Severity::error, "virtualDestructor", "Class '" + Base + "' which is inherited by class '" + Derived + "' does not have a virtual destructor.\n"
+                    "Class '" + Base + "' which is inherited by class '" + Derived + "' does not have a virtual destructor. "
+                    "If you destroy instances of the derived class by deleting a pointer that points to the base class, only "
+                    "the destructor of the base class is executed. Thus, dynamic memory that is managed by the derived class "
+                    "could leak. This can be avoided by adding a virtual destructor to the base class.");
 }
 
 //---------------------------------------------------------------------------
@@ -1528,13 +1575,16 @@ void CheckClass::checkConst()
                 } else if (Token::Match(previous->previous(), "*|& >")) {
                     const Token *temp = previous;
 
+                    bool foundConst = false;
                     while (!Token::Match(temp->previous(), ";|}|{|public:|protected:|private:")) {
                         temp = temp->previous();
-                        if (temp->str() == "const")
+                        if (temp->str() == "const") {
+                            foundConst = true;
                             break;
+                        }
                     }
 
-                    if (temp->str() != "const")
+                    if (!foundConst)
                         continue;
                 } else if (func->isOperator && Token::Match(previous, ";|{|}|public:|private:|protected:")) { // Operator without return type: conversion operator
                     const std::string& opName = func->tokenDef->str();
@@ -1619,7 +1669,7 @@ bool CheckClass::isMemberVar(const Scope *scope, const Token *tok) const
     // not found in this class
     if (!scope->definedType->derivedFrom.empty() && !scope->definedType->hasCircularDependencies()) {
         // check each base class
-        for (unsigned int i = 0; i < scope->definedType->derivedFrom.size(); ++i) {
+        for (std::size_t i = 0; i < scope->definedType->derivedFrom.size(); ++i) {
             // find the base class
             const Type *derivedFrom = scope->definedType->derivedFrom[i].type;
 
@@ -1685,7 +1735,7 @@ bool CheckClass::isMemberFunc(const Scope *scope, const Token *tok) const
     // not found in this class
     if (!scope->definedType->derivedFrom.empty()) {
         // check each base class
-        for (unsigned int i = 0; i < scope->definedType->derivedFrom.size(); ++i) {
+        for (std::size_t i = 0; i < scope->definedType->derivedFrom.size(); ++i) {
             // find the base class
             const Type *derivedFrom = scope->definedType->derivedFrom[i].type;
 
@@ -1724,7 +1774,7 @@ bool CheckClass::isConstMemberFunc(const Scope *scope, const Token *tok) const
     // not found in this class
     if (!scope->definedType->derivedFrom.empty()) {
         // check each base class
-        for (unsigned int i = 0; i < scope->definedType->derivedFrom.size(); ++i) {
+        for (std::size_t i = 0; i < scope->definedType->derivedFrom.size(); ++i) {
             // find the base class
             const Type *derivedFrom = scope->definedType->derivedFrom[i].type;
 

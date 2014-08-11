@@ -41,177 +41,6 @@ namespace {
  */
 void CheckNullPointer::parseFunctionCall(const Token &tok, std::list<const Token *> &var, const Library *library, unsigned char value)
 {
-    // standard functions that dereference first parameter..
-    static std::set<std::string> functionNames1_all;     // used no matter what 'value' is
-    static std::set<std::string> functionNames1_nullptr; // used only when 'value' is 0
-    static std::set<std::string> functionNames1_uninit;  // used only when 'value' is non-zero
-    if (functionNames1_all.empty()) {
-        // cstdlib
-        functionNames1_all.insert("atoi");
-        functionNames1_all.insert("atof");
-        functionNames1_all.insert("atol");
-        functionNames1_all.insert("qsort");
-        functionNames1_all.insert("strtof");
-        functionNames1_all.insert("strtod");
-        functionNames1_all.insert("strtol");
-        functionNames1_all.insert("strtoul");
-        functionNames1_all.insert("strtold");
-        functionNames1_all.insert("strtoll");
-        functionNames1_all.insert("strtoull");
-        functionNames1_all.insert("wcstof");
-        functionNames1_all.insert("wcstod");
-        functionNames1_all.insert("wcstol");
-        functionNames1_all.insert("wcstoul");
-        functionNames1_all.insert("wcstold");
-        functionNames1_all.insert("wcstoll");
-        functionNames1_all.insert("wcstoull");
-        // cstring
-        functionNames1_all.insert("strcat");
-        functionNames1_all.insert("strncat");
-        functionNames1_all.insert("strcoll");
-        functionNames1_all.insert("strchr");
-        functionNames1_all.insert("strrchr");
-        functionNames1_all.insert("strcmp");
-        functionNames1_all.insert("strncmp");
-        functionNames1_all.insert("strcspn");
-        functionNames1_all.insert("strdup");
-        functionNames1_all.insert("strndup");
-        functionNames1_all.insert("strpbrk");
-        functionNames1_all.insert("strlen");
-        functionNames1_all.insert("strspn");
-        functionNames1_all.insert("strstr");
-        functionNames1_all.insert("wcscat");
-        functionNames1_all.insert("wcsncat");
-        functionNames1_all.insert("wcscoll");
-        functionNames1_all.insert("wcschr");
-        functionNames1_all.insert("wcsrchr");
-        functionNames1_all.insert("wcscmp");
-        functionNames1_all.insert("wcsncmp");
-        functionNames1_all.insert("wcscspn");
-        functionNames1_all.insert("wcsdup");
-        functionNames1_all.insert("wcsndup");
-        functionNames1_all.insert("wcspbrk");
-        functionNames1_all.insert("wcslen");
-        functionNames1_all.insert("wcsspn");
-        functionNames1_all.insert("wcsstr");
-        // cstdio
-        functionNames1_all.insert("fclose");
-        functionNames1_all.insert("feof");
-        functionNames1_all.insert("fwrite");
-        functionNames1_all.insert("fseek");
-        functionNames1_all.insert("ftell");
-        functionNames1_all.insert("fputs");
-        functionNames1_all.insert("fputws");
-        functionNames1_all.insert("ferror");
-        functionNames1_all.insert("fgetc");
-        functionNames1_all.insert("fgetwc");
-        functionNames1_all.insert("fgetpos");
-        functionNames1_all.insert("fsetpos");
-        functionNames1_all.insert("fscanf");
-        functionNames1_all.insert("fprintf");
-        functionNames1_all.insert("fwscanf");
-        functionNames1_all.insert("fwprintf");
-        functionNames1_all.insert("fopen");
-        functionNames1_all.insert("rewind");
-        functionNames1_all.insert("printf");
-        functionNames1_all.insert("wprintf");
-        functionNames1_all.insert("scanf");
-        functionNames1_all.insert("wscanf");
-        functionNames1_all.insert("fscanf");
-        functionNames1_all.insert("sscanf");
-        functionNames1_all.insert("fwscanf");
-        functionNames1_all.insert("swscanf");
-        functionNames1_all.insert("setbuf");
-        functionNames1_all.insert("setvbuf");
-        functionNames1_all.insert("rename");
-        functionNames1_all.insert("remove");
-        functionNames1_all.insert("puts");
-        functionNames1_all.insert("getc");
-        functionNames1_all.insert("clearerr");
-        // ctime
-        functionNames1_all.insert("asctime");
-        functionNames1_all.insert("ctime");
-        functionNames1_all.insert("mktime");
-
-        functionNames1_nullptr.insert("strcpy");
-        functionNames1_nullptr.insert("sprintf");
-        functionNames1_nullptr.insert("vsprintf");
-        functionNames1_nullptr.insert("vprintf");
-        functionNames1_nullptr.insert("fprintf");
-        functionNames1_nullptr.insert("vfprintf");
-        functionNames1_nullptr.insert("wcscpy");
-        functionNames1_nullptr.insert("swprintf");
-        functionNames1_nullptr.insert("vswprintf");
-        functionNames1_nullptr.insert("vwprintf");
-        functionNames1_nullptr.insert("fwprintf");
-        functionNames1_nullptr.insert("vfwprintf");
-        functionNames1_nullptr.insert("fread");
-        functionNames1_nullptr.insert("gets");
-        functionNames1_nullptr.insert("gmtime");
-        functionNames1_nullptr.insert("localtime");
-        functionNames1_nullptr.insert("strftime");
-
-        functionNames1_uninit.insert("itoa"); // value to convert
-        functionNames1_uninit.insert("perror");
-        functionNames1_uninit.insert("fflush");
-        functionNames1_uninit.insert("freopen");
-    }
-
-    // standard functions that dereference second parameter..
-    static std::set<std::string> functionNames2_all;     // used no matter what 'value' is
-    static std::set<std::string> functionNames2_nullptr; // used only if 'value' is 0
-    if (functionNames2_all.empty()) {
-        functionNames2_all.insert("mbstowcs");
-        functionNames2_all.insert("wcstombs");
-        functionNames2_all.insert("strcat");
-        functionNames2_all.insert("strncat");
-        functionNames2_all.insert("strcmp");
-        functionNames2_all.insert("strncmp");
-        functionNames2_all.insert("strcoll");
-        functionNames2_all.insert("strcpy");
-        functionNames2_all.insert("strcspn");
-        functionNames2_all.insert("strncpy");
-        functionNames2_all.insert("strpbrk");
-        functionNames2_all.insert("strspn");
-        functionNames2_all.insert("strstr");
-        functionNames2_all.insert("strxfrm");
-        functionNames2_all.insert("wcscat");
-        functionNames2_all.insert("wcsncat");
-        functionNames2_all.insert("wcscmp");
-        functionNames2_all.insert("wcsncmp");
-        functionNames2_all.insert("wcscoll");
-        functionNames2_all.insert("wcscpy");
-        functionNames2_all.insert("wcscspn");
-        functionNames2_all.insert("wcsncpy");
-        functionNames2_all.insert("wcspbrk");
-        functionNames2_all.insert("wcsspn");
-        functionNames2_all.insert("wcsstr");
-        functionNames2_all.insert("wcsxfrm");
-        functionNames2_all.insert("sprintf");
-        functionNames2_all.insert("fprintf");
-        functionNames2_all.insert("fscanf");
-        functionNames2_all.insert("sscanf");
-        functionNames2_all.insert("swprintf");
-        functionNames2_all.insert("fwprintf");
-        functionNames2_all.insert("fwscanf");
-        functionNames2_all.insert("swscanf");
-        functionNames2_all.insert("fputs");
-        functionNames2_all.insert("fputc");
-        functionNames2_all.insert("ungetc");
-        functionNames2_all.insert("fputws");
-        functionNames2_all.insert("fputwc");
-        functionNames2_all.insert("ungetwc");
-        functionNames2_all.insert("rename");
-        functionNames2_all.insert("putc");
-        functionNames2_all.insert("putwc");
-        functionNames2_all.insert("freopen");
-
-        functionNames2_nullptr.insert("itoa"); // destination buffer
-        functionNames2_nullptr.insert("frexp");
-        functionNames2_nullptr.insert("modf");
-        functionNames2_nullptr.insert("fgetpos");
-    }
-
     if (Token::Match(&tok, "%var% ( )") || !tok.tokAt(2))
         return;
 
@@ -221,13 +50,7 @@ void CheckNullPointer::parseFunctionCall(const Token &tok, std::list<const Token
     // 1st parameter..
     if ((Token::Match(firstParam, "%var% ,|)") && firstParam->varId() > 0) ||
         (value == 0 && Token::Match(firstParam, "0|NULL ,|)"))) {
-        if (functionNames1_all.find(tok.str()) != functionNames1_all.end())
-            var.push_back(firstParam);
-        else if (value == 0 && functionNames1_nullptr.find(tok.str()) != functionNames1_nullptr.end())
-            var.push_back(firstParam);
-        else if (value != 0 && functionNames1_uninit.find(tok.str()) != functionNames1_uninit.end())
-            var.push_back(firstParam);
-        else if (value == 0 && Token::Match(&tok, "snprintf|vsnprintf|fnprintf|vfnprintf") && secondParam && secondParam->str() != "0") // Only if length (second parameter) is not zero
+        if (value == 0 && Token::Match(&tok, "snprintf|vsnprintf|fnprintf|vfnprintf") && secondParam && secondParam->str() != "0") // Only if length (second parameter) is not zero
             var.push_back(firstParam);
         else if (value == 0 && library != nullptr && library->isnullargbad(tok.str(),1))
             var.push_back(firstParam);
@@ -237,11 +60,7 @@ void CheckNullPointer::parseFunctionCall(const Token &tok, std::list<const Token
 
     // 2nd parameter..
     if ((value == 0 && Token::Match(secondParam, "0|NULL ,|)")) || (secondParam && secondParam->varId() > 0 && Token::Match(secondParam->next(),"[,)]"))) {
-        if (functionNames2_all.find(tok.str()) != functionNames2_all.end())
-            var.push_back(secondParam);
-        else if (value == 0 && functionNames2_nullptr.find(tok.str()) != functionNames2_nullptr.end())
-            var.push_back(secondParam);
-        else if (value == 0 && library != nullptr && library->isnullargbad(tok.str(),2))
+        if (value == 0 && library != nullptr && library->isnullargbad(tok.str(),2))
             var.push_back(secondParam);
         else if (value == 1 && library != nullptr && library->isuninitargbad(tok.str(),2))
             var.push_back(secondParam);
@@ -327,34 +146,33 @@ bool CheckNullPointer::isPointerDeRef(const Token *tok, bool &unknown)
         "stringstream", "wistringstream", "wostringstream", "wstringstream"
     };
 
-    const bool inconclusive = unknown;
-
     unknown = false;
 
-    const Token* prev = tok->previous();
-    while (prev->str() == "." || prev->str() == "::") { // Skip over previous member dereferences
-        prev = prev->previous();
-        while (prev->link() && (prev->str() == "]" || prev->str() == ">"))
-            prev = prev->link()->previous();
-        prev = prev->previous();
+    const Token* parent = tok->astParent();
+    if (!parent)
+        return false;
+    bool firstOperand = parent->astOperand1() == tok;
+    while (parent->str() == "(" && (parent->astOperand2() == nullptr && parent->strAt(1) != ")")) { // Skip over casts
+        parent = parent->astParent();
+        if (!parent)
+            return false;
     }
-    while (prev->str() == ")") // Skip over casts
-        prev = prev->link()->previous();
 
     // Dereferencing pointer..
-    if (prev->str() == "*" && (Token::Match(prev->previous(), "return|throw|;|{|}|:|[|(|,") || prev->previous()->isOp()) && !Token::Match(prev->tokAt(-2), "sizeof|decltype|typeof"))
+    if (parent->str() == "*" && !parent->astOperand2() && !Token::Match(parent->tokAt(-2), "sizeof|decltype|typeof"))
+        return true;
+
+    // array access
+    if (parent->str() == "[" && (!parent->astParent() || parent->astParent()->str() != "&"))
         return true;
 
     // read/write member variable
-    if (!Token::simpleMatch(prev->previous(), "& (") && !Token::Match(prev->previous(), "sizeof|decltype|typeof (") && prev->str() != "&" && Token::Match(tok->next(), ". %var%")) {
-        if (tok->strAt(3) != "(")
+    if (firstOperand && parent->str() == "." && (!parent->astParent() || parent->astParent()->str() != "&")) {
+        if (!parent->astParent() || parent->astParent()->str() != "(" || parent->astParent() == tok->previous())
             return true;
         unknown = true;
         return false;
     }
-
-    if (Token::Match(tok, "%var% [") && (prev->str() != "&" || Token::Match(tok->next()->link()->next(), "[.(]")))
-        return true;
 
     if (Token::Match(tok, "%var% ("))
         return true;
@@ -365,19 +183,19 @@ bool CheckNullPointer::isPointerDeRef(const Token *tok, bool &unknown)
         return true;
 
     // std::string dereferences nullpointers
-    if (Token::Match(prev->tokAt(-3), "std :: string|wstring (") && tok->strAt(1) == ")")
+    if (Token::Match(parent->tokAt(-3), "std :: string|wstring (") && tok->strAt(1) == ")")
         return true;
-    if (Token::Match(prev->previous(), "%var% (") && tok->strAt(1) == ")") {
+    if (Token::Match(parent->previous(), "%var% (") && tok->strAt(1) == ")") {
         const Variable* var = tok->tokAt(-2)->variable();
         if (var && !var->isPointer() && !var->isArray() && Token::Match(var->typeStartToken(), "std :: string|wstring !!::"))
             return true;
     }
 
     // streams dereference nullpointers
-    if (Token::Match(prev, "<<|>>")) {
+    if (Token::Match(parent, "<<|>>") && !firstOperand) {
         const Variable* var = tok->variable();
         if (var && var->isPointer() && Token::Match(var->typeStartToken(), "char|wchar_t")) { // Only outputting or reading to char* can cause problems
-            const Token* tok2 = prev; // Find start of statement
+            const Token* tok2 = parent; // Find start of statement
             for (; tok2; tok2 = tok2->previous()) {
                 if (Token::Match(tok2->previous(), ";|{|}|:"))
                     break;
@@ -393,63 +211,14 @@ bool CheckNullPointer::isPointerDeRef(const Token *tok, bool &unknown)
     }
 
     const Variable *ovar = nullptr;
-    if (Token::Match(tok, "%var% ==|!= %var%"))
-        ovar = tok->tokAt(2)->variable();
-    else if (Token::Match(prev->previous(), "%var% ==|!="))
-        ovar = tok->tokAt(-2)->variable();
-    else if (Token::Match(prev->previous(), "%var% =|+") && Token::Match(tok->next(), ")|]|,|;|+"))
-        ovar = tok->tokAt(-2)->variable();
+    if (Token::Match(parent, "+|==|!=") || (parent->str() == "=" && !firstOperand)) {
+        if (parent->astOperand1() == tok && parent->astOperand2())
+            ovar = parent->astOperand2()->variable();
+        else if (parent->astOperand1() && parent->astOperand2() == tok)
+            ovar = parent->astOperand1()->variable();
+    }
     if (ovar && !ovar->isPointer() && !ovar->isArray() && Token::Match(ovar->typeStartToken(), "std :: string|wstring !!::"))
         return true;
-
-    // Check if it's NOT a pointer dereference.
-    // This is most useful in inconclusive checking
-    if (inconclusive) {
-        // Not a dereference..
-        if (Token::Match(tok, "%var% ="))
-            return false;
-
-        // OK to delete a null
-        if (Token::simpleMatch(prev, "delete") || Token::Match(prev->tokAt(-2), "delete [ ]"))
-            return false;
-
-        // OK to check if pointer is null
-        // OK to take address of pointer
-        if (Token::Match(prev, "!|&"))
-            return false;
-
-        // OK to check pointer in "= p ? : "
-        if (tok->next()->str() == "?" &&
-            (Token::Match(prev, "return|throw|;|{|}|:|[|(|,") || prev->isAssignmentOp()))
-            return false;
-
-        // OK to pass pointer to function
-        if (Token::Match(prev, "[(,]") && Token::Match(tok->next(), "[,)]") &&
-            (prev->str() != "(" ||
-             Token::Match(prev->previous(), "%var% (")))
-            return false;
-
-        // Compare pointer
-        if (Token::Match(prev, "(|&&|%oror%|==|!="))
-            return false;
-        if (Token::Match(tok, "%var% &&|%oror%|==|!=|)"))
-            return false;
-
-        // Taking address
-        if (Token::Match(prev, "return|=") && tok->strAt(1) == ";")
-            return false;
-
-        // (void)var
-        if (Token::Match(prev, "[{;}]") && tok->strAt(1) == ";")
-            return false;
-
-        // Shift pointer (e.g. to cout, but its no char* (see above))
-        if (Token::Match(prev, "<<|>>"))
-            return false;
-
-        // unknown if it's a dereference
-        unknown = true;
-    }
 
     // assume that it's not a dereference (no false positives)
     return false;
@@ -610,218 +379,12 @@ void CheckNullPointer::nullPointerByDeRefAndChec()
     }
 }
 
-void CheckNullPointer::nullPointerByCheckAndDeRef()
-{
-    const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
-
-    // Check if pointer is NULL and then dereference it..
-    for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
-        if (i->type != Scope::eIf && i->type != Scope::eElseIf && i->type != Scope::eWhile)
-            continue;
-        if (!i->classDef || i->classDef->isExpandedMacro())
-            continue;
-
-        const Token* const tok = i->type != Scope::eElseIf ? i->classDef->next() : i->classDef->tokAt(2);
-        // TODO: investigate false negatives:
-        // - handle "while"?
-        // - if there are logical operators
-        // - if (x) { } else { ... }
-
-        // If the if-body ends with a unknown macro then bailout
-        if (Token::Match(i->classEnd->tokAt(-3), "[;{}] %var% ;") && i->classEnd->tokAt(-2)->isUpperCaseName())
-            continue;
-
-        // vartok : token for the variable
-        const Token *vartok = nullptr;
-        const Token *checkConditionStart = nullptr;
-        if (Token::Match(tok, "( ! %var% )|&&")) {
-            vartok = tok->tokAt(2);
-            checkConditionStart = vartok->next();
-        } else if (Token::Match(tok, "( %var% )|&&")) {
-            vartok = tok->next();
-        } else if (Token::Match(tok, "( ! ( %var% =")) {
-            vartok = tok->tokAt(3);
-            if (Token::simpleMatch(tok->linkAt(2), ") &&"))
-                checkConditionStart = tok->linkAt(2);
-        } else
-            continue;
-
-        // Check if variable is a pointer
-        const Variable *var = vartok->variable();
-        if (!var || !var->isPointer())
-            continue;
-
-        // variable id for pointer
-        const unsigned int varid(vartok->varId());
-
-        const Scope* declScope = &*i;
-        while (declScope->nestedIn && var->scope() != declScope && declScope->type != Scope::eFunction)
-            declScope = declScope->nestedIn;
-
-        if (Token::Match(vartok->next(), "&& ( %varid% =", varid))
-            continue;
-
-        // Name and line of the pointer
-        const std::string &pointerName = vartok->str();
-
-        // Check the condition (eg. ( !x && x->i )
-        if (checkConditionStart) {
-            const Token * const conditionEnd = tok->link();
-            for (const Token *tok2 = checkConditionStart; tok2 != conditionEnd; tok2 = tok2->next()) {
-                // If we hit a || operator, abort
-                if (tok2->str() == "||")
-                    break;
-
-                // Pointer is used
-                bool unknown = _settings->inconclusive;
-                if (tok2->varId() == varid && (isPointerDeRef(tok2, unknown) || unknown)) {
-                    nullPointerError(tok2, pointerName, vartok, unknown);
-                    break;
-                }
-            }
-        }
-
-        // start token = inside the if-body
-        const Token *tok1 = i->classStart;
-
-        if (Token::Match(tok, "( %var% )|&&")) {
-            // start token = first token after the if/while body
-            tok1 = i->classEnd->next();
-            if (!tok1)
-                continue;
-        }
-
-        int indentlevel = 0;
-
-        // Set to true if we would normally bail out the check.
-        bool inconclusive = false;
-
-        // Count { and } for tok2
-        for (const Token *tok2 = tok1; tok2 != declScope->classEnd; tok2 = tok2->next()) {
-            if (tok2->str() == "{")
-                ++indentlevel;
-            else if (tok2->str() == "}") {
-                if (indentlevel == 0) {
-                    if (_settings->inconclusive)
-                        inconclusive = true;
-                    else
-                        break;
-                }
-                --indentlevel;
-
-                // calling exit function?
-                bool unknown = false;
-                if (_tokenizer->IsScopeNoReturn(tok2, &unknown)) {
-                    if (_settings->inconclusive && unknown)
-                        inconclusive = true;
-                    else
-                        break;
-                }
-
-                if (indentlevel <= 0) {
-                    // skip all "else" blocks because they are not executed in this execution path
-                    while (Token::simpleMatch(tok2, "} else if ("))
-                        tok2 = tok2->linkAt(3)->linkAt(1);
-                    if (Token::simpleMatch(tok2, "} else {"))
-                        tok2 = tok2->linkAt(2);
-                }
-            }
-
-            if (tok2->str() == "return" || tok2->str() == "throw") {
-                bool unknown = _settings->inconclusive;
-                for (; tok2 && tok2->str() != ";"; tok2 = tok2->next()) {
-                    if (tok2->varId() == varid) {
-                        if (CheckNullPointer::isPointerDeRef(tok2, unknown))
-                            nullPointerError(tok2, pointerName, vartok, inconclusive);
-                        else if (unknown)
-                            nullPointerError(tok2, pointerName, vartok, true);
-                        if (Token::Match(tok2, "%var% %oror%|&&|?"))
-                            break;
-                    }
-                }
-                break;
-            }
-
-            // Bailout for "if".
-            if (tok2->str() == "if") {
-                if (_settings->inconclusive)
-                    inconclusive = true;
-                else
-                    break;
-            }
-
-            if (Token::Match(tok2, "goto|continue|break|switch|for"))
-                break;
-
-            // parameters to sizeof are not dereferenced
-            if (Token::Match(tok2, "decltype|sizeof|typeof")) {
-                if (tok2->strAt(1) != "(")
-                    tok2 = tok2->next();
-                else
-                    tok2 = tok2->next()->link();
-                continue;
-            }
-
-            // function call, check if pointer is dereferenced
-            if (Token::Match(tok2, "%var% (") && !Token::Match(tok2, "if|while")) {
-                std::list<const Token *> vars;
-                parseFunctionCall(*tok2, vars, &_settings->library, 0);
-                for (auto it = vars.begin(); it != vars.end(); ++it) {
-                    if (Token::Match(*it, "%varid% [,)]", varid)) {
-                        nullPointerError(*it, pointerName, vartok, inconclusive);
-                        break;
-                    }
-                }
-            }
-
-            // calling unknown function (abort/init)..
-            else if (Token::simpleMatch(tok2, ") ;") &&
-                     (Token::Match(tok2->link()->tokAt(-2), "[;{}.] %var% (") ||
-                      Token::Match(tok2->link()->tokAt(-5), "[;{}] ( * %var% ) ("))) {
-                // noreturn function?
-                bool unknown = false;
-                if (_tokenizer->IsScopeNoReturn(tok2->tokAt(2), &unknown)) {
-                    if (!unknown || !_settings->inconclusive) {
-                        break;
-                    }
-                    inconclusive = _settings->inconclusive;
-                }
-
-                // init function (global variables)
-                if (!(var->isLocal() || var->isArgument()))
-                    break;
-            }
-
-            if (tok2->varId() == varid) {
-                // unknown: this is set to true by isPointerDeRef if
-                //          the function fails to determine if there
-                //          is a dereference or not
-                bool unknown = _settings->inconclusive;
-
-                if (Token::Match(tok2->previous(), "[;{}=] %var% = 0 ;"))
-                    ;
-
-                else if (CheckNullPointer::isPointerDeRef(tok2, unknown))
-                    nullPointerError(tok2, pointerName, vartok, inconclusive);
-
-                else if (unknown && _settings->inconclusive)
-                    nullPointerError(tok2, pointerName, vartok, true);
-
-                else
-                    break;
-            }
-        }
-    }
-}
-
-
 void CheckNullPointer::nullPointer()
 {
     nullPointerLinkedList();
 
     if (_settings->isEnabled("warning")) {
         nullPointerByDeRefAndChec();
-        nullPointerByCheckAndDeRef();
         nullPointerDefaultArgument();
     }
 }
@@ -871,7 +434,7 @@ void CheckNullPointer::nullConstantDereference()
                     parseFunctionCall(*tok, var, &_settings->library, 0);
 
                     // is one of the var items a NULL pointer?
-                    for (auto it = var.begin(); it != var.end(); ++it) {
+                    for (std::list<const Token *>::const_iterator it = var.begin(); it != var.end(); ++it) {
                         if (Token::Match(*it, "0|NULL [,)]")) {
                             nullPointerError(*it);
                         }
@@ -883,9 +446,11 @@ void CheckNullPointer::nullConstantDereference()
             else if (Token::simpleMatch(tok->previous(), ">> 0")) { // Only checking input stream operations is safe here, because otherwise 0 can be an integer as well
                 const Token* tok2 = tok->previous(); // Find start of statement
                 for (; tok2; tok2 = tok2->previous()) {
-                    if (Token::Match(tok2->previous(), ";|{|}|:"))
+                    if (Token::Match(tok2->previous(), ";|{|}|:|("))
                         break;
                 }
+                if (tok2 && tok2->previous() && tok2->previous()->str()=="(")
+                    continue;
                 if (Token::simpleMatch(tok2, "std :: cin"))
                     nullPointerError(tok);
                 if (tok2 && tok2->varId() != 0) {
@@ -960,7 +525,17 @@ void CheckNullPointer::nullPointerDefaultArgument()
             for (const Token *tok = scope->classStart; tok != scope->classEnd; tok = tok->next()) {
 
                 // If we encounter a possible NULL-pointer check, skip over its body
-                if (Token::simpleMatch(tok, "if ( "))  {
+                if (tok->str() == "?") { // TODO: Skip this if the condition is unrelated to the variables
+                    // Find end of statement
+                    tok = tok->astOperand2();
+                    while (tok && !Token::Match(tok, ")|;")) {
+                        if (tok->link() && Token::Match(tok, "(|[|<|{"))
+                            tok = tok->link();
+                        tok = tok->next();
+                    }
+                    if (!tok)
+                        break;
+                } else if (Token::simpleMatch(tok, "if ( "))  {
                     bool dependsOnPointer = false;
                     const Token *endOfCondition = tok->next()->link();
                     if (!endOfCondition)
@@ -1064,4 +639,3 @@ void CheckNullPointer::nullPointerDefaultArgError(const Token *tok, const std::s
 {
     reportError(tok, Severity::warning, "nullPointer", "Possible null pointer dereference if the default parameter value is used: " + varname);
 }
-

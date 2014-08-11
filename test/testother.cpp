@@ -61,6 +61,7 @@ private:
         TEST_CASE(strPlusChar1);     // "/usr" + '/'
         TEST_CASE(strPlusChar2);     // "/usr" + ch
         TEST_CASE(strPlusChar3);     // ok: path + "/sub" + '/'
+        TEST_CASE(strPlusChar4);     // ast
 
         TEST_CASE(varScope1);
         TEST_CASE(varScope2);
@@ -165,6 +166,7 @@ private:
 
         TEST_CASE(alwaysTrueFalseStringCompare);
         TEST_CASE(suspiciousStringCompare);
+        TEST_CASE(suspiciousStringCompare_char);
         TEST_CASE(checkSignOfUnsignedVariable);
         TEST_CASE(checkSignOfPointer);
 
@@ -194,6 +196,8 @@ private:
         TEST_CASE(checkCommaSeparatedReturn);
 
         TEST_CASE(checkComparisonFunctionIsAlwaysTrueOrFalse);
+
+        TEST_CASE(integerOverflow) // #5895
     }
 
     void check(const char code[], const char *filename = nullptr, bool experimental = false, bool inconclusive = true, bool posix = false, bool runSimpleChecks=true, Settings* settings = 0) {
@@ -215,7 +219,7 @@ private:
         if (posix) {
             const char cfg[] = "<?xml version=\"1.0\"?>\n"
                                "<def>\n"
-                               "  <function name=\"usleep\"> <arg nr=\"1\"><valid>0-999999</valid></arg> </function>\n"
+                               "  <function name=\"usleep\"> <arg nr=\"1\"><valid>0:999999</valid></arg> </function>\n"
                                "</def>";
             tinyxml2::XMLDocument xmldoc;
             xmldoc.Parse(cfg, sizeof(cfg));
@@ -361,19 +365,49 @@ private:
         ASSERT_EQUALS("", errout.str());
 
 
-        check("void foo(int& i)\n"
-              "{\n"
+        check("void foo(int& i) {\n"
               "    i=6;\n"
               "}\n"
-              "void bar(int i)\n"
-              "{\n"
-              "    if(i>5){\n"
+              "void bar(int i) {\n"
+              "    if(i>5) {\n"
               "        foo(i);\n"
-              "        if(i<5){\n"
+              "        if(i<5) {\n"
               "        }\n"
               "    }\n"
               "}");
         ASSERT_EQUALS("", errout.str());
+
+        check("void foo(int& i);\n"
+              "void bar() {\n"
+              "    int i; i = func();\n"
+              "    if(i>5) {\n"
+              "        foo(i);\n"
+              "        if(i<5) {\n"
+              "        }\n"
+              "    }\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("void foo(int i);\n"
+              "void bar(int i) {\n"
+              "    if(i>5) {\n"
+              "        foo(i);\n"
+              "        if(i<5) {\n"
+              "        }\n"
+              "    }\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:3] -> [test.cpp:5]: (warning) Opposite conditions in nested 'if' blocks lead to a dead code block.\n", errout.str());
+
+        check("void foo(int i);\n"
+              "void bar() {\n"
+              "    int i; i = func();\n"
+              "    if(i>5) {\n"
+              "        foo(i);\n"
+              "        if(i<5) {\n"
+              "        }\n"
+              "    }\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:4] -> [test.cpp:6]: (warning) Opposite conditions in nested 'if' blocks lead to a dead code block.\n", errout.str());
 
         // see linux revision 1f80c0cc
         check("int generic_write_sync(int,int,int);\n"
@@ -415,6 +449,16 @@ private:
               "       r += 3;\n"
               "       if (r > w) {}\n"
               "    }\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        // #5874 - array
+        check("void testOppositeConditions2() {\n"
+              "  int array[2] = { 0, 0 };\n"
+              "  if (array[0] < 2) {\n"
+              "    array[0] += 5;\n"
+              "    if (array[0] > 2) {}\n"
+              "  }\n"
               "}");
         ASSERT_EQUALS("", errout.str());
     }
@@ -724,7 +768,7 @@ private:
         const char cfg[] = "<?xml version=\"1.0\"?>\n"
                            "<def>\n"
                            "  <function name=\"memset\"> <arg nr=\"3\"><not-bool/></arg> </function>\n"
-                           "  <function name=\"strtol\"> <arg nr=\"3\"><valid>0,2-36</valid></arg> </function>\n"
+                           "  <function name=\"strtol\"> <arg nr=\"3\"><valid>0,2:36</valid></arg> </function>\n"
                            "</def>";
         tinyxml2::XMLDocument xmldoc;
         xmldoc.Parse(cfg, sizeof(cfg));
@@ -750,10 +794,10 @@ private:
         TODO_ASSERT_EQUALS("error", "", errout.str());
 
         invalidFunctionUsage("int f() { strtol(a,b,sizeof(a)!=12); }");
-        ASSERT_EQUALS("[test.cpp:1]: (error) Invalid strtol() argument nr 3. The value is 0 or 1 (comparison result) but the valid values are '0,2-36'.\n", errout.str());
+        ASSERT_EQUALS("[test.cpp:1]: (error) Invalid strtol() argument nr 3. The value is 0 or 1 (comparison result) but the valid values are '0,2:36'.\n", errout.str());
 
         invalidFunctionUsage("int f() { strtol(a,b,1); }");
-        ASSERT_EQUALS("[test.cpp:1]: (error) Invalid strtol() argument nr 3. The value is 1 but the valid values are '0,2-36'.\n", errout.str());
+        ASSERT_EQUALS("[test.cpp:1]: (error) Invalid strtol() argument nr 3. The value is 1 but the valid values are '0,2:36'.\n", errout.str());
 
         invalidFunctionUsage("int f() { strtol(a,b,10); }");
         ASSERT_EQUALS("", errout.str());
@@ -860,6 +904,10 @@ private:
         ASSERT_EQUALS("", errout.str());
     }
 
+    void strPlusChar4() {
+        // don't crash
+        strPlusChar("int test() { int +; }");
+    }
 
 
     void varScope(const char code[]) {
@@ -1528,6 +1576,9 @@ private:
     void passedByValue() {
         testPassedByValue("void f(const std::string str) {}");
         ASSERT_EQUALS("[test.cpp:1]: (performance) Function parameter 'str' should be passed by reference.\n", errout.str());
+
+        testPassedByValue("void f(const std::string::size_type x) {}");
+        ASSERT_EQUALS("", errout.str());
 
         testPassedByValue("class Foo;\nvoid f(const Foo foo) {}");
         ASSERT_EQUALS("[test.cpp:2]: (performance) Function parameter 'foo' should be passed by reference.\n", errout.str());
@@ -3354,23 +3405,29 @@ private:
     void selfAssignment() {
         check("void foo()\n"
               "{\n"
-              "        int x = 1;\n"
-              "        x = x;\n"
-              "        return 0;\n"
+              "    int x = 1;\n"
+              "    x = x;\n"
+              "    return 0;\n"
               "}");
         ASSERT_EQUALS("[test.cpp:4]: (warning) Redundant assignment of 'x' to itself.\n", errout.str());
 
         check("void foo()\n"
               "{\n"
-              "        int x = x;\n"
+              "    int x = x;\n"
               "}");
         ASSERT_EQUALS("[test.cpp:3]: (warning) Redundant assignment of 'x' to itself.\n", errout.str());
 
         check("void foo()\n"
               "{\n"
-              "        std::string var = var = \"test\";\n"
+              "    std::string var = var = \"test\";\n"
               "}");
-        ASSERT_EQUALS("[test.cpp:3]: (warning) Redundant assignment of 'var' to itself.\n", errout.str());
+        TODO_ASSERT_EQUALS("[test.cpp:3]: (warning) Redundant assignment of 'var' to itself.\n", "", errout.str());
+
+        check("struct A { int b; };\n"
+              "void foo(A* a1, A* a2) {\n"
+              "    a1->b = a1->b;\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:3]: (warning) Redundant assignment of 'a1.b' to itself.\n", errout.str());
 
         // #4073 (segmentation fault)
         check("void Foo::myFunc( int a )\n"
@@ -3381,9 +3438,9 @@ private:
 
         check("void foo()\n"
               "{\n"
-              "        int x = 1;\n"
-              "        x = x + 1;\n"
-              "        return 0;\n"
+              "    int x = 1;\n"
+              "    x = x + 1;\n"
+              "    return 0;\n"
               "}");
         ASSERT_EQUALS("", errout.str());
 
@@ -3403,7 +3460,7 @@ private:
         // #2502 - non-primitive type -> there might be some side effects
         check("void foo()\n"
               "{\n"
-              "        Fred fred; fred = fred;\n"
+              "    Fred fred; fred = fred;\n"
               "}");
         ASSERT_EQUALS("", errout.str());
 
@@ -3440,7 +3497,16 @@ private:
               "void Foo::func() {\n"
               "    this->var = var;\n"
               "}");
-        ASSERT_EQUALS("[test.cpp:6]: (warning) Redundant assignment of 'var' to itself.\n", errout.str());
+        ASSERT_EQUALS("[test.cpp:6]: (warning) Redundant assignment of 'this.var' to itself.\n", errout.str());
+
+        check("class Foo {\n"
+              "    int var;\n"
+              "    void func(int var);\n"
+              "};\n"
+              "void Foo::func(int var) {\n"
+              "    this->var = var;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
     }
 
     void trac1132() {
@@ -4263,6 +4329,12 @@ private:
               "}\n");
         ASSERT_EQUALS("", errout.str());
 
+        check("void f() {\n" // FP
+              "    float x = 2.3f;\n"
+              "    memset(a, (x?64:0), 40);\n"
+              "}\n");
+        ASSERT_EQUALS("", errout.str());
+
         check("void f() {\n"
               "    short ss[] = {1, 2};\n"
               "    memset(ss, 256, 4);\n"
@@ -4771,6 +4843,11 @@ private:
               "}");
         ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:2]: (style) Same expression on both sides of '&'.\n", errout.str());
 
+        check("void foo(int a, int b) {\n"
+              "    if ((a | b) == (a | b)) {}\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:2]: (style) Same expression on both sides of '=='.\n", errout.str());
+
         check("void foo() {\n"
               "    if (a1[a2[c & 0xff] & 0xff]) {}\n"
               "}");
@@ -4846,6 +4923,22 @@ private:
               "    bool b = bar.isSet() && bar.isSet();\n"
               "}");
         ASSERT_EQUALS("[test.cpp:3] -> [test.cpp:3]: (style) Same expression on both sides of '&&'.\n", errout.str());
+
+
+        check("void foo() {\n"
+              "    if ((b + a) | (a + b)) {}\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:2]: (style) Same expression on both sides of '|'.\n", errout.str());
+
+        check("void foo() {\n"
+              "    if ((b > a) | (a > b)) {}\n" // > is not commutative
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("void foo() {\n"
+              "    if ((b + a) > (a + b)) {}\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:2]: (style) Same expression on both sides of '>'.\n", errout.str());
     }
 
     void duplicateExpression2() { // check if float is NaN or Inf
@@ -4967,6 +5060,17 @@ private:
               "    if (dynamic_cast<B*>(src) || dynamic_cast<B*>(src)) {}\n"
               "}\n", "test.cpp", false, false, false, false); // don't run simplifications
         ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:2]: (style) Same expression on both sides of '||'.\n", errout.str());
+
+        // #5819
+        check("Vector func(Vector vec1) {\n"
+              "    return fabs(vec1 & vec1 & vec1);\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("Vector func(int vec1) {\n"
+              "    return fabs(vec1 & vec1 & vec1);\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:2]: (style) Same expression on both sides of '&'.\n", errout.str());
 
     }
 
@@ -5119,8 +5223,23 @@ private:
 
         check("bool foo(char* c) {\n"
               "    return \"x\" == c+foo;\n"
-              "}");
+              "}", "test.cpp");
         ASSERT_EQUALS("", errout.str());
+
+        check("bool foo(char* c) {\n"
+              "    return \"x\" == c+foo;\n"
+              "}", "test.c");
+        ASSERT_EQUALS("[test.c:2]: (warning) String literal compared with variable 'c'. Did you intend to use strcmp() instead?\n", errout.str());
+
+        check("bool foo(Foo c) {\n"
+              "    return \"x\" == c.foo;\n"
+              "}", "test.cpp");
+        ASSERT_EQUALS("", errout.str());
+
+        check("bool foo(Foo c) {\n"
+              "    return \"x\" == c.foo;\n"
+              "}", "test.c");
+        ASSERT_EQUALS("[test.c:2]: (warning) String literal compared with variable 'c.foo'. Did you intend to use strcmp() instead?\n", errout.str());
 
         check("bool foo(const std::string& c) {\n"
               "    return \"x\" == c;\n"
@@ -5136,7 +5255,7 @@ private:
         check("bool foo() {\n"
               "MyString *str=Getter();\n"
               "return *str==\"bug\"; }\n", "test.c");
-        ASSERT_EQUALS("[test.c:3]: (warning) String literal compared with variable 'str'. Did you intend to use strcmp() instead?\n", errout.str());
+        ASSERT_EQUALS("[test.c:3]: (warning) String literal compared with variable '*str'. Did you intend to use strcmp() instead?\n", errout.str());
 
         // Ticket #4257
         check("bool foo() {\n"
@@ -5172,6 +5291,60 @@ private:
         ASSERT_EQUALS("", errout.str());
         check("int foo(char c) {\n"
               "return c == \"42\"[0];}", "test.c", false, true, false, false);
+        ASSERT_EQUALS("", errout.str());
+    }
+
+    void suspiciousStringCompare_char() {
+        check("bool foo(char* c) {\n"
+              "    return c == '\\0';\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:2]: (warning) Char literal compared with pointer 'c'. Did you intend to dereference it?\n", errout.str());
+
+        check("bool foo(char* c) {\n"
+              "    return '\\0' != c;\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:2]: (warning) Char literal compared with pointer 'c'. Did you intend to dereference it?\n", errout.str());
+
+        check("bool foo(char c) {\n"
+              "    return c == '\\0';\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("bool foo(char c) {\n"
+              "    return c == 0;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("bool foo(char* c) {\n"
+              "    return *c == 0;\n"
+              "}", "test.c");
+        ASSERT_EQUALS("", errout.str());
+
+        check("bool foo(char* c) {\n"
+              "    return *c == 0;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("bool foo(Foo* c) {\n"
+              "    return 0 == c->x;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("void foo(char* c) {\n"
+              "    if(c == '\\0') bar();\n"
+              "}");
+        TODO_ASSERT_EQUALS("[test.cpp:2]: (warning) Char literal compared with pointer 'c'. Did you intend to dereference it?\n", "", errout.str());
+
+        check("void f() {\n"
+              "  struct { struct { char *str; } x; } a;\n"
+              "  return a.x.str == '\\0';"
+              "}");
+        ASSERT_EQUALS("[test.cpp:3]: (warning) Char literal compared with pointer 'a.x.str'. Did you intend to dereference it?\n", errout.str());
+
+        check("void f() {\n"
+              "  struct { struct { char *str; } x; } a;\n"
+              "  return *a.x.str == '\\0';"
+              "}");
         ASSERT_EQUALS("", errout.str());
     }
 
@@ -6208,6 +6381,14 @@ private:
                              "    }\n"
                              "}\n");
         TODO_ASSERT_EQUALS("", "[test.cpp:7]: (performance, inconclusive) Use const reference for 'temp' to avoid unnecessary data copying.\n", errout.str());
+
+        // #5890 - crash: wesnoth desktop_util.cpp / unicode.hpp
+        check_redundant_copy("typedef std::vector<char> X;\n"
+                             "X f<X>(const X &in) {\n"
+                             "    const X s = f<X>(in);\n"
+                             "    return f<X>(s);\n"
+                             "}");
+        ASSERT_EQUALS("", errout.str());
     }
 
     void checkNegativeShift() {
@@ -6996,12 +7177,12 @@ private:
         check("void f(){\n"
               "usleep(1000000);\n"
               "}",nullptr,false,false,true);
-        ASSERT_EQUALS("[test.cpp:2]: (error) Invalid usleep() argument nr 1. The value is 1000000 but the valid values are '0-999999'.\n", errout.str());
+        ASSERT_EQUALS("[test.cpp:2]: (error) Invalid usleep() argument nr 1. The value is 1000000 but the valid values are '0:999999'.\n", errout.str());
 
         check("void f(){\n"
               "usleep(1000001);\n"
               "}",nullptr,false,false,true);
-        ASSERT_EQUALS("[test.cpp:2]: (error) Invalid usleep() argument nr 1. The value is 1000001 but the valid values are '0-999999'.\n", errout.str());
+        ASSERT_EQUALS("[test.cpp:2]: (error) Invalid usleep() argument nr 1. The value is 1000001 but the valid values are '0:999999'.\n", errout.str());
     }
 
     void checkCommaSeparatedReturn() {
@@ -7086,6 +7267,14 @@ private:
         check("bool f(int x, int y){\n"
               "   return isgreaterequal(x,y) && islessequal(x,y) && islessgreater(x,y) && isgreater(x,y) && isless(x,y);\n"
               "}");
+        ASSERT_EQUALS("", errout.str());
+    }
+
+    void integerOverflow() { // 5895
+        // no signed integer overflow should happen
+        check("void f(unsigned long long ull) {\n"
+              "    if (ull == 0x89504e470d0a1a0a || ull == 0x8a4d4e470d0a1a0a) ;\n"
+              "}\n");
         ASSERT_EQUALS("", errout.str());
     }
 };

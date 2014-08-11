@@ -24,7 +24,6 @@
 #include "config.h"
 #include "check.h"
 
-class Token;
 class Scope;
 class Function;
 
@@ -143,7 +142,7 @@ private:
     void mallocOnClassError(const Token* tok, const std::string &memfunc, const Token* classTok, const std::string &classname);
     void mallocOnClassWarning(const Token* tok, const std::string &memfunc, const Token* classTok);
     void operatorEqReturnError(const Token *tok, const std::string &className);
-    void virtualDestructorError(const Token *tok, const std::string &Base, const std::string &Derived);
+    void virtualDestructorError(const Token *tok, const std::string &Base, const std::string &Derived, bool inconclusive);
     void thisSubtractionError(const Token *tok);
     void operatorEqRetRefThisError(const Token *tok);
     void operatorEqToSelfError(const Token *tok);
@@ -167,7 +166,7 @@ private:
         c.mallocOnClassWarning(0, "malloc", 0);
         c.mallocOnClassError(0, "malloc", 0, "std::string");
         c.operatorEqReturnError(0, "class");
-        c.virtualDestructorError(0, "Base", "Derived");
+        c.virtualDestructorError(0, "Base", "Derived", false);
         c.thisSubtractionError(0);
         c.operatorEqRetRefThisError(0);
         c.operatorEqToSelfError(0);
@@ -202,8 +201,9 @@ private:
                "* Duplicated inherited data members\n";
     }
 
-    // operatorEqRetRefThis helper function
+    // operatorEqRetRefThis helper functions
     void checkReturnPtrThis(const Scope *scope, const Function *func, const Token *tok, const Token *last);
+    void checkReturnPtrThis(const Scope *scope, const Function *func, const Token *tok, const Token *last, std::set<const Function*>& analyzedFunctions);
 
     // operatorEqToSelf helper functions
     bool hasAllocation(const Function *func, const Scope* scope) const;

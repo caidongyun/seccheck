@@ -38,7 +38,7 @@ bool Preprocessor::missingSystemIncludeFlag;
 
 char Preprocessor::macroChar = char(1);
 
-Preprocessor::Preprocessor(Settings *settings, ErrorLogger *errorLogger) : _settings(settings), _errorLogger(errorLogger)
+Preprocessor::Preprocessor(Settings *settings, ErrorLogger *errorLogger) : _settings(settings), _errorLogger(errorLogger), _foundUnhandledChars(false)
 {
 
 }
@@ -279,7 +279,7 @@ std::string Preprocessor::read(std::istream &istr, const std::string &filename)
 
 
 /** read preprocessor statements */
-std::string Preprocessor::readpreprocessor(std::istream &istr, const unsigned int bom) const
+std::string Preprocessor::readpreprocessor(std::istream &istr, const unsigned int bom)
 {
     enum { NEWLINE, SPACE, PREPROCESSOR, BACKSLASH, OTHER } state = NEWLINE;
     std::ostringstream code;
@@ -486,14 +486,13 @@ std::string Preprocessor::removeComments(const std::string &str, const std::stri
                    << "Neither unicode nor extended ASCII are supported. "
                    << "(line=" << lineno << ", character code=" << std::hex << (int(ch) & 0xff) << ")";
             writeError(filename, lineno, _errorLogger, "syntaxError", errmsg.str());
+            _foundUnhandledChars = true;
         }
 
         if (_settings && _settings->terminated())
             return "";
 
-        if ((str.compare(i, 7, "#error ") == 0 && (!_settings || _settings->userDefines.empty())) ||
-            str.compare(i, 9, "#warning ") == 0) {
-
+        if (str.compare(i, 7, "#error ") == 0 || str.compare(i, 9, "#warning ") == 0) {
             if (str.compare(i, 6, "#error") == 0)
                 code << "#error";
 
@@ -872,7 +871,7 @@ std::string Preprocessor::removeSpaceNearNL(const std::string &str)
 {
     std::string tmp;
     char prev = 0;
-    for (unsigned int i = 0; i < str.size(); i++) {
+    for (std::size_t i = 0; i < str.size(); i++) {
         if (str[i] == ' ' &&
             ((i > 0 && prev == '\n') ||
              (i + 1 < str.size() && str[i+1] == '\n')
@@ -1041,7 +1040,7 @@ void Preprocessor::preprocess(std::istream &srcCodeStream, std::string &processe
         processedFile = ostr.str();
     }
 
-    std::map<std::string, std::string> defs(getcfgmap(_settings ? _settings->userDefines : std::string(""), _settings, filename));
+    std::map<std::string, std::string> defs(getcfgmap(_settings ? _settings->userDefines : emptyString, _settings, filename));
 
     if (_settings && _settings->_maxConfigs == 1U) {
         std::set<std::string> pragmaOnce;
@@ -1431,7 +1430,7 @@ std::list<std::string> Preprocessor::getcfgs(const std::string &filedata, const 
         }
 
         else if (line.compare(0, 5, "#else") == 0 && ! deflist.empty()) {
-            if (deflist.back() == "!") {
+            if (deflist.back() == "!" && !ndeflist.empty()) {
                 deflist.back() = ndeflist.back();
                 ndeflist.pop_back();
             } else {
@@ -1441,7 +1440,7 @@ std::list<std::string> Preprocessor::getcfgs(const std::string &filedata, const 
         }
 
         else if (line.compare(0, 6, "#endif") == 0 && ! deflist.empty()) {
-            if (deflist.back() == "!")
+            if (deflist.back() == "!" && !ndeflist.empty())
                 ndeflist.pop_back();
             deflist.pop_back();
         }
@@ -1781,32 +1780,43 @@ std::string Preprocessor::getcode(const std::string &filedata, const std::string
     std::stack<unsigned int> lineNumbers;
     std::istringstream istr(filedata);
     std::string line;
-    while (std::getline(istr, line)) {
+    while (std::getline(istr, line)) 
+	{
         ++lineno;
 
         if (_settings && _settings->terminated())
+		{
             return "";
+		}
 
-        if (line.compare(0, 11, "#pragma asm") == 0) {
+        if (line.compare(0, 11, "#pragma asm") == 0) 
+		{
             ret << "\n";
             bool found_end = false;
-            while (getline(istr, line)) {
-                if (line.compare(0, 14, "#pragma endasm") == 0) {
+            while (getline(istr, line)) 
+			{
+                if (line.compare(0, 14, "#pragma endasm") == 0) 
+				{
                     found_end = true;
                     break;
                 }
 
                 ret << "\n";
             }
+			
             if (!found_end)
+			{
                 break;
+			}
 
-            if (line.find("=") != std::string::npos) {
+            if (line.find("=") != std::string::npos) 
+			{
                 Tokenizer tokenizer(_settings, _errorLogger);
                 line.erase(0, sizeof("#pragma endasm"));
                 std::istringstream tempIstr(line);
-                tokenizer.tokenize(tempIstr, "");
-                if (Token::Match(tokenizer.tokens(), "( %var% = %any% )")) {
+                tokenizer.tokenize(tempIstr, "", "", true);
+                if (Token::Match(tokenizer.tokens(), "( %var% = %any% )")) 
+				{
                     ret << "asm(" << tokenizer.tokens()->strAt(1) << ");";
                 }
             }
@@ -1819,21 +1829,26 @@ std::string Preprocessor::getcode(const std::string &filedata, const std::string
         const std::string def = getdef(line, true);
         const std::string ndef = getdef(line, false);
 
-        const bool emptymatch = matching_ifdef.empty() | matched_ifdef.empty();
+        const bool emptymatch = matching_ifdef.empty() || matched_ifdef.empty();
 
-        if (line.compare(0, 8, "#define ") == 0) {
+        if (line.compare(0, 8, "#define ") == 0) 
+		{
             match = true;
 
-            if (_settings) {
+            if (_settings) 
+			{
                 typedef std::set<std::string>::const_iterator It;
-                for (It it = _settings->userUndefs.begin(); it != _settings->userUndefs.end(); ++it) {
+                for (It it = _settings->userUndefs.begin(); it != _settings->userUndefs.end(); ++it) 
+				{
                     std::string::size_type pos = line.find_first_not_of(' ',8);
-                    if (pos != std::string::npos) {
+                    if (pos != std::string::npos) 
+					{
                         std::string::size_type pos2 = line.find(*it,pos);
                         if ((pos2 != std::string::npos) &&
                             ((line.size() == pos2 + (*it).size()) ||
                              (line[pos2 + (*it).size()] == ' ') ||
-                             (line[pos2 + (*it).size()] == '('))) {
+                             (line[pos2 + (*it).size()] == '('))) 
+						{
                             match = false;
                             break;
                         }
@@ -1841,102 +1856,150 @@ std::string Preprocessor::getcode(const std::string &filedata, const std::string
                 }
             }
 
-            for (auto it = matching_ifdef.begin(); it != matching_ifdef.end(); ++it)
-                match &= bool(*it);
+            if (match) 
+			{
+                for (std::list<bool>::const_iterator it = matching_ifdef.begin(); it != matching_ifdef.end(); ++it) 
+				{
+                    if (!bool(*it)) 
+					{
+                        match = false;
+                        break;
+                    }
+                }
+            }
 
-            if (match) {
+            if (match) 
+			{
                 std::string::size_type pos = line.find_first_of(" (", 8);
                 if (pos == std::string::npos)
+				{
                     cfgmap[line.substr(8)] = "";
-                else if (line[pos] == ' ') {
+				}
+                else if (line[pos] == ' ') 
+				{
                     std::string value(line.substr(pos + 1));
                     if (cfgmap.find(value) != cfgmap.end())
+					{
                         value = cfgmap[value];
+					}
                     cfgmap[line.substr(8, pos - 8)] = value;
-                } else
+                } 
+				else
+				{
                     cfgmap[line.substr(8, pos - 8)] = "";
+				}
             }
         }
 
-        else if (line.compare(0, 7, "#undef ") == 0) {
+        else if (line.compare(0, 7, "#undef ") == 0) 
+		{
             const std::string name(line.substr(7));
             cfgmap.erase(name);
         }
 
-        else if (!emptymatch && line.compare(0, 7, "#elif !") == 0) {
-            if (matched_ifdef.back()) {
+        else if (!emptymatch && line.compare(0, 7, "#elif !") == 0) 
+		{
+            if (matched_ifdef.back()) 
+			{
                 matching_ifdef.back() = false;
-            } else {
-                if (!match_cfg_def(cfgmap, ndef)) {
+            } 
+			else 
+			{
+                if (!match_cfg_def(cfgmap, ndef)) 
+				{
                     matching_ifdef.back() = true;
                     matched_ifdef.back() = true;
                 }
             }
         }
 
-        else if (!emptymatch && line.compare(0, 6, "#elif ") == 0) {
-            if (matched_ifdef.back()) {
+        else if (!emptymatch && line.compare(0, 6, "#elif ") == 0) 
+		{
+            if (matched_ifdef.back()) 
+			{
                 matching_ifdef.back() = false;
-            } else {
-                if (match_cfg_def(cfgmap, def)) {
+            } 
+			else 
+			{
+                if (match_cfg_def(cfgmap, def)) 
+				{
                     matching_ifdef.back() = true;
                     matched_ifdef.back() = true;
                 }
             }
         }
 
-        else if (line.compare(0,4,"#if ") == 0) {
+        else if (line.compare(0,4,"#if ") == 0) 
+		{
             matching_ifdef.push_back(match_cfg_def(cfgmap, line.substr(4)));
             matched_ifdef.push_back(matching_ifdef.back());
         }
 
-        else if (! def.empty()) {
+        else if (! def.empty()) 
+		{
             matching_ifdef.push_back(cfgmap.find(def) != cfgmap.end());
             matched_ifdef.push_back(matching_ifdef.back());
         }
 
-        else if (! ndef.empty()) {
+        else if (! ndef.empty()) 
+		{
             matching_ifdef.push_back(cfgmap.find(ndef) == cfgmap.end());
             matched_ifdef.push_back(matching_ifdef.back());
         }
 
-        else if (!emptymatch && line == "#else") {
+        else if (!emptymatch && line == "#else") 
+		{
             if (! matched_ifdef.empty())
+			{
                 matching_ifdef.back() = ! matched_ifdef.back();
+			}
         }
 
-        else if (line.compare(0, 6, "#endif") == 0) {
+        else if (line.compare(0, 6, "#endif") == 0) 
+		{
             if (! matched_ifdef.empty())
+			{
                 matched_ifdef.pop_back();
+			}
             if (! matching_ifdef.empty())
+			{
                 matching_ifdef.pop_back();
+			}
         }
 
-        if (!line.empty() && line[0] == '#') {
+        if (!line.empty() && line[0] == '#') 
+		{
             match = true;
-            for (auto it = matching_ifdef.begin(); it != matching_ifdef.end(); ++it)
-                match &= bool(*it);
+            for (auto it = matching_ifdef.begin(); it != matching_ifdef.end(); ++it) 
+			{
+                if (!bool(*it)) 
+				{
+                    match = false;
+                    break;
+                }
+            }
         }
 
         // #error => return ""
         if (match && line.compare(0, 6, "#error") == 0) {
-            if (_settings && !_settings->userDefines.empty()) {
-                Settings settings2(*_settings);
-                Preprocessor preprocessor(&settings2, _errorLogger);
-                preprocessor.error(filenames.top(), lineno, line);
+            if (_settings && !_settings->userDefines.empty() && !_settings->_force) {
+                error(filenames.top(), lineno, line);
             }
             return "";
         }
 
         if (!match && (line.compare(0, 8, "#define ") == 0 ||
-                       line.compare(0, 6, "#undef") == 0)) {
+                       line.compare(0, 6, "#undef") == 0)) 
+		{
             // Remove define that is not part of this configuration
             line = "";
-        } else if (line.compare(0, 7, "#file \"") == 0 ||
+        } 
+		else if (line.compare(0, 7, "#file \"") == 0 ||
                    line.compare(0, 8, "#endfile") == 0 ||
                    line.compare(0, 8, "#define ") == 0 ||
                    line.compare(0, 6, "#line ") == 0 ||
-                   line.compare(0, 6, "#undef") == 0) {
+                   line.compare(0, 6, "#undef") == 0) 
+	    {
             // We must not remove #file tags or line numbers
             // are corrupted. File tags are removed by the tokenizer.
 
@@ -1945,16 +2008,23 @@ std::string Preprocessor::getcode(const std::string &filedata, const std::string
                 filenames.push(line.substr(7, line.size() - 8));
                 lineNumbers.push(lineno);
                 lineno = 0;
-            } else if (line.compare(0, 8, "#endfile") == 0) {
+            } 
+			else if (line.compare(0, 8, "#endfile") == 0) 
+			{
                 if (filenames.size() > 1U)
+				{
                     filenames.pop();
+				}
 
-                if (!lineNumbers.empty()) {
+                if (!lineNumbers.empty()) 
+				{
                     lineno = lineNumbers.top();
                     lineNumbers.pop();
                 }
             }
-        } else if (!match || line.compare(0, 1, "#") == 0) {
+        } 
+		else if (!match || line.compare(0, 1, "#") == 0) 
+		{
             // Remove #if, #else, #pragma etc, leaving only
             // #define, #undef, #file and #endfile. and also lines
             // which are not part of this configuration.
@@ -2200,10 +2270,6 @@ std::string Preprocessor::handleIncludes(const std::string &code, const std::str
 
             else if (!suppressCurrentCodePath && line.compare(0,7,"#undef ") == 0) {
                 defs.erase(line.substr(7));
-            }
-
-            else if (!suppressCurrentCodePath && line.compare(0,7,"#error ") == 0) {
-                error(filePath, linenr, line.substr(7));
             }
 
             else if (!suppressCurrentCodePath && line.compare(0,9,"#include ")==0) {
@@ -2566,7 +2632,7 @@ private:
 
         std::vector<std::string> params2(params1);
 
-        for (unsigned int ipar = 0; ipar < params1.size(); ++ipar) {
+        for (std::size_t ipar = 0; ipar < params1.size(); ++ipar) {
             const std::string s(innerMacroName + "(");
             std::string param(params1[ipar]);
             if (param.compare(0,s.length(),s)==0 && param[param.length()-1]==')') {
@@ -2692,7 +2758,7 @@ public:
             // Replace "__VA_ARGS__" with parameters
             if (!_nopar) {
                 std::string s;
-                for (unsigned int i = 0; i < params2.size(); ++i) {
+                for (std::size_t i = 0; i < params2.size(); ++i) {
                     if (i > 0)
                         s += ",";
                     s += params2[i];
@@ -2737,13 +2803,13 @@ public:
                         if (stringify) {
                             str = str.erase(0, 1);
                         }
-                        for (unsigned int i = 0; i < _params.size(); ++i) {
+                        for (std::size_t i = 0; i < _params.size(); ++i) {
                             if (str == _params[i]) {
                                 if (_variadic &&
                                     (i == _params.size() - 1 ||
                                      (givenparams.size() + 2 == _params.size() && i + 1 == _params.size() - 1))) {
                                     str = "";
-                                    for (unsigned int j = (unsigned int)_params.size() - 1; j < givenparams.size(); ++j) {
+                                    for (std::size_t j = _params.size() - 1; j < givenparams.size(); ++j) {
                                         if (optcomma || j > _params.size() - 1)
                                             str += ",";
                                         optcomma = false;

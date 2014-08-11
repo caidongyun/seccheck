@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,8 +24,6 @@
 
 #include "check.h"
 #include "config.h"
-
-class Token;
 
 /// @addtogroup Checks
 /// @{
@@ -79,6 +77,7 @@ private:
     void missingPercentCharacterError(const Token *tok, const std::string &pattern, const std::string &funcname);
     void unknownPatternError(const Token* tok, const std::string& pattern);
     void redundantNextPreviousError(const Token* tok, const std::string& func1, const std::string& func2);
+    void orInComplexPattern(const Token *tok, const std::string &pattern, const std::string &funcname);
 
     void getErrorMessages(ErrorLogger *errorLogger, const Settings *settings) const {
         CheckInternal c(0, settings, errorLogger);
@@ -88,6 +87,7 @@ private:
         c.missingPercentCharacterError(0, "%num", "Match");
         c.unknownPatternError(0, "%typ");
         c.redundantNextPreviousError(0, "previous", "next");
+        c.orInComplexPattern(0, "||", "Match");
     }
 
     static std::string myName() {

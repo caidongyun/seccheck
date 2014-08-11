@@ -43,6 +43,8 @@ private:
         TEST_CASE(virtualDestructorInherited);
         TEST_CASE(virtualDestructorTemplate);
 
+        TEST_CASE(virtualDestructorInconclusive); // ticket # 5807
+
         TEST_CASE(copyConstructor1);
         TEST_CASE(copyConstructor2); // ticket #4458
 
@@ -67,6 +69,7 @@ private:
         TEST_CASE(operatorEqRetRefThis4); // ticket #1451
         TEST_CASE(operatorEqRetRefThis5); // ticket #1550
         TEST_CASE(operatorEqRetRefThis6); // ticket #2479
+        TEST_CASE(operatorEqRetRefThis7); // ticket #5782 endless recursion
         TEST_CASE(operatorEqToSelf1);   // single class
         TEST_CASE(operatorEqToSelf2);   // nested class
         TEST_CASE(operatorEqToSelf3);   // multiple inheritance
@@ -81,6 +84,7 @@ private:
         TEST_CASE(memsetVector);
         TEST_CASE(memsetOnClass);
         TEST_CASE(memsetOnInvalid);  // Ticket #5425: Crash upon invalid
+        TEST_CASE(memsetOnStdPodType);  // #5901 - std::uint8_t
         TEST_CASE(mallocOnClass);
 
         TEST_CASE(this_subtraction);    // warn about "this-x"
@@ -891,6 +895,25 @@ private:
             "UString& UString::operator=( const UString& s ) {\n"
             "    return assign( s );\n"
             "}");
+    }
+
+    void operatorEqRetRefThis7() { // ticket #5782 Endless recursion in CheckClass::checkReturnPtrThis()
+        checkOpertorEqRetRefThis(
+            "class basic_fbstring {\n"
+            "  basic_fbstring& operator=(int il) {\n"
+            "    return assign();\n"
+            "  }\n"
+            "  basic_fbstring& assign() {\n"
+            "    return replace();\n"
+            "  }\n"
+            "  basic_fbstring& replaceImplDiscr() {\n"
+            "    return replace();\n"
+            "  }\n"
+            "  basic_fbstring& replace() {\n"
+            "    return replaceImplDiscr();\n"
+            "  }\n"
+            "};\n");
+        ASSERT_EQUALS("", errout.str());
     }
 
     // Check that operator Equal checks for assignment to self
@@ -1717,11 +1740,12 @@ private:
     }
 
     // Check that base classes have virtual destructors
-    void checkVirtualDestructor(const char code[]) {
+    void checkVirtualDestructor(const char code[], bool inconclusive = false) {
         // Clear the error log
         errout.str("");
 
         Settings settings;
+        settings.inconclusive = inconclusive;
 
         // Tokenize..
         Tokenizer tokenizer(&settings, this);
@@ -1971,6 +1995,30 @@ private:
         ASSERT_EQUALS("[test.cpp:9]: (error) Class 'AA<double>' which is inherited by class 'B' does not have a virtual destructor.\n", errout.str());
     }
 
+    void virtualDestructorInconclusive() {
+        checkVirtualDestructor("class Base {\n"
+                               "public:\n"
+                               "    ~Base(){}\n"
+                               "    virtual void foo(){}\n"
+                               "};\n", true);
+        ASSERT_EQUALS("[test.cpp:3]: (warning, inconclusive) Class 'Base' which has virtual members does not have a virtual destructor.\n", errout.str());
+
+        checkVirtualDestructor("class Base {\n"
+                               "public:\n"
+                               "    ~Base(){}\n"
+                               "    virtual void foo(){}\n"
+                               "};\n"
+                               "class Derived : public Base {\n"
+                               "public:\n"
+                               "    ~Derived() { bar(); }\n"
+                               "};\n"
+                               "void foo() {\n"
+                               "    Base * base = new Derived();\n"
+                               "    delete base;\n"
+                               "}\n", true);
+        ASSERT_EQUALS("[test.cpp:3]: (error) Class 'Base' which is inherited by class 'Derived' does not have a virtual destructor.\n", errout.str());
+    }
+
     void checkNoConstructor(const char code[], const char* level="style") {
         // Clear the error log
         errout.str("");
@@ -2076,12 +2124,15 @@ private:
         ASSERT_EQUALS("", errout.str());
     }
 
-    void checkNoMemset(const char code[]) {
+    void checkNoMemset(const char code[], bool load_std_cfg = false) {
         // Clear the error log
         errout.str("");
 
         Settings settings;
         settings.addEnabled("warning");
+        if (load_std_cfg) {
+            LOAD_LIB_2(settings.library, "std.cfg");
+        }
 
         // Tokenize..
         Tokenizer tokenizer(&settings, this);
@@ -2518,8 +2569,22 @@ private:
                       "void f() {\n"
                       "    A a;\n"
                       "    memset(&a, 0, sizeof(A));\n"
-                      "}");
+                      "}", true);
         ASSERT_EQUALS("", errout.str()); // std::array is POD (#5481)
+    }
+
+    void memsetOnStdPodType() { // Ticket #5901
+        checkNoMemset("struct st {\n"
+                      "  std::uint8_t a;\n"
+                      "  std::uint8_t b;\n"
+                      "  std::uint8_t c;\n"
+                      "};\n"
+                      "\n"
+                      "void f() {\n"
+                      "  st s;\n"
+                      "  std::memset(&s, 0, sizeof(st));\n"
+                      "}", true);
+        ASSERT_EQUALS("", errout.str());
     }
 
     void mallocOnClass() {
@@ -5882,6 +5947,14 @@ private:
                                      "A::~A()\n"
                                      "{if (b) pure();}\n");
         ASSERT_EQUALS("[test.cpp:8] -> [test.cpp:3]: (warning) Call of pure virtual function 'pure' in destructor.\n", errout.str());
+
+        // ticket # 5831
+        checkPureVirtualFunctionCall("class abc {\n"
+                                     "public:\n"
+                                     "  virtual ~abc() throw() {}\n"
+                                     "  virtual void def(void* g) throw () = 0;\n"
+                                     "};\n");
+        ASSERT_EQUALS("", errout.str());
 
     }
 

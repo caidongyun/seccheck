@@ -40,7 +40,7 @@ void CheckAssert::assertWithSideEffects()
     const Token *endTok = tok ? tok->next()->link() : nullptr;
 
     while (tok && endTok) {
-        for (const Token* tmp = tok->tokAt(1); tmp != endTok; tmp = tmp->next()) {
+        for (const Token* tmp = tok->next(); tmp != endTok; tmp = tmp->next()) {
             checkVariableAssignment(tmp, true);
 
             if (tmp->isName() && tmp->type() == Token::eFunction) {
@@ -81,7 +81,10 @@ void CheckAssert::assertWithSideEffects()
 
                     bool noReturnInScope = true;
                     for (auto rt = returnTokens.begin(); rt != returnTokens.end(); ++rt) {
-                        noReturnInScope &= !inSameScope(*rt, tok2);
+                        if (inSameScope(*rt, tok2)) {
+                            noReturnInScope = false;
+                            break;
+                        }
                     }
                     if (noReturnInScope) continue;
                     bool isAssigned = checkVariableAssignment(tok2, false);

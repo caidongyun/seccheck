@@ -98,6 +98,12 @@ private:
 
         check(
             "void foo() {\n"
+            "  std::cout << (std::cout);\n"
+            "}");
+        ASSERT_EQUALS("[test.cpp:2]: (error) Invalid usage of output stream: '<< std::cout'.\n", errout.str());
+
+        check(
+            "void foo() {\n"
             "  std::cout << \"xyz\" << std::cout;\n"
             "}");
         ASSERT_EQUALS("[test.cpp:2]: (error) Invalid usage of output stream: '<< std::cout'.\n", errout.str());
@@ -118,6 +124,12 @@ private:
         check(
             "void foo() {\n"
             "  std::cout << std::cout.good();\n"
+            "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check(
+            "void foo() {\n"
+            "    unknownObject << std::cout;\n"
             "}");
         ASSERT_EQUALS("", errout.str());
 
@@ -3066,6 +3078,15 @@ private:
               "    printf(\"%zd\", test);\n"
               "}\n");
         ASSERT_EQUALS("", errout.str());
+
+        // #6009
+        check("extern std::string StringByReturnValue();\n"
+              "extern int         IntByReturnValue();\n"
+              "void MyFunction() {\n"
+              "    printf( \"%s - %s\", StringByReturnValue(), IntByReturnValue() );\n"
+              "}\n");
+        ASSERT_EQUALS("[test.cpp:4]: (warning) %s in format string (no. 1) requires 'char *' but the argument type is 'std::string'.\n"
+                      "[test.cpp:4]: (warning) %s in format string (no. 2) requires 'char *' but the argument type is 'int'.\n", errout.str());
 
     }
 

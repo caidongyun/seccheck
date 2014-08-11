@@ -26,11 +26,9 @@
 #include "checkother.h"   // <- doubleFreeError
 
 #include "tokenize.h"
-#include "errorlogger.h"
 #include "symboldatabase.h"
 
-#include <fstream>
-
+#include <iostream>
 //---------------------------------------------------------------------------
 
 const int DEALLOC = -1;
@@ -220,7 +218,7 @@ void CheckLeakAutoVar::checkScope(const Token * const startToken,
 
             // not a local variable nor argument?
             const Variable *var = tok->variable();
-            if (var && !var->isArgument() && !var->isLocal()) {
+            if (var && !var->isArgument() && (!var->isLocal() || var->isStatic())) {
                 continue;
             }
 
@@ -388,14 +386,13 @@ void CheckLeakAutoVar::checkScope(const Token * const startToken,
 
 void CheckLeakAutoVar::functionCall(const Token *tok, VarInfo *varInfo, const int dealloc)
 {
-    std::map<unsigned int, int> &alloctype = varInfo->alloctype;
-    std::map<unsigned int, std::string> &possibleUsage = varInfo->possibleUsage;
-
     // Ignore function call?
     const bool ignore = bool(_settings->library.leakignore.find(tok->str()) != _settings->library.leakignore.end());
-
     if (ignore)
         return;
+
+    std::map<unsigned int, int> &alloctype = varInfo->alloctype;
+    std::map<unsigned int, std::string> &possibleUsage = varInfo->possibleUsage;
 
     for (const Token *arg = tok->tokAt(2); arg; arg = arg->nextArgument()) {
         if ((Token::Match(arg, "%var% [-,)]") && arg->varId() > 0) ||

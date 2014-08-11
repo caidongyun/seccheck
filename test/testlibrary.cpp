@@ -33,9 +33,12 @@ private:
         TEST_CASE(function);
         TEST_CASE(function_arg);
         TEST_CASE(function_arg_any);
+        TEST_CASE(function_arg_valid);
+        TEST_CASE(function_arg_minsize);
         TEST_CASE(memory);
         TEST_CASE(memory2); // define extra "free" allocation functions
         TEST_CASE(resource);
+        TEST_CASE(podtype);
     }
 
     void empty() const {
@@ -76,8 +79,7 @@ private:
                                "    <arg nr=\"2\"><not-null/></arg>\n"
                                "    <arg nr=\"3\"><formatstr/></arg>\n"
                                "    <arg nr=\"4\"><strz/></arg>\n"
-                               "    <arg nr=\"5\"><valid>1-</valid></arg>\n"
-                               "    <arg nr=\"6\"><not-bool/></arg>\n"
+                               "    <arg nr=\"5\"><not-bool/></arg>\n"
                                "  </function>\n"
                                "</def>";
         tinyxml2::XMLDocument doc;
@@ -89,8 +91,7 @@ private:
         ASSERT_EQUALS(true, library.argumentChecks["foo"][2].notnull);
         ASSERT_EQUALS(true, library.argumentChecks["foo"][3].formatstr);
         ASSERT_EQUALS(true, library.argumentChecks["foo"][4].strz);
-        ASSERT_EQUALS("1-", library.argumentChecks["foo"][5].valid);
-        ASSERT_EQUALS(true, library.argumentChecks["foo"][6].notbool);
+        ASSERT_EQUALS(true, library.argumentChecks["foo"][5].notbool);
     }
 
     void function_arg_any() const {
@@ -106,6 +107,91 @@ private:
         Library library;
         library.load(doc);
         ASSERT_EQUALS(true, library.argumentChecks["foo"][-1].notuninit);
+    }
+
+    void function_arg_valid() const {
+        const char xmldata[] = "<?xml version=\"1.0\"?>\n"
+                               "<def>\n"
+                               "  <function name=\"foo\">\n"
+                               "    <arg nr=\"1\"><valid>1:</valid></arg>\n"
+                               "    <arg nr=\"2\"><valid>-7:0</valid></arg>\n"
+                               "    <arg nr=\"3\"><valid>1:5,8</valid></arg>\n"
+                               "    <arg nr=\"4\"><valid>-1,5</valid></arg>\n"
+                               "    <arg nr=\"5\"><valid>:1,5</valid></arg>\n"
+                               "  </function>\n"
+                               "</def>";
+        tinyxml2::XMLDocument doc;
+        doc.Parse(xmldata, sizeof(xmldata));
+
+        Library library;
+        library.load(doc);
+
+        // 1-
+        ASSERT_EQUALS(false, library.isargvalid("foo", 1, -10));
+        ASSERT_EQUALS(false, library.isargvalid("foo", 1, 0));
+        ASSERT_EQUALS(true, library.isargvalid("foo", 1, 1));
+        ASSERT_EQUALS(true, library.isargvalid("foo", 1, 10));
+
+        // -7-0
+        ASSERT_EQUALS(false, library.isargvalid("foo", 2, -10));
+        ASSERT_EQUALS(true,  library.isargvalid("foo", 2, -7));
+        ASSERT_EQUALS(true,  library.isargvalid("foo", 2, -3));
+        ASSERT_EQUALS(true,  library.isargvalid("foo", 2, 0));
+        ASSERT_EQUALS(false, library.isargvalid("foo", 2, 1));
+
+        // 1-5,8
+        ASSERT_EQUALS(false, library.isargvalid("foo", 3, 0));
+        ASSERT_EQUALS(true,  library.isargvalid("foo", 3, 1));
+        ASSERT_EQUALS(true,  library.isargvalid("foo", 3, 3));
+        ASSERT_EQUALS(true,  library.isargvalid("foo", 3, 5));
+        ASSERT_EQUALS(false, library.isargvalid("foo", 3, 6));
+        ASSERT_EQUALS(false, library.isargvalid("foo", 3, 7));
+        ASSERT_EQUALS(true,  library.isargvalid("foo", 3, 8));
+        ASSERT_EQUALS(false, library.isargvalid("foo", 3, 9));
+
+        // -1,5
+        ASSERT_EQUALS(false, library.isargvalid("foo", 4, -10));
+        ASSERT_EQUALS(true,  library.isargvalid("foo", 4, -1));
+
+        // :1,5
+        ASSERT_EQUALS(true,  library.isargvalid("foo", 5, -10));
+        ASSERT_EQUALS(true,  library.isargvalid("foo", 5, 1));
+        ASSERT_EQUALS(false, library.isargvalid("foo", 5, 2));
+    }
+
+    void function_arg_minsize() const {
+        const char xmldata[] = "<?xml version=\"1.0\"?>\n"
+                               "<def>\n"
+                               "  <function name=\"foo\">\n"
+                               "    <arg nr=\"1\"><minsize type=\"strlen\" arg=\"2\"/></arg>\n"
+                               "    <arg nr=\"2\"><minsize type=\"argvalue\" arg=\"3\"/></arg>\n"
+                               "  </function>\n"
+                               "</def>";
+        tinyxml2::XMLDocument doc;
+        doc.Parse(xmldata, sizeof(xmldata));
+
+        Library library;
+        library.load(doc);
+
+        // arg1: type=strlen arg2
+        const std::list<Library::ArgumentChecks::MinSize> *minsizes = library.argminsizes("foo",1);
+        ASSERT_EQUALS(true, minsizes != nullptr);
+        ASSERT_EQUALS(1U, minsizes ? minsizes->size() : 1U);
+        if (minsizes && minsizes->size() == 1U) {
+            const Library::ArgumentChecks::MinSize &m = minsizes->front();
+            ASSERT_EQUALS(Library::ArgumentChecks::MinSize::STRLEN, m.type);
+            ASSERT_EQUALS(2, m.arg);
+        }
+
+        // arg2: type=argvalue arg3
+        minsizes = library.argminsizes("foo", 2);
+        ASSERT_EQUALS(true, minsizes != nullptr);
+        ASSERT_EQUALS(1U, minsizes ? minsizes->size() : 1U);
+        if (minsizes && minsizes->size() == 1U) {
+            const Library::ArgumentChecks::MinSize &m = minsizes->front();
+            ASSERT_EQUALS(Library::ArgumentChecks::MinSize::ARGVALUE, m.type);
+            ASSERT_EQUALS(3, m.arg);
+        }
     }
 
     void memory() const {
@@ -171,6 +257,22 @@ private:
 
         ASSERT(Library::isresource(library.alloc("CreateX")));
         ASSERT_EQUALS(library.alloc("CreateX"), library.dealloc("DeleteX"));
+    }
+
+    void podtype() const {
+        const char xmldata[] = "<?xml version=\"1.0\"?>\n"
+                               "<def>\n"
+                               "  <podtype name=\"s16\" sizeof=\"2\"/>\n"
+                               "</def>";
+        tinyxml2::XMLDocument doc;
+        doc.Parse(xmldata, sizeof(xmldata));
+
+        Library library;
+        library.load(doc);
+
+        const struct Library::PodType *type = library.podtype("s16");
+        ASSERT_EQUALS(2U,   type ? type->size : 0U);
+        ASSERT_EQUALS(0,    type ? type->sign : '?');
     }
 };
 

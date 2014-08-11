@@ -29,7 +29,7 @@ def upload(file_to_upload, destination):
         password = sys.argv[1]
         child = pexpect.spawn(
             'scp ' + file_to_upload + ' danielmarjamaki,cppcheck@web.sourceforge.net:' + destination)
-        #child.expect(
+        # child.expect(
         #    'danielmarjamaki,cppcheck@web.sourceforge.net\'s password:')
         child.expect('Password:')
         child.sendline(password)
@@ -131,28 +131,10 @@ def daca2report():
     subprocess.call(['python', 'tools/daca2-report.py', 'daca2-report'])
     upload('-r daca2-report', 'htdocs/devinfo/')
 
-def daca2folder():
-    oldresults = glob.glob(os.path.expanduser('~/daca2/*/results.txt'))
-    oldestfolder = None
-    oldestdate = None
-    for old in oldresults:
-        f = open(old,'rt')
-        filedata = f.read()
-        f.close()
-        pos = filedata.find('STARTDATE')
-        if pos < 0:
-            pos = old.find('/daca2/')
-            return old[pos+7:old.find('/',pos+8)]
-        startdate = filedata[pos+10:pos+20]
-        if not oldestdate or oldestdate > startdate:
-            oldestdate = startdate
-            pos = old.find('/daca2/')
-            oldestfolder = old[pos+7:old.find('/',pos+8)]
+def daca2(foldernum):
+    folders = '0123456789abcdefghijklmnopqrstuvwxyz'
+    folder = folders[foldernum % len(folders)]
 
-    return oldestfolder
-
-def daca2():
-    folder = daca2folder()
     print('Daca2 folder=' + folder)
 
     p = subprocess.Popen(['git', 'show', '--format=%h'],
@@ -164,9 +146,9 @@ def daca2():
     subprocess.call(
         ['make', 'clean'])
     subprocess.call(
-        ['nice', 'make', 'SRCDIR=build', 'CFGDIR='+os.path.expanduser('~/cppcheck/cfg'), 'CXXFLAGS=-O2', 'CPPFLAGS=-DMAXTIME=600'])
+        ['nice', 'make', 'SRCDIR=build', 'CFGDIR=' + os.path.expanduser('~/cppcheck/cfg'), 'CXXFLAGS=-O2', 'CPPFLAGS=-DMAXTIME=600'])
     subprocess.call(
-        ['mv', 'seccheck', os.path.expanduser('~/daca2/cppcheck-O2')])
+        ['mv', 'cppcheck', os.path.expanduser('~/daca2/cppcheck-O2')])
 
     subprocess.call(['python', 'tools/daca2.py', folder, '--rev=' + rev])
     daca2report()
@@ -175,6 +157,7 @@ def daca2():
     daca2report()
 
 t0 = datetime.date.today()
+foldernum = 0
 while True:
     if datetime.date.today() != t0:
         print("generate daily reports")
@@ -189,4 +172,5 @@ while True:
     if cmd.find("doxygen") >= 0:
         generate_webreport()
 
-    daca2()
+    daca2(foldernum)
+    foldernum = foldernum + 1

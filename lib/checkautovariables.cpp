@@ -22,9 +22,7 @@
 
 #include "checkautovariables.h"
 #include "symboldatabase.h"
-#include "checkuninitvar.h"
 
-#include <list>
 #include <string>
 
 //---------------------------------------------------------------------------
@@ -110,7 +108,8 @@ static bool variableIsUsedInScope(const Token* start, unsigned int varId, const 
     for (const Token *tok = start; tok && tok != scope->classEnd; tok = tok->next()) {
         if (tok->varId() == varId)
             return true;
-        if (tok->scope()->type == Scope::eFor || tok->scope()->type == Scope::eDo || tok->scope()->type == Scope::eWhile) // In case of loops, better checking would be necessary
+        const Scope::ScopeType scopeType = tok->scope()->type;
+        if (scopeType == Scope::eFor || scopeType == Scope::eDo || scopeType == Scope::eWhile) // In case of loops, better checking would be necessary
             return true;
         if (Token::simpleMatch(tok, "asm ("))
             return true;
@@ -202,7 +201,7 @@ void CheckAutoVariables::autoVariables()
                     errorInvalidDeallocation(tok);
             } else if (Token::Match(tok, "free ( & %var% ) ;") || (_tokenizer->isCPP() && Token::Match(tok, "delete [| ]| (| & %var% !!["))) {
                 tok = Token::findmatch(tok->next(), "%var%");
-                if (tok && tok->variable() && tok->variable()->isLocal())
+                if (isAutoVar(tok))
                     errorInvalidDeallocation(tok);
             }
         }
@@ -329,6 +328,34 @@ bool CheckAutoVariables::returnTemporary(const Token *tok) const
 
 //---------------------------------------------------------------------------
 
+static bool astHasAutoResult(const Token *tok)
+{
+    if (tok->astOperand1() && !astHasAutoResult(tok->astOperand1()))
+        return false;
+    if (tok->astOperand2() && !astHasAutoResult(tok->astOperand2()))
+        return false;
+
+    if (tok->isOp())
+        return true;
+
+    if (tok->isLiteral())
+        return true;
+
+    if (tok->isName()) {
+        // TODO: check function calls, struct members, arrays, etc also
+        if (!tok->variable())
+            return false;
+        if (tok->variable()->isStlType() && !Token::Match(tok->astParent(), "<<|>>"))
+            return true;
+        if (tok->variable()->isClass() || tok->variable()->isPointer() || tok->variable()->isReference()) // TODO: Properly handle pointers/references to classes in symbol database
+            return false;
+
+        return true;
+    }
+
+    return false;
+}
+
 void CheckAutoVariables::returnReference()
 {
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
@@ -344,6 +371,9 @@ void CheckAutoVariables::returnReference()
         // have we reached a function that returns a reference?
         if (tok->previous() && tok->previous()->str() == "&") {
             for (const Token *tok2 = scope->classStart->next(); tok2 && tok2 != scope->classEnd; tok2 = tok2->next()) {
+                if (tok2->str() != "return")
+                    continue;
+
                 // return..
                 if (Token::Match(tok2, "return %var% ;")) {
                     // is the returned variable a local variable?
@@ -373,6 +403,11 @@ void CheckAutoVariables::returnReference()
                         // report error..
                         errorReturnTempReference(tok2);
                     }
+                }
+
+                // Return reference to a literal or the result of a calculation
+                else if (tok2->astOperand1() && (tok2->astOperand1()->isCalculation() || tok2->next()->isLiteral()) && astHasAutoResult(tok2->astOperand1())) {
+                    errorReturnTempReference(tok2);
                 }
             }
         }

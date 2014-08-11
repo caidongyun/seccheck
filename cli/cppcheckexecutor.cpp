@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,28 +25,32 @@
 #include "pathmatch.h"
 #include "preprocessor.h"
 #include "threadexecutor.h"
-#include <iostream>
-#include <sstream>
+
+#include <climits>
 #include <cstdlib> // EXIT_SUCCESS and EXIT_FAILURE
 #include <cstring>
 #include <algorithm>
-#include <climits>
+#include <iostream>
+#include <sstream>
 
-#if defined(__GNUC__) && !defined(__MINGW32__) && !defined(__CYGWIN__)
+#if !defined(NO_UNIX_SIGNAL_HANDLING) && defined(__GNUC__) && !defined(__MINGW32__) && !defined(__CYGWIN__) && !defined(__OS2__)
 #define USE_UNIX_SIGNAL_HANDLING
-#include <execinfo.h>
-#include <cxxabi.h>
-#endif
-
-#ifdef USE_UNIX_SIGNAL_HANDLING
 #include <signal.h>
 #include <cstdio>
+#endif
+
+#if !defined(NO_UNIX_BACKTRACE_SUPPORT) && defined(USE_UNIX_SIGNAL_HANDLING) && defined(__GNUC__) && !defined(__MINGW32__) && !defined(__CYGWIN__) && !defined(__SVR4)
+#define USE_UNIX_BACKTRACE_SUPPORT
+#include <cxxabi.h>
+#include <execinfo.h>
 #endif
 
 #if defined(_MSC_VER)
 #define USE_WINDOWS_SEH
 #include <Windows.h>
+#include <DbgHelp.h>
 #include <excpt.h>
+#include <TCHAR.H>
 #endif
 
 CppCheckExecutor::CppCheckExecutor()
@@ -62,7 +66,7 @@ bool CppCheckExecutor::parseFromArgs(CppCheck *cppcheck, int argc, const char* c
 {
     Settings& settings = cppcheck->settings();
     CmdLineParser parser(&settings);
-    bool success = parser.ParseFromArgs(argc, argv);
+    const bool success = parser.ParseFromArgs(argc, argv);
 
     if (success) {
         if (parser.GetShowVersion() && !parser.GetShowErrorMessages()) {
@@ -81,10 +85,12 @@ bool CppCheckExecutor::parseFromArgs(CppCheck *cppcheck, int argc, const char* c
             std::cout << ErrorLogger::ErrorMessage::getXMLFooter(settings._xml_version) << std::endl;
         }
 
-        if (parser.ExitAfterPrinting())
-            std::exit(EXIT_SUCCESS);
+        if (parser.ExitAfterPrinting()) {
+            settings.terminate();
+            return true;
+        }
     } else {
-        std::exit(EXIT_FAILURE);
+        return false;
     }
 
     // Check that all include paths exist
@@ -172,6 +178,9 @@ int CppCheckExecutor::check(int argc, const char* const argv[])
     if (!parseFromArgs(&cppCheck, argc, argv)) {
         return EXIT_FAILURE;
     }
+    if (settings.terminated()) {
+        return EXIT_SUCCESS;
+    }
 
     if (cppCheck.settings().exceptionHandling) {
         return check_wrapper(cppCheck, argc, argv);
@@ -179,6 +188,17 @@ int CppCheckExecutor::check(int argc, const char* const argv[])
         return check_internal(cppCheck, argc, argv);
     }
 }
+
+/**
+ *  Simple helper function:
+ * \return size of array
+ * */
+template<typename T, int size>
+size_t GetArrayLength(const T(&)[size])
+{
+    return size;
+}
+
 
 #if defined(USE_UNIX_SIGNAL_HANDLING)
 /* (declare this list here, so it may be used in signal handlers in addition to main())
@@ -193,6 +213,7 @@ struct Signaltype {
 #define DECLARE_SIGNAL(x) {x, #x}
 static const Signaltype listofsignals[] = {
     // don't care: SIGABRT,
+    DECLARE_SIGNAL(SIGBUS),
     DECLARE_SIGNAL(SIGFPE),
     DECLARE_SIGNAL(SIGILL),
     DECLARE_SIGNAL(SIGINT),
@@ -200,15 +221,18 @@ static const Signaltype listofsignals[] = {
     // don't care: SIGTERM
 };
 
-/**
- *  Simple helper function:
- * \return size of array
- * */
-template<typename T, int size>
-size_t GetArrayLength(const T(&)[size])
+/*
+ * Simple mapping
+ */
+static const char *signal_name(int signo)
 {
-    return size;
+    for (size_t s=0; s<GetArrayLength(listofsignals); ++s) {
+        if (listofsignals[s].signalnumber==signo)
+            return listofsignals[s].signalname;
+    }
+    return "";
 }
+
 
 // 32 vs. 64bit
 #define ADDRESSDISPLAYLENGTH ((sizeof(long)==8)?12:8)
@@ -216,10 +240,11 @@ size_t GetArrayLength(const T(&)[size])
 /*
  * Try to print the callstack.
  * That is very sensitive to the operating system, hardware, compiler and runtime!
+ * The code is not meant for production environment, it's using functions not whitelisted for usage in a signal handler function.
  */
 static void print_stacktrace(FILE* f, bool demangling)
 {
-#if defined(__GNUC__)
+#if defined(USE_UNIX_BACKTRACE_SUPPORT)
     void *array[32]= {0}; // the less resources the better...
     const int depth = backtrace(array, (int)GetArrayLength(array));
     char **symbolstrings = backtrace_symbols(array, depth);
@@ -228,7 +253,6 @@ static void print_stacktrace(FILE* f, bool demangling)
         const int offset=3; // the first two entries are simply within our own exception handling code, third is within libc
         for (int i = offset; i < depth; ++i) {
             const char * const symbol = symbolstrings[i];
-            //fprintf(f, "\"%s\"\n", symbol);
             char * realname = nullptr;
             const char * const firstBracketName = strchr(symbol, '(');
             const char * const firstBracketAddress = strchr(symbol, '[');
@@ -236,7 +260,6 @@ static void print_stacktrace(FILE* f, bool demangling)
             const char * const beginAddress = firstBracketAddress+3;
             const int addressLen = int(secondBracketAddress-beginAddress);
             const int padLen = int(ADDRESSDISPLAYLENGTH-addressLen);
-            //fprintf(f, "AddressDisplayLength=%d    addressLen=%d      padLen=%d\n", ADDRESSDISPLAYLENGTH, addressLen, padLen);
             if (demangling && firstBracketName) {
                 const char * const plus = strchr(firstBracketName, '+');
                 if (plus && (plus>(firstBracketName+1))) {
@@ -248,8 +271,9 @@ static void print_stacktrace(FILE* f, bool demangling)
                     realname = abi::__cxa_demangle(input_buffer, output_buffer, &length, &status); // non-NULL on success
                 }
             }
-            fprintf(f, "#%d 0x",
-                    i-offset);
+            const int ordinal=i-offset;
+            fprintf(f, "#%-2d 0x",
+                    ordinal);
             if (padLen>0)
                 fprintf(f, "%0*d",
                         padLen, 0);
@@ -271,54 +295,130 @@ static void print_stacktrace(FILE* f, bool demangling)
 }
 
 /*
- * Simple mapping
- */
-static const char *signal_name(int signo)
-{
-    for (size_t s=0; s<GetArrayLength(listofsignals); ++s) {
-        if (listofsignals[s].signalnumber==signo)
-            return listofsignals[s].signalname;
-    }
-    return "";
-}
-
-/*
  * Entry pointer for signal handlers
  */
 static void CppcheckSignalHandler(int signo, siginfo_t * info, void * /*context*/)
 {
-    const char * const signame=signal_name(signo);
+    const char * const signame = signal_name(signo);
+    const char * const sigtext = strsignal(signo);
     bool bPrintCallstack=true;
-    FILE* f=stderr;
+    FILE* f=CppCheckExecutor::getExceptionOutput()=="stderr" ? stderr : stdout;
+    fputs("Internal error: cppcheck received signal ", f);
+    fputs(signame, f);
+    fputs(", ", f);
+    fputs(sigtext, f);
     switch (signo) {
-    case SIGILL:
-        fprintf(f, "Internal error (caught signal %d=%s at 0x%p)\n",
-                signo, signame, info->si_addr);
+    case SIGBUS:
+        switch (info->si_code) {
+        case BUS_ADRALN: // invalid address alignment
+            fprintf(f, " - BUS_ADRALN");
+            break;
+        case BUS_ADRERR: // nonexistent physical address
+            fprintf(f, " - BUS_ADRERR");
+            break;
+        case BUS_OBJERR: // object-specific hardware error
+            fprintf(f, " - BUS_OBJERR");
+            break;
+#ifdef BUS_MCEERR_AR
+        case BUS_MCEERR_AR: // Hardware memory error consumed on a machine check;
+            fprintf(f, " - BUS_MCEERR_AR");
+            break;
+#endif
+#ifdef BUS_MCEERR_AO
+        case BUS_MCEERR_AO: // Hardware memory error detected in process but not consumed
+            fprintf(f, " - BUS_MCEERR_AO");
+            break;
+#endif
+        default:
+            break;
+        }
+        fprintf(f, " (at 0x%p).\n",
+                info->si_addr);
         break;
     case SIGFPE:
-        fprintf(f, "Internal error (caught signal %d=%s at 0x%p)\n",
-                signo, signame, info->si_addr);
+        switch (info->si_code) {
+        case FPE_INTDIV: //     integer divide by zero
+            fprintf(f, " - FPE_INTDIV");
+            break;
+        case FPE_INTOVF: //     integer overflow
+            fprintf(f, " - FPE_INTOVF");
+            break;
+        case FPE_FLTDIV: //     floating-point divide by zero
+            fprintf(f, " - FPE_FLTDIV");
+            break;
+        case FPE_FLTOVF: //     floating-point overflow
+            fprintf(f, " - FPE_FLTOVF");
+            break;
+        case FPE_FLTUND: //     floating-point underflow
+            fprintf(f, " - FPE_FLTUND");
+            break;
+        case FPE_FLTRES: //     floating-point inexact result
+            fprintf(f, " - FPE_FLTRES");
+            break;
+        case FPE_FLTINV: //     floating-point invalid operation
+            fprintf(f, " - FPE_FLTINV");
+            break;
+        case FPE_FLTSUB: //     subscript out of range
+            fprintf(f, " - FPE_FLTSUB");
+            break;
+        default:
+            break;
+        }
+        fprintf(f, " (at 0x%p).\n",
+                info->si_addr);
         break;
-    case SIGSEGV:
-        fprintf(f, "Internal error (caught signal %d=%s at 0x%p)\n",
-                signo, signame, info->si_addr);
+    case SIGILL:
+        switch (info->si_code) {
+        case ILL_ILLOPC: //     illegal opcode
+            fprintf(f, " - ILL_ILLOPC");
+            break;
+        case ILL_ILLOPN: //    illegal operand
+            fprintf(f, " - ILL_ILLOPN");
+            break;
+        case ILL_ILLADR: //    illegal addressing mode
+            fprintf(f, " - ILL_ILLADR");
+            break;
+        case ILL_ILLTRP: //    illegal trap
+            fprintf(f, " - ILL_ILLTRP");
+            break;
+        case ILL_PRVOPC: //    privileged opcode
+            fprintf(f, " - ILL_PRVOPC");
+            break;
+        case ILL_PRVREG: //    privileged register
+            fprintf(f, " - ILL_PRVREG");
+            break;
+        case ILL_COPROC: //    coprocessor error
+            fprintf(f, " - ILL_COPROC");
+            break;
+        case ILL_BADSTK: //    internal stack error
+            fprintf(f, " - ILL_BADSTK");
+            break;
+        default:
+            break;
+        }
+        fprintf(f, " (at 0x%p).\n",
+                info->si_addr);
         break;
-        /*
-         case SIGBUS:
-            fprintf(f, "Internal error (caught signal %d=%s at 0x%p)\n",
-                     signo, signame, info->si_addr);
-           break;
-         case SIGTRAP:
-           fprintf(f, "Internal error (caught signal %d=%s at 0x%p)\n",
-                    signo, signame, info->si_addr);
-           break;
-        */
     case SIGINT:
         bPrintCallstack=false;
+        fprintf(f, ".\n");
+        break;
+    case SIGSEGV:
+        switch (info->si_code) {
+        case SEGV_MAPERR: //    address not mapped to object
+            fprintf(f, " - SEGV_MAPERR");
+            break;
+        case SEGV_ACCERR: //    invalid permissions for mapped object
+            fprintf(f, " - SEGV_ACCERR");
+            break;
+        default:
+            break;
+        }
+        fprintf(f, " (at 0x%p).\n",
+                info->si_addr);
         break;
     default:
-        fprintf(f, "Internal error (caught signal %d)\n",
-                signo);
+        fputs(".\n", f);
         break;
     }
     if (bPrintCallstack) {
@@ -330,25 +430,229 @@ static void CppcheckSignalHandler(int signo, siginfo_t * info, void * /*context*
 #endif
 
 #ifdef USE_WINDOWS_SEH
+
+static const ULONG maxnamelength = 512;
+struct IMAGEHLP_SYMBOL64_EXT : public IMAGEHLP_SYMBOL64 {
+    TCHAR NameExt[maxnamelength]; // actually no need to worry about character encoding here
+};
+typedef BOOL (WINAPI *fpStackWalk64)(DWORD, HANDLE, HANDLE, LPSTACKFRAME64, PVOID, PREAD_PROCESS_MEMORY_ROUTINE64, PFUNCTION_TABLE_ACCESS_ROUTINE64, PGET_MODULE_BASE_ROUTINE64, PTRANSLATE_ADDRESS_ROUTINE64);
+static fpStackWalk64 pStackWalk64;
+typedef DWORD64(WINAPI *fpSymGetModuleBase64)(HANDLE, DWORD64);
+static fpSymGetModuleBase64 pSymGetModuleBase64;
+typedef BOOL (WINAPI *fpSymGetSymFromAddr64)(HANDLE, DWORD64, PDWORD64, PIMAGEHLP_SYMBOL64);
+static fpSymGetSymFromAddr64 pSymGetSymFromAddr64;
+typedef BOOL (WINAPI *fpSymGetLineFromAddr64)(HANDLE, DWORD64, PDWORD, PIMAGEHLP_LINE64);
+static fpSymGetLineFromAddr64 pSymGetLineFromAddr64;
+typedef DWORD (WINAPI *fpUnDecorateSymbolName)(const TCHAR*, PTSTR, DWORD, DWORD) ;
+static fpUnDecorateSymbolName pUnDecorateSymbolName;
+typedef PVOID(WINAPI *fpSymFunctionTableAccess64)(HANDLE, DWORD64);
+static fpSymFunctionTableAccess64 pSymFunctionTableAccess64;
+typedef BOOL (WINAPI *fpSymInitialize)(HANDLE, PCSTR, BOOL);
+static fpSymInitialize pSymInitialize;
+
+static HMODULE hLibDbgHelp;
+// avoid explicit dependency on Dbghelp.dll
+static bool loadDbgHelp()
+{
+    hLibDbgHelp = ::LoadLibraryW(L"Dbghelp.dll");
+    if (!hLibDbgHelp)
+        return true;
+    pStackWalk64 = (fpStackWalk64) ::GetProcAddress(hLibDbgHelp, "StackWalk64");
+    pSymGetModuleBase64 = (fpSymGetModuleBase64) ::GetProcAddress(hLibDbgHelp, "SymGetModuleBase64");
+    pSymGetSymFromAddr64 = (fpSymGetSymFromAddr64) ::GetProcAddress(hLibDbgHelp, "SymGetSymFromAddr64");
+    pSymGetLineFromAddr64 = (fpSymGetLineFromAddr64)::GetProcAddress(hLibDbgHelp, "SymGetLineFromAddr64");
+    pSymFunctionTableAccess64 = (fpSymFunctionTableAccess64)::GetProcAddress(hLibDbgHelp, "SymFunctionTableAccess64");
+    pSymInitialize = (fpSymInitialize) ::GetProcAddress(hLibDbgHelp, "SymInitialize");
+    pUnDecorateSymbolName = (fpUnDecorateSymbolName)::GetProcAddress(hLibDbgHelp, "UnDecorateSymbolName");
+    return true;
+}
+
+
+static void PrintCallstack(FILE* f, PEXCEPTION_POINTERS ex)
+{
+    if (!loadDbgHelp())
+        return;
+    const HANDLE hProcess   = GetCurrentProcess();
+    const HANDLE hThread    = GetCurrentThread();
+    BOOL result = pSymInitialize(
+                      hProcess,
+                      0,
+                      TRUE
+                  );
+    CONTEXT             context = *(ex->ContextRecord);
+    STACKFRAME64        stack= {0};
+#ifdef _M_IX86
+    stack.AddrPC.Offset    = context.Eip;
+    stack.AddrPC.Mode      = AddrModeFlat;
+    stack.AddrStack.Offset = context.Esp;
+    stack.AddrStack.Mode   = AddrModeFlat;
+    stack.AddrFrame.Offset = context.Ebp;
+    stack.AddrFrame.Mode   = AddrModeFlat;
+#else
+    stack.AddrPC.Offset    = context.Rip;
+    stack.AddrPC.Mode      = AddrModeFlat;
+    stack.AddrStack.Offset = context.Rsp;
+    stack.AddrStack.Mode   = AddrModeFlat;
+    stack.AddrFrame.Offset = context.Rsp;
+    stack.AddrFrame.Mode   = AddrModeFlat;
+#endif
+    IMAGEHLP_SYMBOL64_EXT symbol;
+    symbol.SizeOfStruct  = sizeof(IMAGEHLP_SYMBOL64);
+    symbol.MaxNameLength = maxnamelength;
+    DWORD64 displacement   = 0;
+    int beyond_main=-1; // emergency exit, see below
+    for (ULONG frame = 0; ; frame++) {
+        result = pStackWalk64
+                 (
+#ifdef _M_IX86
+                     IMAGE_FILE_MACHINE_I386,
+#else
+                     IMAGE_FILE_MACHINE_AMD64,
+#endif
+                     hProcess,
+                     hThread,
+                     &stack,
+                     &context,
+                     NULL,
+                     pSymFunctionTableAccess64,
+                     pSymGetModuleBase64,
+                     NULL
+                 );
+        if (!result)  // official end...
+            break;
+        pSymGetSymFromAddr64(hProcess, (ULONG64)stack.AddrPC.Offset, &displacement, &symbol);
+        TCHAR undname[maxnamelength]= {0};
+        pUnDecorateSymbolName((const TCHAR*)symbol.Name, (PTSTR)undname, (DWORD)GetArrayLength(undname), UNDNAME_COMPLETE);
+        if (beyond_main>=0)
+            ++beyond_main;
+        if (_tcscmp(undname, _T("main"))==0)
+            beyond_main=0;
+        fprintf(f,
+                "%lu. 0x%08LX in ",
+                frame, (ULONG64)stack.AddrPC.Offset);
+        fputs((const char *)undname, f);
+        fputs("\n", f);
+        if (0==stack.AddrReturn.Offset || beyond_main>2) // StackWalk64() sometimes doesn't reach any end...
+            break;
+    }
+
+    FreeLibrary(hLibDbgHelp);
+    hLibDbgHelp=0;
+}
+
 /*
  * Any evaluation of the information about the exception needs to be done here!
  */
 static int filterException(int code, PEXCEPTION_POINTERS ex)
 {
-    // TODO we should try to extract more information here
-    //   - address, read/write
+    FILE *f = stdout;
+    fputs("Internal error: ", f);
     switch (ex->ExceptionRecord->ExceptionCode) {
     case EXCEPTION_ACCESS_VIOLATION:
-        fprintf(stderr, "Internal error (EXCEPTION_ACCESS_VIOLATION)\n");
+        fputs("Access violation", f);
+        switch (ex->ExceptionRecord->ExceptionInformation[0]) {
+        case 0:
+            fprintf(f, " reading from 0x%x",
+                    ex->ExceptionRecord->ExceptionInformation[1]);
+            break;
+        case 1:
+            fprintf(f, " writing at 0x%x",
+                    ex->ExceptionRecord->ExceptionInformation[1]);
+            break;
+        case 8:
+            fprintf(f, " data execution prevention at 0x%x",
+                    ex->ExceptionRecord->ExceptionInformation[1]);
+            break;
+        default:
+            break;
+        }
+        break;
+    case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
+        fputs("Out of array bounds", f);
+        break;
+    case EXCEPTION_BREAKPOINT:
+        fputs("Breakpoint", f);
+        break;
+    case EXCEPTION_DATATYPE_MISALIGNMENT:
+        fputs("Misaligned data", f);
+        break;
+    case EXCEPTION_FLT_DENORMAL_OPERAND:
+        fputs("Denormalized floating-point value", f);
+        break;
+    case EXCEPTION_FLT_DIVIDE_BY_ZERO:
+        fputs("Floating-point divide-by-zero", f);
+        break;
+    case EXCEPTION_FLT_INEXACT_RESULT:
+        fputs("Inexact floating-point value", f);
+        break;
+    case EXCEPTION_FLT_INVALID_OPERATION:
+        fputs("Invalid floating-point operation", f);
+        break;
+    case EXCEPTION_FLT_OVERFLOW:
+        fputs("Floating-point overflow", f);
+        break;
+    case EXCEPTION_FLT_STACK_CHECK:
+        fputs("Floating-point stack overflow", f);
+        break;
+    case EXCEPTION_FLT_UNDERFLOW:
+        fputs("Floating-point underflow", f);
+        break;
+    case EXCEPTION_GUARD_PAGE:
+        fputs("Page-guard access", f);
+        break;
+    case EXCEPTION_ILLEGAL_INSTRUCTION:
+        fputs("Illegal instruction", f);
         break;
     case EXCEPTION_IN_PAGE_ERROR:
-        fprintf(stderr, "Internal error (EXCEPTION_IN_PAGE_ERROR)\n");
+        fputs("Invalid page access", f);
+        switch (ex->ExceptionRecord->ExceptionInformation[0]) {
+        case 0:
+            fprintf(f, " reading from 0x%x",
+                    ex->ExceptionRecord->ExceptionInformation[1]);
+            break;
+        case 1:
+            fprintf(f, " writing at 0x%x",
+                    ex->ExceptionRecord->ExceptionInformation[1]);
+            break;
+        case 8:
+            fprintf(f, " data execution prevention at 0x%x",
+                    ex->ExceptionRecord->ExceptionInformation[1]);
+            break;
+        default:
+            break;
+        }
+        break;
+    case EXCEPTION_INT_DIVIDE_BY_ZERO:
+        fputs("Integer divide-by-zero", f);
+        break;
+    case EXCEPTION_INT_OVERFLOW:
+        fputs("Integer overflow", f);
+        break;
+    case EXCEPTION_INVALID_DISPOSITION:
+        fputs("Invalid exception dispatcher", f);
+        break;
+    case EXCEPTION_INVALID_HANDLE:
+        fputs("Invalid handle", f);
+        break;
+    case EXCEPTION_NONCONTINUABLE_EXCEPTION:
+        fputs("Non-continuable exception", f);
+        break;
+    case EXCEPTION_PRIV_INSTRUCTION:
+        fputs("Invalid instruction", f);
+        break;
+    case EXCEPTION_SINGLE_STEP:
+        fputs("Single instruction step", f);
+        break;
+    case EXCEPTION_STACK_OVERFLOW:
+        fputs("Stack overflow", f);
         break;
     default:
-        fprintf(stderr, "Internal error (%d)\n",
+        fprintf(f, "Unknown exception (%d)\n",
                 code);
         break;
     }
+    fputs("\n", f);
+    PrintCallstack(f, ex);
     return EXCEPTION_EXECUTE_HANDLER;
 }
 #endif
@@ -362,11 +666,12 @@ static int filterException(int code, PEXCEPTION_POINTERS ex)
 int CppCheckExecutor::check_wrapper(CppCheck& cppcheck, int argc, const char* const argv[])
 {
 #ifdef USE_WINDOWS_SEH
+    FILE *f = stdout;
     __try {
         return check_internal(cppcheck, argc, argv);
     } __except (filterException(GetExceptionCode(), GetExceptionInformation())) {
         // reporting to stdout may not be helpful within a GUI application..
-        fprintf(stderr, "Please report this to the cppcheck developers!\n");
+        fputs("Please report this to the cppcheck developers!\n", f);
         return -1;
     }
 #elif defined(USE_UNIX_SIGNAL_HANDLING)
@@ -390,10 +695,10 @@ int CppCheckExecutor::check_internal(CppCheck& cppcheck, int /*argc*/, const cha
 {
     Settings& settings = cppcheck.settings();
     _settings = &settings;
-    bool std = settings.library.load(argv[0], "std.cfg");
+    bool std = (settings.library.load(argv[0], "std.cfg").errorcode == Library::OK);
     bool posix = true;
     if (settings.standards.posix)
-        posix = settings.library.load(argv[0], "posix.cfg");
+        posix = (settings.library.load(argv[0], "posix.cfg").errorcode == Library::OK);
 
     if (!std || !posix) {
         const std::list<ErrorLogger::ErrorMessage::FileLocation> callstack;
@@ -561,3 +866,15 @@ void CppCheckExecutor::reportErr(const ErrorLogger::ErrorMessage &msg)
         reportErr(msg.toString(_settings->_verbose, _settings->_outputFormat));
     }
 }
+
+void CppCheckExecutor::setExceptionOutput(const std::string& fn)
+{
+    exceptionOutput=fn;
+}
+
+const std::string& CppCheckExecutor::getExceptionOutput()
+{
+    return exceptionOutput;
+}
+
+std::string CppCheckExecutor::exceptionOutput;

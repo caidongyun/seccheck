@@ -24,10 +24,7 @@
 
 #include "config.h"
 #include "check.h"
-#include "settings.h"
 
-class Token;
-class SymbolDatabase;
 
 /// @addtogroup Checks
 /// @{
@@ -84,12 +81,6 @@ public:
 
     /** @brief possible null pointer dereference */
     void nullPointer();
-
-    /**
-     * @brief Does one part of the check for nullPointer().
-     * Checking if pointer is NULL and then dereferencing it..
-     */
-    void nullPointerByCheckAndDeRef();
 
     /** @brief dereferencing null constant (after Tokenizer::simplifyKnownVariables) */
     void nullConstantDereference();

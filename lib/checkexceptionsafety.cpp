@@ -19,7 +19,6 @@
 //---------------------------------------------------------------------------
 #include "checkexceptionsafety.h"
 #include "symboldatabase.h"
-#include "token.h"
 
 //---------------------------------------------------------------------------
 
@@ -33,26 +32,35 @@ namespace {
 
 void CheckExceptionSafety::destructors()
 {
+    if (!_settings->isEnabled("warning"))
+        return;
+
     const SymbolDatabase* const symbolDatabase = _tokenizer->getSymbolDatabase();
 
     // Perform check..
     const std::size_t functions = symbolDatabase->functionScopes.size();
     for (std::size_t i = 0; i < functions; ++i) {
         const Scope * scope = symbolDatabase->functionScopes[i];
-        const Function * j = scope->function;
-        if (j) {
+        const Function * function = scope->function;
+        if (function) {
             // only looking for destructors
-            if (j->type == Function::eDestructor) {
-                // Inspect this destructor..
+            if (function->type == Function::eDestructor) {
+                // Inspect this destructor.
                 for (const Token *tok = scope->classStart->next(); tok != scope->classEnd; tok = tok->next()) {
                     // Skip try blocks
                     if (Token::simpleMatch(tok, "try {")) {
                         tok = tok->next()->link();
                     }
 
+                    // Skip uncaught execptions
+                    if (Token::simpleMatch(tok, "if ( ! std :: uncaught_exception ( ) ) {")) {
+                        tok = tok->next()->link(); // end of if ( ... )
+                        tok = tok->next()->link(); // end of { ... }
+                    }
+
                     // throw found within a destructor
                     if (tok->str() == "throw") {
-                        destructorsError(tok);
+                        destructorsError(tok, scope->className);
                         break;
                     }
                 }
@@ -98,7 +106,7 @@ void CheckExceptionSafety::deallocThrow()
             const unsigned int varid(tok->varId());
 
             // Token where throw occurs
-            const Token *ThrowToken = nullptr;
+            const Token *throwToken = nullptr;
 
             // is there a throw after the deallocation?
             const Token* const end2 = tok->scope()->classEnd;
@@ -109,13 +117,13 @@ void CheckExceptionSafety::deallocThrow()
                         deallocThrowError(tok2, tok->str());
                         break;
                     }
-                    ThrowToken = tok2;
+                    throwToken = tok2;
                 }
 
                 // Variable is assigned -> Bail out
                 else if (Token::Match(tok2, "%varid% =", varid)) {
-                    if (ThrowToken) // For non-inconclusive checking, wait until we find an assignment to it. Otherwise we assume it is safe to leave a dead pointer.
-                        deallocThrowError(ThrowToken, tok2->str());
+                    if (throwToken) // For non-inconclusive checking, wait until we find an assignment to it. Otherwise we assume it is safe to leave a dead pointer.
+                        deallocThrowError(throwToken, tok2->str());
                     break;
                 }
                 // Variable passed to function. Assume it becomes assigned -> Bail out
@@ -231,32 +239,35 @@ void CheckExceptionSafety::nothrowThrows()
     const std::size_t functions = symbolDatabase->functionScopes.size();
     for (std::size_t i = 0; i < functions; ++i) {
         const Scope * scope = symbolDatabase->functionScopes[i];
+        const Function* function = scope->function;
+        if (!function)
+            continue;
 
         // check noexcept functions
-        if (scope->function && scope->function->isNoExcept &&
-            (!scope->function->noexceptArg || scope->function->noexceptArg->str() == "true")) {
-            const Token *throws = functionThrows(scope->function);
+        if (function->isNoExcept &&
+            (!function->noexceptArg || function->noexceptArg->str() == "true")) {
+            const Token *throws = functionThrows(function);
             if (throws)
                 noexceptThrowError(throws);
         }
 
         // check throw() functions
-        else if (scope->function && scope->function->isThrow && !scope->function->throwArg) {
-            const Token *throws = functionThrows(scope->function);
+        else if (function->isThrow && !function->throwArg) {
+            const Token *throws = functionThrows(function);
             if (throws)
                 nothrowThrowError(throws);
         }
 
         // check __attribute__((nothrow)) functions
-        else if (scope->function && scope->function->isAttributeNothrow()) {
-            const Token *throws = functionThrows(scope->function);
+        else if (function->isAttributeNothrow()) {
+            const Token *throws = functionThrows(function);
             if (throws)
                 nothrowAttributeThrowError(throws);
         }
 
         // check __declspec(nothrow) functions
-        else if (scope->function && scope->function->isDeclspecNothrow()) {
-            const Token *throws = functionThrows(scope->function);
+        else if (function->isDeclspecNothrow()) {
+            const Token *throws = functionThrows(function);
             if (throws)
                 nothrowDeclspecThrowError(throws);
         }

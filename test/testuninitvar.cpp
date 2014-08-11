@@ -67,6 +67,7 @@ private:
         TEST_CASE(uninitvar2_while);
         TEST_CASE(uninitvar2_4494);      // #4494
         TEST_CASE(uninitvar2_malloc);    // malloc returns uninitialized data
+        TEST_CASE(uninitvar7); // ticket #5971
 
         TEST_CASE(syntax_error); // Ticket #5073
 
@@ -1603,7 +1604,7 @@ private:
                        "    int y;\n"
                        "    return x ? 1 : y;\n"
                        "}");
-        ASSERT_EQUALS("[test.cpp:2]: (error) Uninitialized variable: y\n", errout.str());
+        ASSERT_EQUALS("[test.cpp:3]: (error) Uninitialized variable: y\n", errout.str());
 
         // Ticket #3106 - False positive
         {
@@ -2635,6 +2636,18 @@ private:
         ASSERT_EQUALS("[test.c:4]: (error) Uninitialized variable: ab\n", errout.str());
     }
 
+    void uninitvar7() {
+        const char code[] = "void eDBauth_user()  {\n"
+                            "   char *blid_cert;\n"
+                            "   if(  ) {\n"
+                            "        blid_cert   = ;\n"
+                            "   } \n"
+                            "}\n";
+
+        // Assume dfs is a non POD type if file is C++
+        checkUninitVar2(code, "test.cpp");
+    }
+
     // Handling of function calls
     void uninitvar2_func() {
         // non-pointer variable
@@ -2908,6 +2921,22 @@ private:
                         "    buf[ab.a] = 0;\n"
                         "}\n", "test.c");
         ASSERT_EQUALS("[test.c:4]: (error) Uninitialized struct member: ab.a\n", errout.str());
+
+        checkUninitVar2("struct AB { int a; int b; };\n"
+                        "void f(void) {\n"
+                        "    struct AB ab;\n"
+                        "    ab.a = 1;\n"
+                        "    x = ab;\n"
+                        "}\n", "test.c");
+        ASSERT_EQUALS("[test.c:5]: (error) Uninitialized struct member: ab.b\n", errout.str());
+
+        checkUninitVar2("struct AB { int a; int b; };\n"
+                        "void f(void) {\n"
+                        "    struct AB ab;\n"
+                        "    ab.a = 1;\n"
+                        "    x = *(&ab);\n"
+                        "}\n", "test.c");
+        ASSERT_EQUALS("[test.c:5]: (error) Uninitialized struct member: ab.b\n", errout.str());
 
         checkUninitVar2("struct AB { int a; int b; };\n"  // pass struct member by address
                         "void f(void) {\n"

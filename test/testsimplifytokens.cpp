@@ -137,6 +137,8 @@ private:
         TEST_CASE(template42);  // #4878 - variadic templates
         TEST_CASE(template43);  // #5097 - assert due to '>>' not treated as end of template instantiation
         TEST_CASE(template44);  // #5297 - TemplateSimplifier::simplifyCalculations not eager enough
+        TEST_CASE(template45);  // #5814 - syntax error reported for valid code
+        TEST_CASE(template46);  // #5816 - syntax error reported for valid code
         TEST_CASE(template_unhandled);
         TEST_CASE(template_default_parameter);
         TEST_CASE(template_default_type);
@@ -491,7 +493,7 @@ private:
         errout.str("");
 
         Settings settings;
-        if (!settings.library.load("./testrunner", "../cfg/std.cfg") && !settings.library.load("./testrunner", "cfg/std.cfg")) {
+        if ((settings.library.load("./testrunner", "../cfg/std.cfg").errorcode != Library::OK) && (settings.library.load("./testrunner", "cfg/std.cfg").errorcode != Library::OK)) {
             complainMissingLib("std.cfg");
             return "";
         }
@@ -836,13 +838,13 @@ private:
 
 
     void parentheses1() {
-        ASSERT_EQUALS("<= 110 ;", tok("<= (10+100);"));
+        ASSERT_EQUALS("a <= 110 ;", tok("a <= (10+100);"));
         ASSERT_EQUALS("while ( x ( ) == -1 ) { }", tok("while((x()) == -1){ }"));
     }
 
     void parenthesesVar() {
         // remove parentheses..
-        ASSERT_EQUALS("= p ;", tok("= (p);"));
+        ASSERT_EQUALS("a = p ;", tok("a = (p);"));
         ASSERT_EQUALS("if ( a < p ) { }", tok("if(a<(p)){}"));
         ASSERT_EQUALS("void f ( ) { int p ; if ( p == -1 ) { } }", tok("void f(){int p; if((p)==-1){}}"));
         ASSERT_EQUALS("void f ( ) { int p ; if ( -1 == p ) { } }", tok("void f(){int p; if(-1==(p)){}}"));
@@ -857,7 +859,7 @@ private:
         ASSERT_EQUALS("void f ( ) { int p ; if ( p ) { } p = 1 ; }", tok("void f(){int p; if ( p ) { } (p) = 1;}"));
 
         // keep parentheses..
-        ASSERT_EQUALS("= a ;", tok("= (char)a;"));
+        ASSERT_EQUALS("b = a ;", tok("b = (char)a;"));
         ASSERT_EQUALS("cast < char * > ( p )", tok("cast<char *>(p)"));
         ASSERT_EQUALS("return ( a + b ) * c ;", tok("return (a+b)*c;"));
         ASSERT_EQUALS("void f ( ) { int p ; if ( 2 * p == 0 ) { } }", tok("void f(){int p; if (2*p == 0) {}}"));
@@ -2391,6 +2393,35 @@ private:
             "class FoldedZContainer : public ZContainer<FGSTensor> {};");
     }
 
+    void template45() { // #5814
+        tok("namespace Constants { const int fourtytwo = 42; } "
+            "template <class T, int U> struct TypeMath { "
+            "  static const int mult = sizeof(T) * U; "
+            "}; "
+            "template <class T> struct FOO { "
+            "  enum { value = TypeMath<T, Constants::fourtytwo>::something }; "
+            "};");
+        ASSERT_EQUALS("", errout.str());
+    }
+
+    void template46() { // #5816
+        tok("template<class T, class U> struct A { static const int value = 0; }; "
+            "template <class T> struct B { "
+            "  enum { value = A<typename T::type, int>::value }; "
+            "};");
+        ASSERT_EQUALS("", errout.str());
+        tok("template <class T, class U> struct A {}; "
+            "enum { e = sizeof(A<int, int>) }; "
+            "template <class T, class U> struct B {};");
+        ASSERT_EQUALS("", errout.str());
+        tok("template<class T, class U> struct A { static const int value = 0; }; "
+            "template<class T> struct B { typedef int type; }; "
+            "template <class T> struct C { "
+            "  enum { value = A<typename B<T>::type, int>::value }; "
+            "};");
+        ASSERT_EQUALS("", errout.str());
+    }
+
     void template_default_parameter() {
         {
             const char code[] = "template <class T, int n=3>\n"
@@ -2550,7 +2581,7 @@ private:
         Tokenizer tokenizer(&settings, this);
 
         std::istringstream istr(code);
-        tokenizer.tokenize(istr, "test.cpp");
+        tokenizer.tokenize(istr, "test.cpp", "", true);
 
         return TemplateSimplifier::templateParameters(tokenizer.tokens());
     }
@@ -2971,11 +3002,6 @@ private:
 
     void simplifyConditionOperator() {
         {
-            const char code[] = "; x = a ? b : c;";
-            ASSERT_EQUALS("; if ( a ) { x = b ; } else { x = c ; }", tok(code));
-        }
-
-        {
             const char code[] = "(0?(false?1:2):3)";
             ASSERT_EQUALS("( 3 )", tok(code));
         }
@@ -3040,8 +3066,8 @@ private:
         }
 
         {
-            const char code[] = "= 1 ? 0 : ({ 0; });";
-            ASSERT_EQUALS("= 0 ;", tok(code));
+            const char code[] = "a = 1 ? 0 : ({ 0; });";
+            ASSERT_EQUALS("a = 0 ;", tok(code));
         }
 
         //GNU extension: "x ?: y" <-> "x ? x : y"
@@ -3050,50 +3076,8 @@ private:
             ASSERT_EQUALS("; a = 1 ; b = 2 ;", tok(code));
         }
 
-        {
-            const char code[] = "int f(int b, int d)\n"
-                                "{\n"
-                                "  d = b ? b : 10;\n"
-                                "  return d;\n"
-                                "}\n";
-            ASSERT_EQUALS("int f ( int b , int d ) { if ( b ) { d = b ; } else { d = 10 ; } return d ; }", tok(code));
-        }
-
-        {
-            const char code[] = "int f(int b, int *d)\n"
-                                "{\n"
-                                "  *d = b ? b : 10;\n"
-                                "  return *d;\n"
-                                "}\n";
-            ASSERT_EQUALS("int f ( int b , int * d ) { if ( b ) { * d = b ; } else { * d = 10 ; } return * d ; }", tok(code));
-        }
-
-        {
-            const char code[] = "int f(int b, int *d)\n"
-                                "{\n"
-                                "  if(b) {b++;}"
-                                "  *d = b ? b : 10;\n"
-                                "  return *d;\n"
-                                "}\n";
-            ASSERT_EQUALS("int f ( int b , int * d ) { if ( b ) { b ++ ; } if ( b ) { * d = b ; } else { * d = 10 ; } return * d ; }", tok(code));
-        }
-
-        {
-            // Ticket #2885
-            const char code[] = "; const char *cx16 = has_cmpxchg16b ? \" -mcx16\" : \" -mno-cx16\";";
-            const char expected[] = "; const char * cx16 ; if ( has_cmpxchg16b ) { cx16 = \" -mcx16\" ; } else { cx16 = \" -mno-cx16\" ; }";
-            ASSERT_EQUALS(expected, tok(code));
-        }
         // Ticket #3572 (segmentation fault)
         ASSERT_EQUALS("0 ; x = { ? y : z ; }", tok("0; x = { ? y : z; }"));
-
-        {
-            // #4019 - varid
-            const char code[] = "; char *p; *p = a ? 1 : 0;";
-            const char expected[] = "\n\n##file 0\n"
-                                    "1: ; char * p@1 ; if ( a ) { * p@1 = 1 ; } else { * p@1 = 0 ; }\n";
-            ASSERT_EQUALS(expected, tokenizeDebugListing(code, true));
-        }
 
         {
             // #3922 - (true)
@@ -3103,11 +3087,6 @@ private:
             ASSERT_EQUALS("; x = * b ;", tok("; x = (false)?*a:*b;"));
             ASSERT_EQUALS("void f ( ) { return 1 ; }", tok("void f() { char *p=0; return (p==0)?1:2; }"));
         }
-
-        // 4225 - varid gets lost
-        ASSERT_EQUALS("\n\n##file 0\n"
-                      "1: int a@1 ; int b@2 ; int c@3 ; int d@4 ; if ( b@2 ) { a@1 = c@3 ; } else { a@1 = d@4 ; }\n",
-                      tokenizeDebugListing("int a, b, c, d; a = b ? (int *)c : d;", true));
     }
 
     void calculations() {
@@ -4439,7 +4418,7 @@ private:
                       "[test.cpp:20] -> [test.cpp:1]: (style, inconclusive) The function parameter 'A' hides a typedef with the same name.\n"
                       "[test.cpp:21] -> [test.cpp:1]: (style, inconclusive) The variable 'A' hides a typedef with the same name.\n"
                       "[test.cpp:24] -> [test.cpp:1]: (style, inconclusive) The typedef 'A' hides a typedef with the same name.\n"
-                      "[test.cpp:24]: (debug) ValueFlow bailout: parameter a\n", errout.str());
+                      "[test.cpp:24]: (debug) ValueFlow bailout: parameter a, at '{'\n", errout.str());
     }
 
     void simplifyTypedef36() {
@@ -4580,9 +4559,11 @@ private:
                              "union A;");
         ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:1]: (style) The union 'A' forward declaration is unnecessary. Type union is already declared earlier.\n", errout.str());
 
-        checkSimplifyTypedef("typedef std::map<std::string, int> A;\n"
-                             "class A;");
+        const char code [] = "typedef std::map<std::string, int> A;\n"
+                             "class A;";
+        checkSimplifyTypedef(code);
         ASSERT_EQUALS("[test.cpp:2] -> [test.cpp:1]: (style) The class 'A' forward declaration is unnecessary. Type class is already declared earlier.\n", errout.str());
+        TODO_ASSERT_EQUALS("class A ;", "class std :: map < std :: string , int > ;", tok(code));
     }
 
     void simplifyTypedef43() {
@@ -7640,6 +7621,10 @@ private:
         ASSERT_EQUALS("int * * p ;", tok("int * restrict * p;", "test.c"));
         ASSERT_EQUALS("void foo ( float * a , float * b ) ;", tok("void foo(float * restrict a, float * restrict b);", "test.c"));
         ASSERT_EQUALS("int * p ;", tok("typedef int * __restrict__ rint; rint p;", "test.c"));
+
+        // don't remove struct members:
+        ASSERT_EQUALS("a = b . _inline ;", tok("a = b._inline;", true));
+
     }
 
     void simplifyCallingConvention() {

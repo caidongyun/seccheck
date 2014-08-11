@@ -24,9 +24,7 @@
 
 #include "config.h"
 #include "check.h"
-#include "settings.h"
 
-class Token;
 class Function;
 class Variable;
 
@@ -64,7 +62,6 @@ public:
         checkOther.checkRedundantAssignment();
         checkOther.checkRedundantAssignmentInSwitch();
         checkOther.checkSuspiciousCaseInSwitch();
-        checkOther.checkSelfAssignment();
         checkOther.checkDuplicateBranch();
         checkOther.checkDuplicateExpression();
         checkOther.checkUnreachableCode();
@@ -194,9 +191,6 @@ public:
     /** @brief %Check for switch case fall through without comment */
     void checkSwitchCaseFallThrough();
 
-    /** @brief %Check for assigning a variable to itself*/
-    void checkSelfAssignment();
-
     /** @brief %Check for testing for mutual exclusion over ||*/
     void checkIncorrectLogicOperator();
 
@@ -320,6 +314,7 @@ private:
     void alwaysTrueFalseStringCompareError(const Token *tok, const std::string& str1, const std::string& str2);
     void alwaysTrueStringVariableCompareError(const Token *tok, const std::string& str1, const std::string& str2);
     void suspiciousStringCompareError(const Token* tok, const std::string& var);
+    void suspiciousStringCompareError_char(const Token* tok, const std::string& var);
     void duplicateBreakError(const Token *tok, bool inconclusive);
     void unreachableCodeError(const Token* tok, bool inconclusive);
     void unsignedLessThanZeroError(const Token *tok, const std::string &varname, bool inconclusive);
@@ -384,6 +379,7 @@ private:
         c.clarifyStatementError(0);
         c.incorrectStringCompareError(0, "substr", "\"Hello World\"");
         c.suspiciousStringCompareError(0, "foo");
+        c.suspiciousStringCompareError_char(0, "foo");
         c.incorrectStringBooleanError(0, "\"Hello World\"");
         c.duplicateBranchError(0, 0);
         c.duplicateExpressionError(0, 0, "&&");
@@ -460,6 +456,7 @@ private:
                "* suspicious condition (runtime comparison of string literals)\n"
                "* suspicious condition (string literals as boolean)\n"
                "* suspicious comparison of a string literal with a char* variable\n"
+               "* suspicious comparison of '\\0' with a char* variable\n"
                "* duplicate break statement\n"
                "* unreachable code\n"
                "* testing if unsigned variable is negative\n"

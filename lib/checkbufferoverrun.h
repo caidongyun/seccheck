@@ -24,15 +24,11 @@
 
 #include "config.h"
 #include "check.h"
-#include "settings.h"
 #include "mathlib.h"
 #include <list>
 #include <vector>
 #include <string>
 
-class ErrorLogger;
-class Token;
-class Tokenizer;
 class Variable;
 
 /// @addtogroup Checks
@@ -62,12 +58,16 @@ public:
     void runSimplifiedChecks(const Tokenizer *tokenizer, const Settings *settings, ErrorLogger *errorLogger) {
         CheckBufferOverrun checkBufferOverrun(tokenizer, settings, errorLogger);
         checkBufferOverrun.bufferOverrun();
+        checkBufferOverrun.bufferOverrun2();
         checkBufferOverrun.arrayIndexThenCheck();
         checkBufferOverrun.writeOutsideBufferSize();
     }
 
     /** @brief %Check for buffer overruns */
     void bufferOverrun();
+
+    /** @brief %Check for buffer overruns #2 (single pass, use ast and valueflow) */
+    void bufferOverrun2();
 
     /** @brief Using array index before bounds check */
     void arrayIndexThenCheck();
@@ -103,11 +103,11 @@ public:
     /** Check for buffer overruns due to allocating strlen(src) bytes instead of (strlen(src)+1) bytes before copying a string */
     void checkBufferAllocatedWithStrlen();
 
+    /** Check string argument buffer overruns */
+    void checkStringArgument();
+
     /** Check for buffer overruns due to copying command-line args to fixed-sized buffers without bounds checking */
     void checkInsecureCmdLineArgs();
-
-    /** Check for negative index */
-    void negativeIndex();
 
     /** Information about N-dimensional array */
     class CPPCHECKLIB ArrayInfo {
@@ -180,12 +180,6 @@ public:
     /** Check for buffer overruns */
     void checkScope(const Token *tok, const std::vector<std::string> &varname, const ArrayInfo &arrayInfo);
 
-    /** Check scope helper function - parse for body */
-    void checkScopeForBody(const Token *tok, const ArrayInfo &arrayInfo, bool &bailout);
-
-    /** Helper function used when parsing for-loops */
-    void parse_for_body(const Token *tok2, const ArrayInfo &arrayInfo, const std::string &strindex, bool condition_out_of_bounds, unsigned int counter_varid, const std::string &min_counter_value, const std::string &max_counter_value);
-
     /** Check readlink or readlinkat() buffer usage */
     void checkReadlinkBufferUsage(const Token *ftok, const Token *scope_begin, const unsigned int varid, const MathLib::bigint total_size);
 
@@ -196,7 +190,7 @@ public:
      * \param arrayInfo the array information
      * \param callstack call stack. This is used to prevent recursion and to provide better error messages. Pass a empty list from checkScope etc.
      */
-    void checkFunctionParameter(const Token &tok, const unsigned int par, const ArrayInfo &arrayInfo, std::list<const Token *> callstack);
+    void checkFunctionParameter(const Token &tok, const unsigned int par, const ArrayInfo &arrayInfo, const std::list<const Token *>& callstack);
 
     /**
      * Helper function that checks if the array is used and if so calls the checkFunctionCall
@@ -208,14 +202,13 @@ public:
 
     void arrayIndexOutOfBoundsError(const Token *tok, const ArrayInfo &arrayInfo, const std::vector<MathLib::bigint> &index);
     void arrayIndexOutOfBoundsError(const Token *tok, const ArrayInfo &arrayInfo, const std::vector<ValueFlow::Value> &index);
-    void arrayIndexInForLoop(const Token *tok, const ArrayInfo &arrayInfo);
 
 private:
 
     static bool isArrayOfStruct(const Token* tok, int &position);
     void arrayIndexOutOfBoundsError(const std::list<const Token *> &callstack, const ArrayInfo &arrayInfo, const std::vector<MathLib::bigint> &index);
-    void bufferOverrunError(const Token *tok, const std::string &varnames = "");
-    void bufferOverrunError(const std::list<const Token *> &callstack, const std::string &varnames = "");
+    void bufferOverrunError(const Token *tok, const std::string &varnames = emptyString);
+    void bufferOverrunError(const std::list<const Token *> &callstack, const std::string &varnames = emptyString);
     void strncatUsageError(const Token *tok);
     void negativeMemoryAllocationSizeError(const Token *tok); // provide a negative value to memory allocation function
     void outOfBoundsError(const Token *tok, const std::string &what, const bool show_size_info, const MathLib::bigint &supplied_size, const MathLib::bigint &actual_size);
@@ -255,6 +248,7 @@ public:
         c.argumentSizeError(0, "function", "array");
         c.writeOutsideBufferSizeError(0,2,3,"write");
         c.negativeMemoryAllocationSizeError(0);
+        c.reportError(nullptr, Severity::warning, "arrayIndexOutOfBoundsCond", "Array 'x[10]' accessed at index 20, which is out of bounds. Otherwise condition 'y==20' is redundant.");
     }
 private:
 
@@ -263,7 +257,17 @@ private:
     }
 
     std::string classInfo() const {
-        return "out of bounds checking\n";
+        return "Out of bounds checking:\n"
+               "* Array index out of bounds detection by value flow analysis\n"
+               "* Dangerous usage of strncat()\n"
+               "* char constant passed as size to function like memset()\n"
+               "* strncpy() leaving string unterminated\n"
+               "* Accessing array with negative index\n"
+               "* Unsafe usage of main(argv, argc) arguments\n"
+               "* Accessing array with index variable before checking its value\n"
+               "* Check for large enough arrays being passed to functions\n"
+               "* Writing beyond bounds of a buffer\n"
+               "* Allocating memory with a negative size\n";
     }
 };
 /// @}

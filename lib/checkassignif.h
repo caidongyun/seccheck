@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,12 +44,16 @@ public:
         : Check(myName(), tokenizer, settings, errorLogger) {
     }
 
+    void runChecks(const Tokenizer *tokenizer, const Settings *settings, ErrorLogger *errorLogger) {
+        CheckAssignIf checkAssignIf(tokenizer, settings, errorLogger);
+        checkAssignIf.multiCondition();
+    }
+
     /** @brief Run checks against the simplified token list */
     void runSimplifiedChecks(const Tokenizer *tokenizer, const Settings *settings, ErrorLogger *errorLogger) {
         CheckAssignIf checkAssignIf(tokenizer, settings, errorLogger);
         checkAssignIf.assignIf();
         checkAssignIf.comparison();
-        checkAssignIf.multiCondition();
     }
 
     /** mismatching assignment / comparison */

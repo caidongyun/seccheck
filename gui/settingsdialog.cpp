@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2013 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -175,9 +175,11 @@ void SettingsDialog::SaveSettingValues() const
     SaveCheckboxValue(&settings, mUI.mEnableInconclusive, SETTINGS_INCONCLUSIVE_ERRORS);
     SaveCheckboxValue(&settings, mUI.mShowErrorId, SETTINGS_SHOW_ERROR_ID);
 
-    QListWidgetItem *currentLang = mUI.mListLanguages->currentItem();
-    const QString langcode = currentLang->data(LangCodeRole).toString();
-    settings.setValue(SETTINGS_LANGUAGE, langcode);
+    const QListWidgetItem *currentLang = mUI.mListLanguages->currentItem();
+    if (currentLang) {
+        const QString langcode = currentLang->data(LangCodeRole).toString();
+        settings.setValue(SETTINGS_LANGUAGE, langcode);
+    }
 
     const int count = mUI.mListIncludePaths->count();
     QString includePaths;
