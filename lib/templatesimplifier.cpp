@@ -1370,7 +1370,7 @@ void TemplateSimplifier::simplifyTemplates(
     {
         //done = true;
         std::list<Token *> templates2;
-        for (std::list<Token *>::reverse_iterator iter1 = templates.rbegin(); iter1 != templates.rend(); ++iter1) {
+        for (auto iter1 = templates.rbegin(); iter1 != templates.rend(); ++iter1) {
             bool instantiated = TemplateSimplifier::simplifyTemplateInstantiations(tokenlist,
                                 errorlogger,
                                 _settings,

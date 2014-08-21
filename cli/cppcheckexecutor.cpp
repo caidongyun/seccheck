@@ -94,9 +94,8 @@ bool CppCheckExecutor::parseFromArgs(CppCheck *cppcheck, int argc, const char* c
     }
 
     // Check that all include paths exist
-    {
-        std::list<std::string>::iterator iter;
-        for (iter = settings._includePaths.begin();
+    {        
+        for (auto iter = settings._includePaths.begin();
              iter != settings._includePaths.end();
             ) {
             const std::string path(Path::toNativeSeparators(*iter));
@@ -125,7 +124,7 @@ bool CppCheckExecutor::parseFromArgs(CppCheck *cppcheck, int argc, const char* c
         // Also output a warning for the user.
         // TODO: Remove all unknown files? (use FileLister::acceptFile())
         bool warn = false;
-        std::vector<std::string> ignored = parser.GetIgnoredPaths();
+        auto ignored = parser.GetIgnoredPaths();
         for (auto i = ignored.begin(); i != ignored.end();) {
             const std::string extension = Path::getFilenameExtension(*i);
             if (extension == ".h" || extension == ".hpp") {

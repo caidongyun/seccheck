@@ -879,7 +879,7 @@ void CheckClass::privateFunctions()
         // Bailout for overridden virtual functions of base classes
         if (!scope->definedType->derivedFrom.empty()) {
             // Check virtual functions
-            for (std::list<const Function*>::iterator it = privateFunctions.begin(); it != privateFunctions.end();) {
+            for (auto it = privateFunctions.begin(); it != privateFunctions.end();) {
                 if ((*it)->isImplicitlyVirtual(true)) // Give true as default value to be returned if we don't see all base classes
                     privateFunctions.erase(it++);
                 else
@@ -893,7 +893,7 @@ void CheckClass::privateFunctions()
             bool used = checkFunctionUsage(funcName, &*scope); // Usage in this class
             // Check in friend classes
             const std::list<Type::FriendInfo>& friendList = scope->definedType->friendList;
-            for (std::list<Type::FriendInfo>::const_iterator it = friendList.begin(); !used && it != friendList.end(); ++it) {
+            for (auto it = friendList.begin(); !used && it != friendList.end(); ++it) {
                 if (it->type)
                     used = checkFunctionUsage(funcName, it->type->classScope);
                 else
@@ -1193,7 +1193,6 @@ void CheckClass::checkReturnPtrThis(const Scope *scope, const Function *func, co
             // check if a function is called
             if (tok->strAt(2) == "(" &&
                 tok->linkAt(2)->next()->str() == ";") {
-                //std::list<Function>::const_iterator it;
 
                 // check if it is a member function
                 for (auto it = scope->functionList.begin(); it != scope->functionList.end(); ++it) {
@@ -1383,8 +1382,7 @@ void CheckClass::virtualDestructor()
             if (_settings->inconclusive) {
                 const Function *destructor = scope->getDestructor();
                 if (destructor && !destructor->isVirtual) {
-                    std::list<Function>::const_iterator func;
-                    for (func = scope->functionList.begin(); func != scope->functionList.end(); ++func) {
+                    for (auto func = scope->functionList.begin(); func != scope->functionList.end(); ++func) {
                         if (func->isVirtual) {
                             inconclusive_errors.push_back(destructor);
                             break;
@@ -1474,7 +1472,7 @@ void CheckClass::virtualDestructor()
                     if (derivedFrom->derivedFrom.empty()) {
                         virtualDestructorError(derivedFrom->classDef, derivedFrom->name(), derivedClass->str(), false);
                         // check for duplicate error and remove if if found
-                        std::list<const Function *>::iterator found = find(inconclusive_errors.begin(), inconclusive_errors.end(), base_destructor);
+                        auto found = find(inconclusive_errors.begin(), inconclusive_errors.end(), base_destructor);
                         if (found != inconclusive_errors.end())
                             inconclusive_errors.erase(found);
                     }
@@ -1492,7 +1490,7 @@ void CheckClass::virtualDestructor()
                         if (base_destructor->access == Public) {
                             virtualDestructorError(base, derivedFrom->name(), derivedClass->str(), false);
                             // check for duplicate error and remove if if found
-                            std::list<const Function *>::iterator found = find(inconclusive_errors.begin(), inconclusive_errors.end(), base_destructor);
+                            auto found = find(inconclusive_errors.begin(), inconclusive_errors.end(), base_destructor);
                             if (found != inconclusive_errors.end())
                                 inconclusive_errors.erase(found);
                         }
@@ -1502,8 +1500,9 @@ void CheckClass::virtualDestructor()
         }
     }
 
-    for (std::list<const Function *>::const_iterator i = inconclusive_errors.begin(); i != inconclusive_errors.end(); ++i)
+    for (auto i = inconclusive_errors.begin(); i != inconclusive_errors.end(); ++i) {
         virtualDestructorError((*i)->tokenDef, (*i)->name(), "", true);
+	}
 }
 
 void CheckClass::virtualDestructorError(const Token *tok, const std::string &Base, const std::string &Derived, bool inconclusive)

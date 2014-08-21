@@ -29,7 +29,7 @@
 Check::Check(const std::string &aname)
     : _tokenizer(0), _settings(0), _errorLogger(0), _name(aname)
 {
-    for (std::list<Check*>::iterator i = instances().begin(); i != instances().end(); ++i) {
+    for (auto i = instances().begin(); i != instances().end(); ++i) {
         if ((*i)->name() > aname) {
             instances().insert(i, this);
             return;

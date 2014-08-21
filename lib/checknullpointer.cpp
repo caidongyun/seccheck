@@ -434,7 +434,7 @@ void CheckNullPointer::nullConstantDereference()
                     parseFunctionCall(*tok, var, &_settings->library, 0);
 
                     // is one of the var items a NULL pointer?
-                    for (std::list<const Token *>::const_iterator it = var.begin(); it != var.end(); ++it) {
+                    for (auto it = var.begin(); it != var.end(); ++it) {
                         if (Token::Match(*it, "0|NULL [,)]")) {
                             nullPointerError(*it);
                         }

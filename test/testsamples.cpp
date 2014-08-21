@@ -45,7 +45,7 @@ private:
 #else
         FileLister::recursiveAddFiles(files, "samples");
 #endif
-        for (std::map<std::string, std::size_t>::const_iterator i = files.begin(); i != files.end(); ++i) {
+        for (auto i = files.begin(); i != files.end(); ++i) {
             CLEAR_REDIRECT_ERROUT;
             char* path = new char[i->first.size() + 1];
             strcpy(path, i->first.c_str());

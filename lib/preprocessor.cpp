@@ -1733,19 +1733,6 @@ void Preprocessor::simplifyCondition(const std::map<std::string, std::string> &c
 
 bool Preprocessor::match_cfg_def(std::map<std::string, std::string> cfg, std::string def)
 {
-    /*
-        std::cout << "cfg: \"";
-        for (std::map<std::string, std::string>::const_iterator it = cfg.begin(); it != cfg.end(); ++it)
-        {
-            std::cout << it->first;
-            if (!it->second.empty())
-                std::cout << "=" << it->second;
-            std::cout << ";";
-        }
-        std::cout << "\"  ";
-        std::cout << "def: \"" << def << "\"\n";
-    */
-
     simplifyVarMap(cfg);
     simplifyCondition(cfg, def, true);
 
@@ -1837,8 +1824,7 @@ std::string Preprocessor::getcode(const std::string &filedata, const std::string
 
             if (_settings) 
 			{
-                typedef std::set<std::string>::const_iterator It;
-                for (It it = _settings->userUndefs.begin(); it != _settings->userUndefs.end(); ++it) 
+                for (auto it = _settings->userUndefs.begin(); it != _settings->userUndefs.end(); ++it) 
 				{
                     std::string::size_type pos = line.find_first_not_of(' ',8);
                     if (pos != std::string::npos) 
@@ -1858,7 +1844,7 @@ std::string Preprocessor::getcode(const std::string &filedata, const std::string
 
             if (match) 
 			{
-                for (std::list<bool>::const_iterator it = matching_ifdef.begin(); it != matching_ifdef.end(); ++it) 
+                for (auto it = matching_ifdef.begin(); it != matching_ifdef.end(); ++it) 
 				{
                     if (!bool(*it)) 
 					{

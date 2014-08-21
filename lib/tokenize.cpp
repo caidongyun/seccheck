@@ -6179,7 +6179,7 @@ bool Tokenizer::simplifyCAlternativeTokens()
             Token * const end = tok->link();
             for (Token *tok2 = tok->next(); tok2 && tok2 != end; tok2 = tok2->next()) {
                 if (Token::Match(tok2, "%var%|%num%|)|] %any% %var%|%num%|(")) {
-                    const std::map<std::string, std::string>::const_iterator cOpIt = cAlternativeTokens.find(tok2->next()->str());
+                    const auto cOpIt = cAlternativeTokens.find(tok2->next()->str());
                     if (cOpIt != cAlternativeTokens.end()) {
                         tok2->next()->str(cOpIt->second);
                         ret = true;

@@ -1458,8 +1458,7 @@ void SymbolDatabase::addClassFunction(Scope **scope, const Token **tok, const To
 
         // check in namespace if using found
         if (*scope == scope1 && !scope1->usingList.empty()) {
-            std::list<Scope::UsingInfo>::const_iterator it2;
-            for (it2 = scope1->usingList.begin(); it2 != scope1->usingList.end(); ++it2) {
+            for (auto it2 = scope1->usingList.begin(); it2 != scope1->usingList.end(); ++it2) {
                 if (it2->scope) {
                     Function * func = findFunctionInScope(tok1, it2->scope);
                     if (func) {
@@ -1724,7 +1723,7 @@ bool Type::hasCircularDependencies(std::set<BaseInfo>* anchestors) const
     if (!anchestors) {
         anchestors=&knownAnchestors;
     }
-    for (std::vector<BaseInfo>::const_iterator parent=derivedFrom.begin(); parent!=derivedFrom.end(); ++parent) {
+    for (auto parent=derivedFrom.begin(); parent!=derivedFrom.end(); ++parent) {
         if (!parent->type)
             continue;
         else if (this==parent->type)
@@ -1955,11 +1954,9 @@ void SymbolDatabase::printOut(const char *title) const
         std::cout << "    definedType: " << scope->definedType << std::endl;
 
         std::cout << "    nestedList[" << scope->nestedList.size() << "] = (";
-
-        std::list<Scope *>::const_iterator nsi;
-
+		
         std::size_t count = scope->nestedList.size();
-        for (nsi = scope->nestedList.begin(); nsi != scope->nestedList.end(); ++nsi) {
+        for (auto nsi = scope->nestedList.begin(); nsi != scope->nestedList.end(); ++nsi) {
             std::cout << " " << (*nsi) << " " << (*nsi)->type << " " << (*nsi)->className;
             if (count-- > 1)
                 std::cout << ",";
@@ -2084,7 +2081,7 @@ void SymbolDatabase::printXml(std::ostream &out) const
 {
     // Scopes..
     out << "  <scopes>" << std::endl;
-    for (std::list<Scope>::const_iterator scope = scopeList.begin(); scope != scopeList.end(); ++scope) {
+    for (auto scope = scopeList.begin(); scope != scopeList.end(); ++scope) {
         out << "    <scope";
         out << " id=\"" << &*scope << "\"";
         out << " type=\"" << scope->type << "\"";
@@ -2104,7 +2101,7 @@ void SymbolDatabase::printXml(std::ostream &out) const
             out << '>' << std::endl;
             if (!scope->functionList.empty()) {
                 out << "      <functionList>" << std::endl;
-                for (std::list<Function>::const_iterator function = scope->functionList.begin(); function != scope->functionList.end(); ++function) {
+                for (auto function = scope->functionList.begin(); function != scope->functionList.end(); ++function) {
                     out << "        <function id=\"" << &*function << '\"';
                     if (function->argCount() == 0U)
                         out << "/>" << std::endl;
@@ -2121,7 +2118,7 @@ void SymbolDatabase::printXml(std::ostream &out) const
             }
             if (!scope->varlist.empty()) {
                 out << "      <varlist>" << std::endl;
-                for (std::list<Variable>::const_iterator var = scope->varlist.begin(); var != scope->varlist.end(); ++var)
+                for (auto var = scope->varlist.begin(); var != scope->varlist.end(); ++var)
                     out << "        <var id=\""   << &*var << "\"/>" << std::endl;
                 out << "      </varlist>" << std::endl;
             }
@@ -2924,14 +2921,12 @@ const Type* Scope::findType(const std::string & name) const
 
 Scope *Scope::findInNestedListRecursive(const std::string & name)
 {
-    std::list<Scope *>::iterator it;
-
-    for (it = nestedList.begin(); it != nestedList.end(); ++it) {
+    for (auto it = nestedList.begin(); it != nestedList.end(); ++it) {
         if ((*it)->className == name)
             return (*it);
     }
 
-    for (it = nestedList.begin(); it != nestedList.end(); ++it) {
+    for (auto it = nestedList.begin(); it != nestedList.end(); ++it) {
         Scope *child = (*it)->findInNestedListRecursive(name);
         if (child)
             return child;

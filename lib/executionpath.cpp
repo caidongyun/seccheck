@@ -428,14 +428,13 @@ void ExecutionPath::checkScope(const Token *tok, std::list<ExecutionPath *> &che
             std::copy(newchecks.begin(), newchecks.end(), std::back_inserter(checks));
 
             // Increase numberOfIf
-            std::list<ExecutionPath *>::iterator it;
-            for (it = checks.begin(); it != checks.end(); ++it) {
+            for (auto it = checks.begin(); it != checks.end(); ++it) {
                 if (countif.find((*it)->varId) != countif.end())
                     (*it)->numberOfIf++;
             }
 
             // Delete checks that have numberOfIf >= 2
-            for (it = checks.begin(); it != checks.end();) {
+            for (auto it = checks.begin(); it != checks.end();) {
                 if ((*it)->varId > 0 && (*it)->numberOfIf >= 2) {
                     delete *it;
                     checks.erase(it++);

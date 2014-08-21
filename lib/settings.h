@@ -273,8 +273,8 @@ public:
      * @return true for the file to be excluded.
      */
     bool configurationExcluded(const std::string &file) const {
-        for (std::set<std::string>::const_iterator i=configExcludePaths.begin(); i!=configExcludePaths.end(); ++i) {
-            if (file.length()>=i->length() && file.compare(0,i->length(),*i)==0) {
+        for (auto i=configExcludePaths.begin(); i!=configExcludePaths.end(); ++i) {
+            if (file.length() >= i->length() && file.compare(0,i->length(),*i)==0) {
                 return true;
             }
         }

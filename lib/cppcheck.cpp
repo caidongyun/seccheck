@@ -314,14 +314,14 @@ void CppCheck::analyseFile(std::istream &fin, const std::string &filename)
 
     // Analyse the tokens..
     std::set<std::string> data;
-    for (std::list<Check *>::const_iterator it = Check::instances().begin(); it != Check::instances().end(); ++it) {
+    for (auto it = Check::instances().begin(); it != Check::instances().end(); ++it) {
         (*it)->analyse(tokenizer.tokens(), data);
     }
 
     // Save analysis results..
     // TODO: This loop should be protected by a mutex or something like that
     //       The saveAnalysisData must _not_ be called from many threads at the same time.
-    for (std::list<Check *>::const_iterator it = Check::instances().begin(); it != Check::instances().end(); ++it) {
+    for (auto it = Check::instances().begin(); it != Check::instances().end(); ++it) {
         (*it)->saveAnalysisData(data);
     }
 }

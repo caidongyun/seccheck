@@ -125,12 +125,12 @@ public:
     std::set<std::string> functionpure;
 
     bool isnoreturn(const std::string &name) const {
-        std::map<std::string, bool>::const_iterator it = _noreturn.find(name);
+        auto it = _noreturn.find(name);
         return (it != _noreturn.end() && it->second);
     }
 
     bool isnotnoreturn(const std::string &name) const {
-        std::map<std::string, bool>::const_iterator it = _noreturn.find(name);
+        auto it = _noreturn.find(name);
         return (it != _noreturn.end() && !it->second);
     }
 
@@ -200,12 +200,11 @@ public:
     }
 
     bool hasminsize(const std::string &functionName) const {
-        std::map<std::string, std::map<int, ArgumentChecks> >::const_iterator it1;
-        it1 = argumentChecks.find(functionName);
-        if (it1 == argumentChecks.end())
+        auto it1 = argumentChecks.find(functionName);
+        if (it1 == argumentChecks.end()) {
             return false;
-        std::map<int,ArgumentChecks>::const_iterator it2;
-        for (it2 = it1->second.begin(); it2 != it1->second.end(); ++it2) {
+		}
+        for (auto it2 = it1->second.begin(); it2 != it1->second.end(); ++it2) {
             if (!it2->second.minsizes.empty())
                 return true;
         }
@@ -326,7 +325,7 @@ public:
         char           sign;
     };
     const struct PodType *podtype(const std::string &name) const {
-        const std::map<std::string, struct PodType>::const_iterator it = podtypes.find(name);
+        auto it = podtypes.find(name);
         return (it != podtypes.end()) ? &(it->second) : nullptr;
     }
 

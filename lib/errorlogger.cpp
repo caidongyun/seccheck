@@ -265,7 +265,7 @@ std::string ErrorLogger::ErrorMessage::toXML(bool verbose, int version) const
         if (_inconclusive)
             printer.PushAttribute("inconclusive", "true");
 
-        for (std::list<FileLocation>::const_reverse_iterator it = _callStack.rbegin(); it != _callStack.rend(); ++it) {
+        for (auto it = _callStack.rbegin(); it != _callStack.rend(); ++it) {
             printer.OpenElement("location", false);
             printer.PushAttribute("file", (*it).getfile().c_str());
             printer.PushAttribute("line", (*it).line);

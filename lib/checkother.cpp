@@ -2463,9 +2463,7 @@ void CheckOther::checkDuplicateBranch()
         return;
 
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
-
-    std::list<Scope>::const_iterator scope;
-
+	
     for (auto scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
         if (scope->type != Scope::eIf)
             continue;
@@ -2553,8 +2551,8 @@ void CheckOther::checkInvalidFree()
                                  tok->strAt(3) == "(" ? 4 : 1;
             const unsigned int var1 = tok->tokAt(varIndex)->varId();
             const unsigned int var2 = tok->tokAt(varIndex + 2)->varId();
-            const std::map<unsigned int, bool>::iterator alloc1 = allocatedVariables.find(var1);
-            const std::map<unsigned int, bool>::iterator alloc2 = allocatedVariables.find(var2);
+            auto alloc1 = allocatedVariables.find(var1);
+            auto alloc2 = allocatedVariables.find(var2);
             if (alloc1 != allocatedVariables.end()) {
                 invalidFreeError(tok, alloc1->second);
             } else if (alloc2 != allocatedVariables.end()) {
@@ -2699,7 +2697,6 @@ namespace {
     void getConstFunctions(const SymbolDatabase *symbolDatabase, std::list<const Function*> &constFunctions)
     {
         for (auto scope = symbolDatabase->scopeList.begin(); scope != symbolDatabase->scopeList.end(); ++scope) {
-            //std::list<Function>::const_iterator func;
             // only add const functions that do not have a non-const overloaded version
             // since it is pretty much impossible to tell which is being called.
             typedef std::map<std::string, std::list<const Function*> > StringFunctionMap;

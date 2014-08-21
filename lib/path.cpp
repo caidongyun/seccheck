@@ -100,7 +100,7 @@ std::string Path::simplifyPath(std::string originalPath)
     }
 
     std::ostringstream oss;
-    for (std::vector<std::string>::size_type i = 0; i < pathParts.size(); ++i) {
+    for (auto i = 0; i < pathParts.size(); ++i) {
         oss << pathParts[i];
     }
 

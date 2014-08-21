@@ -219,7 +219,7 @@ void CheckUnusedFunctions::parseTokens(const Tokenizer &tokenizer, const char Fi
 
 void CheckUnusedFunctions::check(ErrorLogger * const errorLogger)
 {
-    for (std::map<std::string, FunctionUsage>::const_iterator it = _functions.begin(); it != _functions.end(); ++it) {
+    for (auto it = _functions.begin(); it != _functions.end(); ++it) {
         const FunctionUsage &func = it->second;
         if (func.usedOtherFile || func.filename.empty())
             continue;

@@ -373,7 +373,7 @@ void Variables::leaveScope(bool insideLoop)
         }
     }
 
-    std::list<std::set<unsigned int> >::reverse_iterator reverseReadIter = _varReadInScope.rbegin();
+    auto reverseReadIter = _varReadInScope.rbegin();
     ++reverseReadIter;
     if (reverseReadIter != _varReadInScope.rend()) {
         // Transfer read variables into previous scope

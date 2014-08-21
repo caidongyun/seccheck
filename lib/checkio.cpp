@@ -147,7 +147,7 @@ void CheckIO::checkFileUsage()
             } else if (tok->varId() && Token::Match(tok, "%var% =") &&
                        (tok->strAt(2) != "fopen" && tok->strAt(2) != "freopen" && tok->strAt(2) != "tmpfile" &&
                         (windows ? (tok->str() != "_wfopen" && tok->str() != "_wfreopen") : true))) {
-                std::map<unsigned int, Filepointer>::iterator i = filepointers.find(tok->varId());
+                auto i = filepointers.find(tok->varId());
                 if (i != filepointers.end()) {
                     i->second.mode = UNKNOWN_OM;
                     i->second.lastOperation = Filepointer::UNKNOWN_OP;
@@ -500,7 +500,7 @@ void CheckIO::checkWrongPrintfScanfArguments()
 
             if (Token::Match(tok->next(), "( %any%") && _settings->library.formatstr_function(tok->str())) {
                 const std::map<int, Library::ArgumentChecks>& argumentChecks = _settings->library.argumentChecks.at(tok->str());
-                for (std::map<int, Library::ArgumentChecks>::const_iterator i = argumentChecks.begin(); i != argumentChecks.end(); ++i) {
+                for (auto i = argumentChecks.begin(); i != argumentChecks.end(); ++i) {
                     if (i->second.formatstr) {
                         formatStringArgNo = i->first - 1;
                         break;
@@ -1326,7 +1326,7 @@ void CheckIO::checkWrongPrintfScanfArguments()
 
             if (warning) {
                 // Check that all parameter positions reference an actual parameter
-                for (std::set<unsigned int>::const_iterator it = parameterPositionsUsed.begin() ; it != parameterPositionsUsed.end() ; ++it) {
+                for (auto it = parameterPositionsUsed.begin() ; it != parameterPositionsUsed.end() ; ++it) {
                     if ((*it == 0) || (*it > numFormat))
                         wrongPrintfScanfPosixParameterPositionError(tok, tok->str(), *it, numFormat);
                 }

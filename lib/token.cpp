@@ -1211,7 +1211,7 @@ void Token::printValueFlow(bool xml, std::ostream &out) const
         line = tok->linenr();
         if (!xml)
             out << "  " << tok->str() << ":{";
-        for (std::list<ValueFlow::Value>::const_iterator it=tok->values.begin(); it!=tok->values.end(); ++it) {
+        for (auto it=tok->values.begin(); it!=tok->values.end(); ++it) {
             if (xml) {
                 out << "      <value intvalue=\"" << it->intvalue << "\"";
                 if (it->condition) {
@@ -1236,8 +1236,7 @@ void Token::printValueFlow(bool xml, std::ostream &out) const
 const ValueFlow::Value * Token::getValueLE(const MathLib::bigint val, const Settings *settings) const
 {
     const ValueFlow::Value *ret = nullptr;
-    std::list<ValueFlow::Value>::const_iterator it;
-    for (it = values.begin(); it != values.end(); ++it) {
+    for (auto it = values.begin(); it != values.end(); ++it) {
         if (it->intvalue <= val) {
             if (!ret || ret->inconclusive || (ret->condition && !it->inconclusive))
                 ret = &(*it);
@@ -1257,8 +1256,7 @@ const ValueFlow::Value * Token::getValueLE(const MathLib::bigint val, const Sett
 const ValueFlow::Value * Token::getValueGE(const MathLib::bigint val, const Settings *settings) const
 {
     const ValueFlow::Value *ret = nullptr;
-    std::list<ValueFlow::Value>::const_iterator it;
-    for (it = values.begin(); it != values.end(); ++it) {
+    for (auto it = values.begin(); it != values.end(); ++it) {
         if (it->intvalue >= val) {
             if (!ret || ret->inconclusive || (ret->condition && !it->inconclusive))
                 ret = &(*it);

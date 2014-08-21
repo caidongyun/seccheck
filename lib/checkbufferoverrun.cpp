@@ -277,7 +277,7 @@ static bool checkMinSizes(const std::list<Library::ArgumentChecks::MinSize> &min
 
     // All conditions must be true
     bool error = true;
-    for (std::list<Library::ArgumentChecks::MinSize>::const_iterator minsize = minsizes.begin(); minsize != minsizes.end(); ++minsize) {
+    for (auto minsize = minsizes.begin(); minsize != minsizes.end(); ++minsize) {
         if (!error)
             return false;
         error = false;
@@ -450,10 +450,11 @@ void CheckBufferOverrun::checkFunctionCall(const Token *tok, const ArrayInfo &ar
         return;
 
     // Prevent recursion
-    for (std::list<const Token*>::const_iterator it = callstack.begin(); it != callstack.end(); ++it) {
+    for (auto it = callstack.begin(); it != callstack.end(); ++it) {
         // Same function name => bail out
-        if (tok->str() == (*it)->str())
+        if (tok->str() == (*it)->str()) {
             return;
+		}
     }
     callstack.push_back(tok);
 
@@ -1129,8 +1130,7 @@ void CheckBufferOverrun::checkStructVariable()
         const Scope * scope = symbolDatabase->classAndStructScopes[i];
 
         // check all variables to see if they are arrays
-        std::list<Variable>::const_iterator var;
-        for (var = scope->varlist.begin(); var != scope->varlist.end(); ++var) {
+        for (auto var = scope->varlist.begin(); var != scope->varlist.end(); ++var) {
             if (var->isArray()) {
                 // create ArrayInfo from the array variable
                 ArrayInfo arrayInfo(&*var, _tokenizer);
@@ -1341,7 +1341,7 @@ MathLib::bigint CheckBufferOverrun::countSprintfLength(const std::string &input_
     bool handleNextParameter = false;
     std::string digits_string = "";
     bool i_d_x_f_found = false;
-    std::list<const Token*>::const_iterator paramIter = parameters.begin();
+    auto paramIter = parameters.begin();
     std::size_t parameterLength = 0;
     for (std::string::size_type i = 0; i < input_string.length(); ++i) {
         if (input_string[i] == '\\') {

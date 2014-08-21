@@ -99,7 +99,7 @@ Library::Error Library::load(const tinyxml2::XMLDocument &doc)
             int allocationId = 0;
             for (const tinyxml2::XMLElement *memorynode = node->FirstChildElement(); memorynode; memorynode = memorynode->NextSiblingElement()) {
                 if (strcmp(memorynode->Name(),"dealloc")==0) {
-                    const std::map<std::string,int>::const_iterator it = _dealloc.find(memorynode->GetText());
+                    const auto it = _dealloc.find(memorynode->GetText());
                     if (it != _dealloc.end()) {
                         allocationId = it->second;
                         break;
@@ -402,14 +402,13 @@ bool Library::isargvalid(const std::string &functionName, int argnr, const MathL
 
 const Library::ArgumentChecks * Library::getarg(const std::string &functionName, int argnr) const
 {
-    std::map<std::string, std::map<int, ArgumentChecks> >::const_iterator it1;
-    it1 = argumentChecks.find(functionName);
+    auto it1 = argumentChecks.find(functionName);
     if (it1 == argumentChecks.end())
         return nullptr;
-    const std::map<int,ArgumentChecks>::const_iterator it2 = it1->second.find(argnr);
+    auto it2 = it1->second.find(argnr);
     if (it2 != it1->second.end())
         return &it2->second;
-    const std::map<int,ArgumentChecks>::const_iterator it3 = it1->second.find(-1);
+    auto it3 = it1->second.find(-1);
     if (it3 != it1->second.end())
         return &it3->second;
     return nullptr;
