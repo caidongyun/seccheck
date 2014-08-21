@@ -1167,6 +1167,18 @@ void Token::printAst(bool verbose, bool xml, std::ostream &out) const
     }
 }
 
+void Token::printAllTokens(bool verbose, std::ostream &out) const
+{
+	out << "--==--" << std::endl;
+	for (const Token *tok = this; tok; tok = tok->next()) {
+		out << "type:" << printType(_type) 
+			<< ", orig name:" << originalName()
+			<< ", str:" << _str
+			<< std::endl;
+	}
+	out << "--==--" << std::endl;
+}
+
 static std::string indent(const unsigned int indent1, const unsigned int indent2)
 {
     std::string ret(indent1,' ');
@@ -1281,4 +1293,53 @@ void Token::assignProgressValues(Token *tok)
     unsigned int count = 0;
     for (Token *tok2 = tok; tok2; tok2 = tok2->next())
         tok2->_progressValue = count++ * 100 / total_count;
+}
+
+std::string Token::printType(Type tkType)
+{
+	switch (tkType)
+	{
+	case eVariable:
+		return "eVariable";
+	case eType:
+		return "eType";
+	case eFunction:
+		return "eFunction";
+	case eKeyword:
+		return "eKeyword";
+	case eName:
+		return "eName";
+	case eNumber:
+		return "eNumber";
+	case eString:
+		return "eString";
+	case eChar:
+		return "eChar";
+	case eBoolean:
+		return "eBoolean";
+	case eLiteral:
+		return "eLiteral";
+	case eArithmeticalOp:
+		return "eArithmeticalOp";
+	case eComparisonOp:
+		return "eComparisonOp";
+	case eAssignmentOp:
+		return "eAssignmentOp";
+	case eLogicalOp:
+		return "eLogicalOp";
+	case eBitOp:
+		return "eBitOp";
+	case eIncDecOp:
+		return "eIncDecOp";
+	case eExtendedOp:
+		return "eExtendedOp";
+	case eBracket:
+		return "eBracket";
+	case eOther:
+		return "eOther";
+	case eNone:
+		return "eNone";
+	default:
+		return "eNone";
+	}
 }
