@@ -822,7 +822,7 @@ public:
 
     void printAst(bool verbose, bool xml, std::ostream &out) const;
 
-	void printAllTokens(bool verbose, std::ostream &out) const;
+	void printAllTokens(std::ostream &out) const;
 
     void printValueFlow(bool xml, std::ostream &out) const;
 };

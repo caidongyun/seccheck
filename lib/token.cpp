@@ -1167,13 +1167,12 @@ void Token::printAst(bool verbose, bool xml, std::ostream &out) const
     }
 }
 
-void Token::printAllTokens(bool verbose, std::ostream &out) const
+void Token::printAllTokens(std::ostream &out) const
 {
 	out << "--==--" << std::endl;
 	for (const Token *tok = this; tok; tok = tok->next()) {
-		out << "type:" << printType(_type) 
-			<< ", orig name:" << originalName()
-			<< ", str:" << _str
+		out << "type:" << printType(tok->type())
+			<< ", str:" << tok->str()
 			<< std::endl;
 	}
 	out << "--==--" << std::endl;
