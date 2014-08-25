@@ -127,8 +127,17 @@ static string convertNormalFunctionDefine(const Function& func)
 		funcDef += convertVariableDefine(*itr) + ",";
 	}
 
-	funcDef = funcDef.substr(0, funcDef.size() - 1); // Remove last "," 
-	funcDef += ") " + findReturnValue(func) + " { "; // function return value
+	if (func.argumentList.size() > 0)
+	{
+		funcDef = funcDef.substr(0, funcDef.size() - 1); // Remove last "," 
+	}
+	
+	string retType = findReturnValue(func);
+	if (retType == "void")
+	{
+		retType = "";
+	}
+	funcDef += ") " + retType; // function return value
 
 	statements.push_back(funcDef);
 
