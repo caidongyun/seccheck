@@ -136,11 +136,13 @@
 		<Unit filename="lib/checkother.h" />
 		<Unit filename="lib/checkpostfixoperator.cpp" />
 		<Unit filename="lib/checkpostfixoperator.h" />
+		<Unit filename="lib/checksizeofpointer.cpp" />
 		<Unit filename="lib/checkstl.cpp" />
 		<Unit filename="lib/checkstl.h" />
 		<Unit filename="lib/checkuninitvar.cpp" />
 		<Unit filename="lib/checkuninitvar.h" />
 		<Unit filename="lib/checkunsafefunctions.cpp" />
+		<Unit filename="lib/checkunsafefunctions.h" />
 		<Unit filename="lib/checkunusedfunctions.cpp" />
 		<Unit filename="lib/checkunusedfunctions.h" />
 		<Unit filename="lib/checkunusedvar.cpp" />

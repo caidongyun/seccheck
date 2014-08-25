@@ -28,15 +28,15 @@ class Scope;
 class GoConvertor
 {
 public:
-	GoConvertor(Tokenizer* ptr);
+	GoConvertor(const Tokenizer* const ptr);
 
 	void convert();
 
 private:
-	void convertScope(const Scope* scopePtr);
+	std::string convertScope(const Scope& scope);
 
 private:
-	Tokenizer* tokenizer_;
+	const Tokenizer* tokenizer_;
 };
 
 #endif // PATHMATCH_H

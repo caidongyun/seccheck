@@ -68,6 +68,7 @@
     <ClCompile Include="cppcheck.cpp" />
     <ClCompile Include="errorlogger.cpp" />
     <ClCompile Include="executionpath.cpp" />
+    <ClCompile Include="goconvertor.cpp" />
     <ClCompile Include="library.cpp" />
     <ClCompile Include="mathlib.cpp" />
     <ClCompile Include="path.cpp" />
@@ -117,6 +118,7 @@
     <ClInclude Include="cppcheck.h" />
     <ClInclude Include="errorlogger.h" />
     <ClInclude Include="executionpath.h" />
+    <ClInclude Include="goconvertor.h" />
     <ClInclude Include="library.h" />
     <ClInclude Include="mathlib.h" />
     <ClInclude Include="path.h" />

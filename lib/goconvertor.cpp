@@ -1,26 +1,26 @@
 /*
- * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+* Cppcheck - A tool for static C/C++ code analysis
+* Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "goconvertor.h"
 #include "tokenize.h"
 #include "symboldatabase.h"
 
-#include <string>
+#include <iostream>
 #include <locale>
 #include <vector>
 
@@ -31,6 +31,22 @@ static string convertVariableName(const string& varName)
 	string firstCharUpper = varName;
 	firstCharUpper[0] = toupper(firstCharUpper[0]);
 	return firstCharUpper;
+}
+
+static string findVariableType(const Variable& var)
+{
+	if (var.type() != nullptr)
+	{
+		return var.type()->name();
+	}
+
+	if (var.typeStartToken() != nullptr)
+	{
+		return var.typeStartToken()->str();
+	}
+
+	// TODO
+	return "NA";
 }
 
 static string convertVariableDefine(const Variable& var)
@@ -44,15 +60,15 @@ static string convertVariableDefine(const Variable& var)
 
 	if (var.isArray())
 	{
-		return (varName) + " [] " + var.type()->name();
+		return (varName) + " [] " + findVariableType(var);
 	}
 	else if (var.isPointer())
 	{
-		return (varName) + " * " + var.type()->name();
+		return (varName) + " * " + findVariableType(var);
 	}
 	else
 	{
-		return (varName) + " " + var.type()->name();
+		return (varName) + " " + findVariableType(var);
 	}	
 }
 
@@ -64,6 +80,32 @@ static string array2string(const vector<string>& arr)
 		statement += *itr + "\r\n";
 	}
 	return statement;
+}
+
+static string findReturnValue(const Function& func)
+{
+	if (func.retType != nullptr)
+	{
+		return func.retType->name();
+	}
+
+	if (func.retDef != nullptr)
+	{
+		return func.retDef->str();
+	}
+
+	return "";
+}
+
+static string convertFunctionContent(const Scope& sc)
+{
+	string line = "";
+	for (const Token* ftok2 = sc.classStart; ftok2 != sc.classEnd; ftok2 = ftok2->next())
+	{
+		// TODO parse content
+		line += ftok2->str() + " ";
+	}
+	return line;
 }
 
 static string convertNormalFunctionDefine(const Function& func)
@@ -86,14 +128,19 @@ static string convertNormalFunctionDefine(const Function& func)
 	}
 
 	funcDef = funcDef.substr(0, funcDef.size() - 1); // Remove last "," 
-	funcDef += "){";
-	// TODO function return value
+	funcDef += ") " + findReturnValue(func) + " { "; // function return value
 
 	statements.push_back(funcDef);
 
-	// TODO Function content
+	// Function content
+	string content = convertFunctionContent(*func.functionScope);
+	if (content != "")
+	{
+		statements.push_back(content);
+	}
 
 	statements.push_back("}");
+
 	return array2string(statements);
 }
 
@@ -148,11 +195,6 @@ static string convertClassScope(const Scope& sc)
 	return convertStructScope(sc);
 }
 
-static string convertFunctionScope(const Scope& sc)
-{
-	return "";
-}
-
 static string convertNamespaceScope(const Scope& sc)
 {
 	return "";
@@ -198,67 +240,71 @@ static string convertCatchScope(const Scope& sc)
 	return "";
 }
 
-GoConvertor::GoConvertor(Tokenizer* ptr) : tokenizer_(ptr)
+GoConvertor::GoConvertor(const Tokenizer* const ptr) : tokenizer_(ptr)
 {
 }
 
 // See: SymbolDatabase::printOut
 void GoConvertor::convert()
 {
+	vector<string> contents;
 	const SymbolDatabase* pDb = tokenizer_->getSymbolDatabase();
 	for (auto scope = pDb->scopeList.begin(); scope != pDb->scopeList.end(); ++scope)
 	{
-		switch (scope->type)
+		string content = convertScope(*scope);
+
+		if (content.size() > 0)
 		{
-		case Scope::eGlobal:
-			break;
-		case Scope::eClass:
-			convertClassScope(*scope);
-			break;
-		case Scope::eStruct:
-			convertStructScope(*scope);
-			break;
-		case Scope::eUnion:
-			break;
-		case Scope::eNamespace:
-			convertNamespaceScope(*scope);
-			break;
-		case Scope::eFunction:
-			convertFunctionScope(*scope);
-			break;
-		case Scope::eIf:
-			convertIfScope(*scope);
-			break;
-		case Scope::eElse:
-			convertElseScope(*scope);
-			break;
-		case Scope::eFor:
-			convertForScope(*scope);
-			break;
-		case Scope::eWhile:
-			convertWhileScope(*scope);
-			break;
-		case Scope::eDo:
-			convertDoScope(*scope);
-			break;
-		case Scope::eSwitch:
-			convertSwitchScope(*scope);
-			break;
-		case Scope::eUnconditional:
-			break;
-		case Scope::eTry:
-			convertTryScope(*scope);
-			break;
-		case Scope::eCatch:
-			break;
-		default:
-			break;
+			contents.push_back(content);
 		}
 	}
 
+	cout << array2string(contents) << endl;
 }
 
-void GoConvertor::convertScope(const Scope* scopePtr)
+string GoConvertor::convertScope(const Scope& scope)
 {
+	switch (scope.type)
+	{
+	case Scope::eGlobal:
+		break;
+	case Scope::eClass:
+		return convertClassScope(scope);
+	case Scope::eStruct:
+		return convertStructScope(scope);
+	case Scope::eUnion:
+		break;
+	case Scope::eNamespace:
+		return convertNamespaceScope(scope);
+	case Scope::eFunction:
+		{
+			if (scope.function == nullptr)
+			{
+				return "";
+			}
+			return convertNormalFunctionDefine(*scope.function);
+		}
+	case Scope::eIf:
+		return convertIfScope(scope);
+	case Scope::eElse:
+		return convertElseScope(scope);
+	case Scope::eFor:
+		return convertForScope(scope);
+	case Scope::eWhile:
+		return convertWhileScope(scope);
+	case Scope::eDo:
+		return convertDoScope(scope);
+	case Scope::eSwitch:
+		return convertSwitchScope(scope);
+	case Scope::eUnconditional:
+		break;
+	case Scope::eTry:
+		return convertTryScope(scope);
+	case Scope::eCatch:
+		break;
+	default:
+		break;
+	}
 
+	return "";
 }
