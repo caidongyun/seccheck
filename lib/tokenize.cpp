@@ -26,6 +26,7 @@
 #include "symboldatabase.h"
 #include "templatesimplifier.h"
 #include "timer.h"
+#include "goconvertor.h"
 
 #include <cstring>
 #include <sstream>
@@ -3737,8 +3738,9 @@ void Tokenizer::printDebugOutput() const
     if (_settings->debug) {
         list.front()->printOut(0, list.getFiles());
 
-        if (_settings->_xml)
+        if (_settings->_xml) {
             std::cout << "<debug>" << std::endl;
+		}
 
         if (_symbolDatabase) {
             if (_settings->_xml)

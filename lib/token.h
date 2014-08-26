@@ -390,6 +390,7 @@ public:
      */
     static int multiCompare(const Token *needle, const char *haystack, unsigned int varid);
 
+	// Line number in a file
     unsigned int linenr() const {
         return _linenr;
     }

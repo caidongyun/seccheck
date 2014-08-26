@@ -97,13 +97,62 @@ static string findReturnValue(const Function& func)
 	return "";
 }
 
+static string convertPublicMember(const Token& variableToken)
+{
+	if (variableToken.type() != Token::eVariable)
+	{
+		return variableToken.str();
+	}
+
+	auto v = variableToken.variable();
+	if (v == nullptr)
+	{
+		return variableToken.str();
+	}
+
+	if (!v->isPublic())
+	{
+		return variableToken.str();
+	}
+
+	auto prevToken = variableToken.previous();
+	if (prevToken == nullptr)
+	{
+		return variableToken.str();
+	}
+
+	if (prevToken->str() == ".")
+	{
+		return variableToken.str();
+	}
+
+	if (prevToken->str() == "->")
+	{
+		return variableToken.str();
+	}
+
+	return "parent." + variableToken.str();
+}
+
 static string convertFunctionContent(const Scope& sc)
 {
 	string line = "";
 	for (const Token* ftok2 = sc.classStart; ftok2 != sc.classEnd; ftok2 = ftok2->next())
 	{
 		// TODO parse content
-		line += ftok2->str() + " ";
+		if ((ftok2->str() == ";") || (ftok2->str() == "{") || (ftok2->str() == "}"))
+		{
+			line += ftok2->str() + "\r\n";
+		}
+		else if (ftok2->type() == Token::eVariable)
+		{
+			// member variable
+			line += convertPublicMember(*ftok2) + " ";
+		}
+		else
+		{
+			line += ftok2->str() + " ";
+		}
 	}
 	return line;
 }
@@ -180,7 +229,7 @@ static string convertGlobalScope(const Scope& sc)
 
 static string convertStructScope(const Scope& sc)
 {
-	string classDef = "struct " + sc.className + "{\r\n";
+	string classDef = "type " + sc.className + " struct {\r\n";
 
 	// Added variable members
 	for (auto var = sc.varlist.begin(); var != sc.varlist.end(); ++var)
