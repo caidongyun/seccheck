@@ -28,8 +28,8 @@ using namespace std;
 
 struct Statement
 {
-	Token* startTok;
-	Token* endTok;
+	Token* StartToken;
+	Token* EndToken;
 
 	// Statements Defination from CPP Standard 
 	enum StatementType
@@ -153,10 +153,19 @@ static string convertPublicMember(const Token& variableToken)
 	return "parent." + variableToken.str();
 }
 
-static string convertStatement(const Token& startToken, const Token& endToken)
+static string convertStatement(const Token* startToken, const Token* endToken)
 {
 	// TODO
 	return "";
+}
+
+static bool splitStatement(const Scope& sc, vector<Statement>& stmts)
+{
+    for (const Token* ftok2 = sc.classStart; ftok2 != sc.classEnd; ftok2 = ftok2->next())
+    {
+    }
+
+    return true;
 }
 
 static string convertFunctionContent(const Scope& sc)
@@ -328,7 +337,7 @@ GoConvertor::GoConvertor(const Tokenizer* const ptr) : tokenizer_(ptr)
 }
 
 // See: SymbolDatabase::printOut
-void GoConvertor::convert()
+std::string GoConvertor::convert()
 {
 	vector<string> contents;
 	const SymbolDatabase* pDb = tokenizer_->getSymbolDatabase();
@@ -342,7 +351,9 @@ void GoConvertor::convert()
 		}
 	}
 
-	cout << array2string(contents) << endl;
+    string allContents = array2string(contents);
+	cout << allContents << endl;
+    return allContents;
 }
 
 string GoConvertor::convertScope(const Scope& scope)

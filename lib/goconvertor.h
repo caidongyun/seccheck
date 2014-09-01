@@ -19,18 +19,20 @@
 #ifndef GOCONVERTOR_H_1dzfes
 #define GOCONVERTOR_H_1dzfes
 
+#include "config.h"
+
 #include <string>
 #include <vector>
 
 class Tokenizer;
 class Scope;
 
-class GoConvertor
+class CPPCHECKLIB GoConvertor
 {
 public:
 	GoConvertor(const Tokenizer* const ptr);
 
-	void convert();
+	std::string convert();
 
 private:
 	std::string convertScope(const Scope& scope);
@@ -39,4 +41,4 @@ private:
 	const Tokenizer* tokenizer_;
 };
 
-#endif // PATHMATCH_H
+#endif // GOCONVERTOR_H_1dzfes
