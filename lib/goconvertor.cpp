@@ -168,13 +168,19 @@ static bool splitStatement(const Scope& sc, vector<Statement>& stmts)
     return true;
 }
 
+// Indicator a new line
+static bool isNewLineChar(const string& s)
+{
+    return (s == ";") || (s == "{") || (s == "}");
+}
+
 static string convertFunctionContent(const Scope& sc)
 {
 	string line = "";
 	for (const Token* ftok2 = sc.classStart; ftok2 != sc.classEnd; ftok2 = ftok2->next())
 	{
 		// TODO parse content
-		if ((ftok2->str() == ";") || (ftok2->str() == "{") || (ftok2->str() == "}"))
+		if (isNewLineChar(ftok2->str()))
 		{
 			line += ftok2->str() + "\r\n";
 		}

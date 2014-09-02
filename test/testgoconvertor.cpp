@@ -37,27 +37,8 @@ private:
     void run() {
         TEST_CASE(simpleForClause);
     }
-	
-	// Pointer needs to be destroyed outside
-	Tokenizer* tokenize(const char code[])
-    {
-        errout.str("");
 
-        Settings settings;
-        settings.debugwarnings = true;
-        //settings.platform(platform);
-        //settings.standards.cpp = cpp11 ? Standards::CPP11 : Standards::CPP03;
-
-        // tokenize..
-        Tokenizer *tokenizer = new Tokenizer(&settings, this);
-        std::istringstream istr(code);
-        tokenizer->tokenize(istr, "test.cpp");
-        tokenizer->simplifyTokenList2();
-		
-		return tokenizer;
-    }
-
-    void check(const char code[]) {
+    void convert(const char code[]) {
         // Clear the error buffer..
         errout.str("");
 
@@ -74,7 +55,7 @@ private:
     }
 
     void simpleForClause() {
-		check("int main() { int sum = 0; for (int i = 0; i < 50; i++) { sum+=2;}; return sum;}\n"
+		convert("int main() { int sum = 0; for (int i = 0; i < 50; i++) { sum+=2;}; return sum;}\n"
 			  );
     }
 };
