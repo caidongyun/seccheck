@@ -116,7 +116,17 @@ static string findReturnValue(const Function& func)
 	return "";
 }
 
-static string convertPublicMember(const Token& variableToken)
+static bool isScopeClass(const Scope* sc)
+{
+	if (sc == nullptr)
+	{
+		return false;
+	}
+
+	return (sc->type == Scope::eClass) || (sc->type == Scope::eStruct);
+}
+
+static string convertClassMember(const Token& variableToken)
 {
 	if (variableToken.type() != Token::eVariable)
 	{
@@ -129,28 +139,32 @@ static string convertPublicMember(const Token& variableToken)
 		return variableToken.str();
 	}
 
-	if (!v->isPublic())
-	{
-		return variableToken.str();
-	}
-
 	auto prevToken = variableToken.previous();
 	if (prevToken == nullptr)
 	{
 		return variableToken.str();
 	}
 
+	// member of other class
 	if (prevToken->str() == ".")
 	{
 		return variableToken.str();
 	}
 
+	// member of other class
 	if (prevToken->str() == "->")
 	{
 		return variableToken.str();
 	}
 
-	return "parent." + variableToken.str();
+	if (isScopeClass(variableToken.scope()))
+	{
+		return "parent." + variableToken.str();
+	}
+	else
+	{
+		return variableToken.str();
+	}
 }
 
 static string convertStatement(const Token* startToken, const Token* endToken)
@@ -159,6 +173,12 @@ static string convertStatement(const Token* startToken, const Token* endToken)
 	return "";
 }
 
+
+// 4 statements type
+// eType + eVariable + ";"
+// eVariable + eAssignment
+// eType + eVariable + 
+// (, eExtendedOp
 static bool splitStatement(const Scope& sc, vector<Statement>& stmts)
 {
     for (const Token* ftok2 = sc.classStart; ftok2 != sc.classEnd; ftok2 = ftok2->next())
@@ -168,26 +188,121 @@ static bool splitStatement(const Scope& sc, vector<Statement>& stmts)
     return true;
 }
 
+static bool isVariableDefination(const Token& tk)
+{
+    if (tk.type() != Token::eType)
+    {
+        return false;
+    }
+
+    Token* nextTk = tk.next();
+    if (nextTk == nullptr)
+    {
+        return false;
+    }
+
+    if (nextTk->type() != Token::eVariable)
+    {
+        return false;
+    }
+
+    Token* secondTk = nextTk->next();
+    if (secondTk == nullptr)
+    {
+        return false;
+    }
+
+    return (secondTk->str() == ";");
+}
+
+static bool isAssignmentOP(const Token& tk)
+{
+    return (tk.str() == "=") && (tk.type() == Token::eAssignmentOp);
+}
+
+static bool isVariableInit(const Token& tk)
+{
+    if (tk.type() != Token::eType)
+    {
+        return false;
+    }
+
+    Token* nextTk = tk.next();
+    if (nextTk == nullptr)
+    {
+        return false;
+    }
+
+    if (nextTk->type() != Token::eVariable)
+    {
+        return false;
+    }
+
+    Token* secondTk = nextTk->next();
+    if (secondTk == nullptr)
+    {
+        return false;
+    }
+
+    return isAssignmentOP(*secondTk);
+}
+
 // Indicator a new line
 static bool isNewLineChar(const string& s)
 {
     return (s == ";") || (s == "{") || (s == "}");
 }
 
+static bool isStartBracket(const Token& tk)
+{
+    return (tk.str() == "(") && (tk.type() == Token::eExtendedOp);
+}
+
+static bool isEndBracket(const Token& tk)
+{
+    return (tk.str() == ")") && (tk.type() == Token::eExtendedOp);
+}
+
 static string convertFunctionContent(const Scope& sc)
 {
 	string line = "";
+    bool isInBracket = false;
+
 	for (const Token* ftok2 = sc.classStart; ftok2 != sc.classEnd; ftok2 = ftok2->next())
-	{
-		// TODO parse content
-		if (isNewLineChar(ftok2->str()))
+	{		
+        if (isStartBracket(*ftok2))
+        {
+			line += ftok2->str() + " ";
+            isInBracket = true;
+        }
+        else if (isEndBracket(*ftok2))
+        {
+            line += ftok2->str() + " ";
+            isInBracket = false;
+        }
+		else if (isNewLineChar(ftok2->str()) && (!isInBracket))
 		{
 			line += ftok2->str() + "\r\n";
 		}
+        else if (isVariableDefination(*ftok2))
+        {
+			auto varTk = ftok2->next();
+			line += "type " + convertClassMember(*varTk) + " " + ftok2->str() + "\r\n";
+
+            ftok2 = ftok2->next()->next();
+        }
+        else if (isVariableInit(*ftok2))
+        {
+            // Skip the variable type token
+            auto varTk = ftok2->next();
+            line += convertClassMember(*varTk) + " := ";
+
+            ftok2 = ftok2->next()->next();
+        }
 		else if (ftok2->type() == Token::eVariable)
 		{
 			// member variable
-			line += convertPublicMember(*ftok2) + " ";
+			line += convertClassMember(*ftok2) + " ";
 		}
 		else
 		{
@@ -202,12 +317,14 @@ static string convertNormalFunctionDefine(const Function& func)
 	vector<string> statements;
 
 	string funcDef = "";
-	if (func.nestedIn->type == Scope::ScopeType::eClass || func.nestedIn->type == Scope::ScopeType::eStruct)
+	if (isScopeClass(func.nestedIn) && (!func.isStatic))
 	{
+		// Only non-static method
 		funcDef = ("func (parent * " + func.nestedIn->className + " ) " + func.name() + "(");
 	}
 	else
 	{
+		// Global function or static function
 		funcDef = ("func " + func.name() + "(");
 	}
 
@@ -242,6 +359,7 @@ static string convertNormalFunctionDefine(const Function& func)
 	return array2string(statements);
 }
 
+// Go lang has neither constructor nor destructor
 static string convertFunctionDefine(const Function& func)
 {
 	switch (func.type)
@@ -269,23 +387,30 @@ static string convertGlobalScope(const Scope& sc)
 
 static string convertStructScope(const Scope& sc)
 {
-	string classDef = "type " + sc.className + " struct {\r\n";
+	vector<string> statements;
+
+	// Start struct defination
+	string classDef = "type " + sc.className + " struct {";
+	statements.push_back(classDef);
 
 	// Added variable members
 	for (auto var = sc.varlist.begin(); var != sc.varlist.end(); ++var)
 	{
-		classDef += convertVariableDefine(*var) + "\r\n";
+		string line = convertVariableDefine(*var);
+		statements.push_back(line);
 	}
 
-	classDef += "}\r\n";
+	// End of struct defination
+	statements.push_back("}");
 
 	// Added functions definition
 	for (auto func = sc.functionList.begin(); func != sc.functionList.end(); ++func)
 	{
-		classDef += convertFunctionDefine(*func) + "\r\n";
+		string line = convertFunctionDefine(*func);
+		statements.push_back(line);
 	}
 
-	return classDef;
+	return array2string(statements);
 }
 
 static string convertClassScope(const Scope& sc)
@@ -338,6 +463,22 @@ static string convertCatchScope(const Scope& sc)
 	return "";
 }
 
+static bool isClassMember(const Function* func)
+{
+	if (func == nullptr)
+	{
+		return false;
+	}
+
+	if (func->nestedIn == nullptr)
+	{
+		return false;
+	}
+
+	return (func->nestedIn->type == Scope::eClass) 
+		|| (func->nestedIn->type == Scope::eStruct);
+}
+
 GoConvertor::GoConvertor(const Tokenizer* const ptr) : tokenizer_(ptr)
 {
 }
@@ -378,7 +519,7 @@ string GoConvertor::convertScope(const Scope& scope)
 		return convertNamespaceScope(scope);
 	case Scope::eFunction:
 		{
-			if (scope.function == nullptr)
+			if (isClassMember(scope.function))
 			{
 				return "";
 			}
