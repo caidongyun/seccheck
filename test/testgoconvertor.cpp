@@ -28,6 +28,14 @@ using namespace std;
 
 extern std::ostringstream errout;
 
+static const char* SIMPLE_POINTER_STR = "class A {\n"
+			" public: A(){}; \n"
+			"static int f(int* para){ int v = (*para) + 100; return v; }\n"
+			"void setM(int m){ m_ = m; }\n"
+			"private: int m_; \n"
+			"};\n"
+			"int main() { A* a = new A(); a->setM(20);delete a;a=0; }\n";
+
 class TestGoConvertor : public TestFixture {
 public:
     TestGoConvertor() : TestFixture("TestGoConvertor") {
@@ -38,7 +46,9 @@ private:
         //TEST_CASE(simpleForClause);
 		//TEST_CASE(simpleClass);
 		//TEST_CASE(simpleClass2);
-		TEST_CASE(simplePointer);
+		//TEST_CASE(simplePointer);
+        TEST_CASE(constPointer);
+        TEST_CASE(constPointerConst);
     }
 
     string convert(const char code[]) {
@@ -61,7 +71,7 @@ private:
     void simpleForClause() {
 		string s = convert("int main() { int sum = 0; for (int i = 0; i < 50; i++) { sum+=2;}; return sum;}\n"
 			  );
-		ASSERT(s!="");
+		ASSERT(s != "");
     }
 
 	void simpleClass() {
@@ -74,9 +84,9 @@ private:
 			"};\n"
 			"int main() { A a; a.setM(20); }\n"
 			  );
-		ASSERT(s!="");
+        ASSERT(s != "");
     }
-
+    
 	void simpleClass2() {
 		string s = convert(
 			"class A {\n"
@@ -90,20 +100,48 @@ private:
 			"int A::f(int para){int v = para + 100; return v;}\n"
 			"int main() { A a; a.setM(20); }\n"
 			  );
-		ASSERT(s!="");
+		ASSERT(s != "");
     }
 
 	void simplePointer() {
+		string s = convert(SIMPLE_POINTER_STR);
+		ASSERT(s != "");
+    }
+
+    void simpleRef() {
+		string s = convert(
+			"int func(int para){int v = para + 100; int& vf = v; vf += 10; int* pv = &v; return v;}\n"
+            "int main() { int ret = func(20); }\n"
+			  );
+		ASSERT(s != "");
+    }
+
+    void constPointer() {
 		string s = convert(
 			"class A {\n"
 			" public: A(){}; \n"
-			"static int f(int* para){ int v = (*para) + 100; return v; }\n"
+			"static int f(const int* para){ int v = (*para) + 100; return v; }\n"
 			"void setM(int m){ m_ = m; }\n"
 			"private: int m_; \n"
 			"};\n"
 			"int main() { A* a = new A(); a->setM(20);delete a;a=0; }\n"
 			  );
-		ASSERT(s!="");
+        string s2 = convert(SIMPLE_POINTER_STR);
+		ASSERT(s == s2);
+    }
+
+    void constPointerConst() {
+		string s = convert(
+			"class A {\n"
+			" public: A(){}; \n"
+			"static int f(const int* const para){ int v = (*para) + 100; return v; }\n"
+			"void setM(int m){ m_ = m; }\n"
+			"private: int m_; \n"
+			"};\n"
+			"int main() { A* a = new A(); a->setM(20);delete a;a=0; }\n"
+			  );
+		string s2 = convert(SIMPLE_POINTER_STR);
+		ASSERT(s == s2);
     }
 };
 

@@ -20,7 +20,7 @@
 // Unsafe functions
 //---------------------------------------------------------------------------
 
-#include "checkfloatarithmetic.h"
+#include "checkmiscellaneous.h"
 #include "symboldatabase.h"
 #include <unordered_set>
 
@@ -31,7 +31,7 @@ using namespace std;
 
 // Register this check class (by creating a static instance of it)
 namespace {
-    CheckFloatArithmetic instance;
+    CheckMiscellaneous instance;
 }
 
 class FloatDefine
@@ -66,7 +66,20 @@ static bool isFloat(const Variable *var)
 	return fd.isFloat(varDef);
 }
 
-void CheckFloatArithmetic::floatEqualsError(const Token *tok)
+/** Is given variable an time_t variable */
+static bool isTimeT(const Variable *var)
+{
+	if (var == 0)
+	{
+		return false;
+	}
+
+	static FloatDefine fd;
+	const string& varDef = var->nameToken()->previous()->str();
+	return "time_t" == (varDef);
+}
+
+void CheckMiscellaneous::floatEqualsError(const Token *tok)
 {
 	reportError(tok, Severity::warning,
                 "FloatEqualsError",
@@ -76,18 +89,41 @@ void CheckFloatArithmetic::floatEqualsError(const Token *tok)
 				"Please see: http://stackoverflow.com/questions/17333/most-effective-way-for-float-and-double-comparison ");
 }
 
+// https://www.securecoding.cert.org/confluence/display/cplusplus/MSC05-CPP.+Do+not+manipulate+time_t+typed+values+directly
+void CheckMiscellaneous::timetOperError(const Token *tok)
+{
+	reportError(tok, Severity::warning,
+                "time_tArithmeticError",
+                "There is no safe way to manually perform arithmetic on the time_t type.\n"
+				"The time_t values should not be modified directly. "
+				"Please see: CERT C++ Secure Coding Standard  49. Miscellaneous (MSC) "
+                "MSC05-CPP. Do not manipulate time_t typed values directly. ");
+}
+
 static bool isFloatVariable(const Token* tok)
 {
+    if (tok == 0)
+    {
+        return false;
+    }
+
 	return (tok->type() == Token::eVariable) && isFloat(tok->variable());
+}
+
+static bool isTimeTVariable(const Token* tok)
+{
+    if (tok == 0)
+    {
+        return false;
+    }
+
+	return (tok->type() == Token::eVariable) && isTimeT(tok->variable());
 }
 
 static bool isFloatComparison(const Token* tok)
 {
 	Token* prev = tok->previous();
 	Token* next = tok->next();
-	if ((prev == 0) || (next == 0)) {
-		return false;
-	}
 
 	if (isFloatVariable(prev))
 	{
@@ -124,7 +160,7 @@ static bool isFloatComparison(const Token* tok)
 	return false;
 }
 
-void CheckFloatArithmetic::improperArithmetic()
+void CheckMiscellaneous::improperArithmetic()
 {
 	// TODO
 	//if (!_settings->isEnabled("portability"))
@@ -139,20 +175,26 @@ void CheckFloatArithmetic::improperArithmetic()
     for (std::size_t i = 0; i < functions; ++i) {
         const Scope * scope = symbolDatabase->functionScopes[i];
         for (const Token *tok = scope->classStart; tok && tok != scope->classEnd; tok = tok->next()) {
-			if (tok->type() != Token::eComparisonOp)
+			if (tok->type() == Token::eComparisonOp)
 			{
-				continue;
-			}
+				if (tok->str() != "==")
+			    {
+				    continue;
+			    }
 
-			if (tok->str() != "==")
-			{
-				continue;
+			    if (isFloatComparison(tok))
+			    {
+				    floatEqualsError(tok);
+			    }
 			}
-
-			if (isFloatComparison(tok))
-			{
-				floatEqualsError(tok);
-			}
+            else if (tok->type() == Token::eArithmeticalOp)
+            {
+                if (isTimeTVariable(tok->next()) || isTimeTVariable(tok->previous()))
+                {
+                    timetOperError(tok);
+                }
+            }
+			
         }
     }
 }

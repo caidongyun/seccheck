@@ -34,19 +34,19 @@
  * @brief Check improper float comparisons
  */
 
-class CPPCHECKLIB CheckFloatArithmetic : public Check {
+class CPPCHECKLIB CheckMiscellaneous : public Check {
 public:
-    /** This constructor is used when registering the CheckFloatArithmetic */
-    CheckFloatArithmetic() : Check(myName()) {
+    /** This constructor is used when registering the CheckMiscellaneous */
+    CheckMiscellaneous() : Check(myName()) {
     }
 
     /** This constructor is used when running checks. */
-    CheckFloatArithmetic(const Tokenizer *tokenizer, const Settings *settings, ErrorLogger *errorLogger)
+    CheckMiscellaneous(const Tokenizer *tokenizer, const Settings *settings, ErrorLogger *errorLogger)
         : Check(myName(), tokenizer, settings, errorLogger) {
     }
 
     void runSimplifiedChecks(const Tokenizer *tokenizer, const Settings *settings, ErrorLogger *errorLogger) {
-        CheckFloatArithmetic c(tokenizer, settings, errorLogger);
+        CheckMiscellaneous c(tokenizer, settings, errorLogger);
         c.improperArithmetic();
     }
 
@@ -58,20 +58,21 @@ public:
 
 private:
 	void floatEqualsError(const Token *tok);
+    void timetOperError(const Token *tok);
 
     void getErrorMessages(ErrorLogger *errorLogger, const Settings *settings) const {
-        CheckFloatArithmetic c(0, settings, errorLogger);
+        CheckMiscellaneous c(0, settings, errorLogger);
 
 		c.floatEqualsError(0);
     }
 
     static std::string myName() {
-        return "Improper floating arithmetic (CERT FLP00-CPP)";
+        return "Improper arithmetic (CERT FLP00-CPP and MSC05-CPP)";
     }
 
 	std::string classInfo() const {
-        return "Check if there is improper floating arithmetic issues:\n"
-               "* float variable equals\n"
+        return "Check if there is improper arithmetic issues:\n"
+               "* variable equals\n"
                "* and others\n";
     }
 };
