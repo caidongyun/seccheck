@@ -31,12 +31,7 @@ namespace {
     CheckUnsafeFunctions instance;
 }
 
-bool CheckUnsafeFunctions::isWinExecuteFunction(const Token* tok)
-{
-	// TODO
-	return false;
-}
-
+namespace {
 static bool isNotMemberFunction(const Token* tok)
 {
 	return (!Token::Match(tok->previous(), ".|::") || Token::simpleMatch(tok->tokAt(-2), "std ::"));
@@ -66,6 +61,13 @@ static bool isSuspiciousName(const std::string& para)
 {
 	static SuspiciousNames names;
 	return names.isBadName(para);
+}
+}
+
+bool CheckUnsafeFunctions::isWinExecuteFunction(const Token* tok)
+{
+	// TODO
+	return false;
 }
 
 void CheckUnsafeFunctions::unsafeFunctions()

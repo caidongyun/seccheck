@@ -48,12 +48,12 @@
     <ClCompile Include="checkclass.cpp" />
     <ClCompile Include="checkcomplexcopying.cpp" />
     <ClCompile Include="checkexceptionsafety.cpp" />
-    <ClCompile Include="checkfloatarithmetic.cpp" />
     <ClCompile Include="checkintegers.cpp" />
     <ClCompile Include="checkinternal.cpp" />
     <ClCompile Include="checkio.cpp" />
     <ClCompile Include="checkleakautovar.cpp" />
     <ClCompile Include="checkmemoryleak.cpp" />
+    <ClCompile Include="checkmiscellaneous.cpp" />
     <ClCompile Include="checknonreentrantfunctions.cpp" />
     <ClCompile Include="checknullpointer.cpp" />
     <ClCompile Include="checkobsoletefunctions.cpp" />
@@ -97,12 +97,12 @@
     <ClInclude Include="checkclass.h" />
     <ClInclude Include="checkcomplexcopying.h" />
     <ClInclude Include="checkexceptionsafety.h" />
-    <ClInclude Include="checkfloatarithmetic.h" />
     <ClInclude Include="checkintegers.h" />
     <ClInclude Include="checkinternal.h" />
     <ClInclude Include="checkio.h" />
     <ClInclude Include="checkleakautovar.h" />
     <ClInclude Include="checkmemoryleak.h" />
+    <ClInclude Include="checkmiscellaneous.h" />
     <ClInclude Include="checknonreentrantfunctions.h" />
     <ClInclude Include="checknullpointer.h" />
     <ClInclude Include="checkobsoletefunctions.h" />

@@ -1,6 +1,6 @@
 /*
  * Seccheck - A tool for security C/C++ code analysis
- * Copyright (C) 2013 Wang Anyu
+ * Copyright (C) 2014 Wang Anyu
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  */
 
 //---------------------------------------------------------------------------
-// Unsafe functions
+// Miscellaneous checkers
 //---------------------------------------------------------------------------
 
 #include "checkmiscellaneous.h"
@@ -34,49 +34,139 @@ namespace {
     CheckMiscellaneous instance;
 }
 
-class FloatDefine
-{
-public:
-	FloatDefine()
-	{
-		floatDef.insert("float");
-		floatDef.insert("double");
-		floatDef.insert("long double");
-	}
+namespace {
+    class FloatDefine
+    {
+    public:
+        FloatDefine()
+        {
+            floatDef.insert("float");
+            floatDef.insert("double");
+            floatDef.insert("long double");
+        }
 
-	bool isFloat(const string& varDef) const
-	{
-		return floatDef.find(varDef) != floatDef.end();
-	}
+        bool isFloat(const string& varDef) const
+        {
+            return floatDef.find(varDef) != floatDef.end();
+        }
 
-private:
-	unordered_set<string> floatDef;
-};
+    private:
+        unordered_set<string> floatDef;
+    };
 
-/** Is given variable an float variable */
-static bool isFloat(const Variable *var)
-{
-	if (var == 0)
-	{
-		return false;
-	}
+    /** Is given variable a float variable */
+    static bool isFloat(const Variable *var)
+    {
+        if (var == 0)
+        {
+            return false;
+        }
 
-	static FloatDefine fd;
-	const string& varDef = var->nameToken()->previous()->str();
-	return fd.isFloat(varDef);
-}
+        static FloatDefine fd;
+        const string& varDef = var->nameToken()->previous()->str();
+        return fd.isFloat(varDef);
+    }
 
-/** Is given variable an time_t variable */
-static bool isTimeT(const Variable *var)
-{
-	if (var == 0)
-	{
-		return false;
-	}
+    /** Is given variable a time_t variable */
+    static bool isTimeT(const Variable *var)
+    {
+        if (var == 0)
+        {
+            return false;
+        }
 
-	static FloatDefine fd;
-	const string& varDef = var->nameToken()->previous()->str();
-	return "time_t" == (varDef);
+        const string& varDef = var->nameToken()->previous()->str();
+        return "time_t" == (varDef);
+    }
+
+    /** Is given variable an unsigned variable */
+    static bool isUnsigned(const Variable *var)
+    {
+        if (var == 0)
+        {
+            return false;
+        }
+
+        for (const Token *type = var->typeStartToken(); type && type->isName(); type = type->next())
+        {
+            if ((type->str() == "unsigned") ||(type->str() == "DWORD") || (type->str() == "WORD"))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static bool isFloatVariable(const Token* tok)
+    {
+        if (tok == 0)
+        {
+            return false;
+        }
+
+        return (tok->type() == Token::eVariable) && isFloat(tok->variable());
+    }
+
+    static bool isTimeTVariable(const Token* tok)
+    {
+        if (tok == 0)
+        {
+            return false;
+        }
+
+        return (tok->type() == Token::eVariable) && isTimeT(tok->variable());
+    }
+
+    static bool isUnsignedVariable(const Token* tok)
+    {
+        if (tok == 0)
+        {
+            return false;
+        }
+
+        return (tok->type() == Token::eVariable) && isUnsigned(tok->variable());
+    }
+
+    static bool isFloatComparison(const Token* tok)
+    {
+        Token* prev = tok->previous();
+        Token* next = tok->next();
+
+        if (isFloatVariable(prev))
+        {
+            if (next->type() == Token::eNumber)
+            {
+                // Compare variable to constant value
+                return true;
+            }
+            else if (isFloatVariable(next))
+            {
+                // Both token are floating variables 
+                return true;
+            }
+
+            return false;
+        }
+
+        if (isFloatVariable(next))
+        {
+            if (prev->type() == Token::eNumber)
+            {
+                // Compare variable to constant value
+                return true;
+            }
+            else if (isFloatVariable(prev))
+            {
+                // Both token are floating variables 
+                return true;
+            }
+
+            return false;
+        }
+
+        return false;
+    }
 }
 
 void CheckMiscellaneous::floatEqualsError(const Token *tok)
@@ -100,64 +190,15 @@ void CheckMiscellaneous::timetOperError(const Token *tok)
                 "MSC05-CPP. Do not manipulate time_t typed values directly. ");
 }
 
-static bool isFloatVariable(const Token* tok)
+// https://www.securecoding.cert.org/confluence/pages/viewpage.action?pageId=20086972
+void CheckMiscellaneous::SignedBitOperError(const Token *tok)
 {
-    if (tok == 0)
-    {
-        return false;
-    }
-
-	return (tok->type() == Token::eVariable) && isFloat(tok->variable());
-}
-
-static bool isTimeTVariable(const Token* tok)
-{
-    if (tok == 0)
-    {
-        return false;
-    }
-
-	return (tok->type() == Token::eVariable) && isTimeT(tok->variable());
-}
-
-static bool isFloatComparison(const Token* tok)
-{
-	Token* prev = tok->previous();
-	Token* next = tok->next();
-
-	if (isFloatVariable(prev))
-	{
-		if (next->type() == Token::eNumber)
-		{
-			// Compare variable to constant value
-			return true;
-		}
-		else if (isFloatVariable(next))
-		{
-			// Both token are floating variables 
-			return true;
-		}
-
-		return false;
-	}
-
-	if (isFloatVariable(next))
-	{
-		if (prev->type() == Token::eNumber)
-		{
-			// Compare variable to constant value
-			return true;
-		}
-		else if (isFloatVariable(prev))
-		{
-			// Both token are floating variables 
-			return true;
-		}
-
-		return false;
-	}
-	
-	return false;
+    reportError(tok, Severity::warning,
+                "SignedBitoperError",
+                "Bitwise operators should only be used with unsigned integer operands.\n"
+				"Bitwise operators should only be used with unsigned integer operands, "
+                "as the results of some bitwise operations on signed integers is implementation defined. "
+				"Please see: CERT C++ Secure Coding Standard INT13-CPP. Use bitwise operators only on unsigned operands.");
 }
 
 void CheckMiscellaneous::improperArithmetic()
@@ -194,7 +235,13 @@ void CheckMiscellaneous::improperArithmetic()
                     timetOperError(tok);
                 }
             }
-			
+			else if (tok->type() == Token::eBitOp)
+            {
+                if (!isUnsignedVariable(tok->next()) || !isUnsignedVariable(tok->previous()))
+                {
+                    SignedBitOperError(tok);
+                }
+            }
         }
     }
 }
