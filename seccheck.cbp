@@ -126,6 +126,8 @@
 		<Unit filename="lib/checkintegers.cpp" />
 		<Unit filename="lib/checkmemoryleak.cpp" />
 		<Unit filename="lib/checkmemoryleak.h" />
+		<Unit filename="lib/checkmiscellaneous.cpp" />
+		<Unit filename="lib/checkmiscellaneous.h" />
 		<Unit filename="lib/checknonreentrantfunctions.cpp" />
 		<Unit filename="lib/checknonreentrantfunctions.h" />
 		<Unit filename="lib/checknullpointer.cpp" />

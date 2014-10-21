@@ -50,7 +50,7 @@ private:
 
         // Check for unsigned divisions..
         CheckOther checkOther(&tokenizer, &settings, this);
-        checkOther.checkUnsignedDivision();
+        //checkOther.checkUnsignedDivision();
     }
 
     void run() {

@@ -73,6 +73,9 @@ private:
 
         // Test that std.cfg is configured correctly
         TEST_CASE(stdcfg);
+
+        // dead pointer
+        TEST_CASE(deadPointer);
     }
 
     void checkUninitVar(const char code[], const char filename[] = "test.cpp") {
@@ -582,12 +585,6 @@ private:
                        "}");
         ASSERT_EQUALS("", errout.str());
 
-        // Ticket #3480 - Don't crash garbage code
-        ASSERT_THROW(checkUninitVar("int f()\n"
-                                    "{\n"
-                                    "    return if\n"
-                                    "}"), InternalError);
-
         // Ticket #3873 (false positive)
         checkUninitVar("MachineLoopRange *MachineLoopRanges::getLoopRange(const MachineLoop *Loop) {\n"
                        "  MachineLoopRange *&Range = Cache[Loop];\n"
@@ -610,6 +607,14 @@ private:
                        "        iter = x;\n"
                        "    }\n"
                        "    return 1 + iter;\n"
+                       "}");
+        ASSERT_EQUALS("", errout.str());
+
+        // C++11 style initialization
+        checkUninitVar("int f() {\n"
+                       "    int i = 0;\n"
+                       "    int j{ i };\n"
+                       "    return j;\n"
                        "}");
         ASSERT_EQUALS("", errout.str());
     }
@@ -2082,9 +2087,7 @@ private:
         tokenizer.simplifyTokenList2();
         const std::string str2(tokenizer.tokens()->stringifyList(0,true));
         if (verify && str1 != str2)
-            warn(("Unsimplified code in test case. It looks like this test "
-                  "should either be cleaned up or moved to TestTokenizer or "
-                  "TestSimplifyTokens instead.\nstr1="+str1+"\nstr2="+str2).c_str());
+            warnUnsimplified(str1, str2);
 
         // Check for redundant code..
         CheckUninitVar checkuninitvar(&tokenizer, &settings1, this);
@@ -2527,15 +2530,6 @@ private:
                         "}");
         ASSERT_EQUALS("", errout.str());
 
-        // Ticket #3486 - Don't crash garbage code
-        checkUninitVar2("void f()\n"
-                        "{\n"
-                        "  (\n"
-                        "    x;\n"
-                        "    int a, a2, a2*x; if () ;\n"
-                        "  )\n"
-                        "}");
-
         // Ticket #3890 - False positive for std::map
         checkUninitVar2("void f() {\n"
                         "    std::map<int,bool> x;\n"
@@ -2938,6 +2932,70 @@ private:
                         "}\n", "test.c");
         ASSERT_EQUALS("[test.c:5]: (error) Uninitialized struct member: ab.b\n", errout.str());
 
+        checkUninitVar2("class Element {\n"
+                        "    static void f() { }\n"
+                        "};\n"
+                        "void test() {\n"
+                        "    Element *element; element->f();\n"
+                        "}");
+        ASSERT_EQUALS("[test.cpp:5]: (error) Uninitialized variable: element\n", errout.str());
+
+        checkUninitVar2("class Element {\n"
+                        "    static void f() { }\n"
+                        "};\n"
+                        "void test() {\n"
+                        "    Element *element; (*element).f();\n"
+                        "}");
+        ASSERT_EQUALS("[test.cpp:5]: (error) Uninitialized variable: element\n", errout.str());
+
+        checkUninitVar2("class Element {\n"
+                        "    static int v;\n"
+                        "};\n"
+                        "void test() {\n"
+                        "    Element *element; element->v;\n"
+                        "}");
+        ASSERT_EQUALS("[test.cpp:5]: (error) Uninitialized variable: element\n", errout.str());
+
+        checkUninitVar2("class Element {\n"
+                        "    static int v;\n"
+                        "};\n"
+                        "void test() {\n"
+                        "    Element *element; (*element).v;\n"
+                        "}");
+        ASSERT_EQUALS("[test.cpp:5]: (error) Uninitialized variable: element\n", errout.str());
+
+        checkUninitVar2("class Element {\n"
+                        "    void f() { }\n"
+                        "};\n"
+                        "void test() {\n"
+                        "    Element *element; element->f();\n"
+                        "}");
+        ASSERT_EQUALS("[test.cpp:5]: (error) Uninitialized variable: element\n", errout.str());
+
+        checkUninitVar2("class Element {\n"
+                        "    void f() { }\n"
+                        "};\n"
+                        "void test() {\n"
+                        "    Element *element; (*element).f();\n"
+                        "}");
+        ASSERT_EQUALS("[test.cpp:5]: (error) Uninitialized variable: element\n", errout.str());
+
+        checkUninitVar2("class Element {\n"
+                        "    int v;\n"
+                        "};\n"
+                        "void test() {\n"
+                        "    Element *element; element->v;\n"
+                        "}");
+        ASSERT_EQUALS("[test.cpp:5]: (error) Uninitialized variable: element\n", errout.str());
+
+        checkUninitVar2("class Element {\n"
+                        "    int v;\n"
+                        "};\n"
+                        "void test() {\n"
+                        "    Element *element; (*element).v;\n"
+                        "}");
+        ASSERT_EQUALS("[test.cpp:5]: (error) Uninitialized variable: element\n", errout.str());
+
         checkUninitVar2("struct AB { int a; int b; };\n"  // pass struct member by address
                         "void f(void) {\n"
                         "    struct AB ab;\n"
@@ -2954,6 +3012,27 @@ private:
                         "    do_something(ab);\n"
                         "}\n", "test.c");
         ASSERT_EQUALS("", errout.str());
+
+        {
+            checkUninitVar2("void f(void) {\n"
+                            "    struct AB ab;\n"
+                            "    strcpy(ab.a, STR);\n"
+                            "}\n", "test.c");
+            ASSERT_EQUALS("", errout.str());
+
+            checkUninitVar2("void f(void) {\n"
+                            "    struct AB ab;\n"
+                            "    strcpy(x, ab.a);\n"
+                            "}\n", "test.c");
+            TODO_ASSERT_EQUALS("error", "", errout.str());
+
+            checkUninitVar2("struct AB { int a; };\n"
+                            "void f(void) {\n"
+                            "    struct AB ab;\n"
+                            "    dosomething(ab.a);\n"
+                            "}\n", "test.c");
+            TODO_ASSERT_EQUALS("error","", errout.str());
+        }
 
         checkUninitVar2("struct AB { int a; int b; };\n"
                         "void do_something(const struct AB ab);\n"
@@ -3124,6 +3203,15 @@ private:
                         "    int *p = ab.a;\n"
                         "}");
         ASSERT_EQUALS("", errout.str());
+
+        // non static data-member initialization
+        checkUninitVar2("struct AB { int a=1; int b; };\n"
+                        "void f(void) {\n"
+                        "    struct AB ab;\n"
+                        "    int a = ab.a;\n"
+                        "    int b = ab.b;\n"
+                        "}");
+        ASSERT_EQUALS("[test.cpp:5]: (error) Uninitialized struct member: ab.b\n", errout.str());
     }
 
     void uninitvar2_while() {
@@ -3153,14 +3241,6 @@ private:
                         "    for (Element *ptr3 = ptr3->Next(); ptr3; ptr3 = ptr3->Next()) {}\n"
                         "}");
         ASSERT_EQUALS("[test.cpp:2]: (error) Uninitialized variable: ptr3\n", errout.str());
-
-        checkUninitVar2("class Element {\n"
-                        "    static void f() { }\n"
-                        "};\n"
-                        "void test() {\n"
-                        "    Element *element; element->f();\n"
-                        "}");
-        ASSERT_EQUALS("", errout.str());
 
         checkUninitVar2("void f() {\n" // #4911 - bad simplification => don't crash
                         "    int a;\n"
@@ -3394,7 +3474,9 @@ private:
                         "    struct AB *ab = malloc(sizeof(struct AB));\n"
                         "    return ab->a;\n"
                         "}");
-        ASSERT_EQUALS("[test.cpp:4]: (error) Uninitialized struct member: ab.a\n", errout.str());
+        ASSERT_EQUALS("[test.cpp:4]: (error) Memory is allocated but not initialized: ab\n"
+                      "[test.cpp:4]: (error) Uninitialized struct member: ab.a\n",
+                      errout.str());
 
         checkUninitVar2("struct t_udf_file {  int dir_left; };\n"
                         "\n"
@@ -3699,6 +3781,73 @@ private:
         checkUninitVar("void f( char *c) {\n"
                        "  putchar (*c);\n"
                        "}");
+        ASSERT_EQUALS("", errout.str());
+
+        // #6116 False positive uninitvar - first argument to wcstombs()
+        checkUninitVar("void f( wchar_t *wstr) {\n"
+                       "  char buf[10];\n"
+                       "  wcstombs (buf, wstr, 3);\n"
+                       "}");
+        ASSERT_EQUALS("", errout.str());
+        checkUninitVar("void f( char *str) {\n"
+                       "  wchar_t wbuf[10];\n"
+                       "  mbstowcs (wbuf, str, 3);\n"
+                       "}");
+        ASSERT_EQUALS("", errout.str());
+
+        checkUninitVar("void foo() {\n"
+                       "  char buf[10];\n"
+                       "  tmpnam(buf);\n"
+                       "}");
+        ASSERT_EQUALS("", errout.str());
+        checkUninitVar("void foo() {\n"
+                       "  char *ptr;\n"
+                       "  tmpnam(ptr);\n"
+                       "}");
+        TODO_ASSERT_EQUALS("[test.cpp:3]: (error) Uninitialized variable: ptr\n", "", errout.str());
+    }
+
+    void checkDeadPointer(const char code[]) {
+        // Clear the error buffer..
+        errout.str("");
+
+        // Tokenize..
+        Tokenizer tokenizer(&settings, this);
+        std::istringstream istr(code);
+        tokenizer.tokenize(istr, "test.cpp");
+        tokenizer.simplifyTokenList2();
+
+        // Check code..
+        CheckUninitVar check(&tokenizer, &settings, this);
+        check.deadPointer();
+    }
+
+    void deadPointer() {
+        checkDeadPointer("void f() {\n"
+                         "  int *p = p1;\n"
+                         "  if (cond) {\n"
+                         "    int x;\n"
+                         "    p = &x;\n"
+                         "  }\n"
+                         "  *p = 0;\n"
+                         "}");
+        ASSERT_EQUALS("[test.cpp:7]: (error) Dead pointer usage. Pointer 'p' is dead if it has been assigned '&x' at line 5.\n", errout.str());
+
+        // FP: don't warn in subfunction
+        checkDeadPointer("void f(struct KEY *key) {\n"
+                         "  key->x = 0;\n"
+                         "}\n"
+                         "\n"
+                         "int main() {\n"
+                         "  struct KEY *tmp = 0;\n"
+                         "  struct KEY k;\n"
+                         "\n"
+                         "  if (condition) {\n"
+                         "    tmp = &k;\n"
+                         "  } else {\n"
+                         "  }\n"
+                         "  f(tmp);\n"
+                         "}");
         ASSERT_EQUALS("", errout.str());
     }
 };

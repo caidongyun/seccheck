@@ -136,7 +136,10 @@ class CPPCHECKLIB Variable {
         fIsReference = (1 << 7), /** @brief reference variable */
         fIsRValueRef = (1 << 8), /** @brief rvalue reference variable */
         fHasDefault  = (1 << 9), /** @brief function argument with default value */
-        fIsStlType   = (1 << 10) /** @brief STL type ('std::') */
+        fIsStlType   = (1 << 10), /** @brief STL type ('std::') */
+        fIsStlString = (1 << 11), /** @brief std::string|wstring|basic_string<T>|u16string|u32string */
+        fIsIntType   = (1 << 12), /** @brief Integral type */
+        fIsFloatType = (1 << 13)  /** @brief Floating point type */
     };
 
     /**
@@ -211,6 +214,15 @@ public:
     const Token *typeEndToken() const {
         return _end;
     }
+
+    /**
+     * Get end token of variable declaration
+     * E.g.
+     * int i[2][3] = ...
+     *   end token ^
+     * @return variable declaration end token
+     */
+    const Token *declEndToken() const;
 
     /**
      * Get name string.
@@ -445,6 +457,18 @@ public:
     }
 
     /**
+    * Checks if the variable is an STL type ('std::')
+    * E.g.:
+    *   std::string s;
+    *   ...
+    *   sVar->isStlType() == true
+    * @return true if it is an stl type and its type matches any of the types in 'stlTypes'
+    */
+    bool isStlType() const {
+        return getFlag(fIsStlType);
+    }
+
+    /**
      * Checks if the variable is an STL type ('std::')
      * E.g.:
      *   std::string s;
@@ -452,8 +476,8 @@ public:
      *   sVar->isStlType() == true
      * @return true if it is an stl type and its type matches any of the types in 'stlTypes'
      */
-    bool isStlType() const {
-        return getFlag(fIsStlType);
+    bool isStlStringType() const {
+        return getFlag(fIsStlString);
     }
 
     /**
@@ -473,18 +497,18 @@ public:
 
     /**
     * Determine whether it's a floating number type
-    * @return true if the type is known and it's a floating type (float, double and long double)
+    * @return true if the type is known and it's a floating type (float, double and long double) or a pointer/array to it
     */
     bool isFloatingType() const {
-        return (typeStartToken()->str() == "float" || typeStartToken()->str() == "double") && !isArrayOrPointer() ;
+        return getFlag(fIsFloatType);
     }
 
     /**
      * Determine whether it's an integral number type
-     * @return true if the type is known and it's an integral type (bool, char, short, int, long long and their unsigned counter parts)
+     * @return true if the type is known and it's an integral type (bool, char, short, int, long long and their unsigned counter parts) or a pointer/array to it
      */
     bool isIntegralType() const {
-        return typeStartToken()->str() == "bool" || typeStartToken()->str() == "char" || typeStartToken()->str() == "short" || typeStartToken()->str() == "int" || typeStartToken()->str() == "long";
+        return getFlag(fIsIntType);
     }
 
 
@@ -654,7 +678,7 @@ public:
         const Scope *scope;
     };
 
-    enum ScopeType { eGlobal, eClass, eStruct, eUnion, eNamespace, eFunction, eIf, eElse, eFor, eWhile, eDo, eSwitch, eUnconditional, eTry, eCatch };
+    enum ScopeType { eGlobal, eClass, eStruct, eUnion, eNamespace, eFunction, eIf, eElse, eFor, eWhile, eDo, eSwitch, eUnconditional, eTry, eCatch, eLambda };
 
     Scope(const SymbolDatabase *check_, const Token *classDef_, const Scope *nestedIn_);
     Scope(const SymbolDatabase *check_, const Token *classDef_, const Scope *nestedIn_, ScopeType type_, const Token *start_);

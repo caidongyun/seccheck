@@ -126,6 +126,7 @@ public:
 
 private:
     Settings settings1;
+    Settings settings2;
 
     void check(const char code[], const Settings *settings = nullptr) {
         // Clear the error buffer..
@@ -146,9 +147,36 @@ private:
         checkMemoryLeak.check();
     }
 
+	void checkDebug(const char code[], const Settings *settings = nullptr) {
+        // Clear the error buffer..
+        errout.str("");
+        settings1.debug = true;
+        settings1.debugwarnings = true;
 
+        if (!settings) {
+            settings = &settings1;
+        }
+
+        // Tokenize..
+        Tokenizer tokenizer(settings, this);
+        std::istringstream istr(code);
+        tokenizer.tokenize(istr, "test.cpp");
+        tokenizer.simplifyTokenList2();
+        tokenizer.printDebugOutput();
+
+        // Check for memory leaks..
+        CheckMemoryLeakInFunction checkMemoryLeak(&tokenizer, settings, this);
+        checkMemoryLeak.checkReallocUsage();
+        checkMemoryLeak.check();
+
+        settings1.debug = false;
+        settings1.debugwarnings = false;
+    }
+	
     void run() {
+        LOAD_LIB_2(settings1.library, "std.cfg");
         LOAD_LIB_2(settings1.library, "gtk.cfg");
+        LOAD_LIB_2(settings2.library, "std.cfg");
 
         // Check that getcode works correctly..
         TEST_CASE(testgetcode);
@@ -239,6 +267,7 @@ private:
 
         TEST_CASE(allocfunc1);
         TEST_CASE(allocfunc2);
+        TEST_CASE(allocfunc2a);
         TEST_CASE(allocfunc3);
         TEST_CASE(allocfunc4);
         TEST_CASE(allocfunc5);
@@ -358,25 +387,20 @@ private:
         // #1879 non regression test case
         TEST_CASE(trac1879);
 
-        TEST_CASE(garbageCode);
-
         TEST_CASE(ptrptr);
 
         // test that the cfg files are configured correctly
         TEST_CASE(posixcfg);
     }
 
-
-
     std::string getcode(const char code[], const char varname[], bool classfunc=false) {
         // Clear the error buffer..
         errout.str("");
 
-        Settings settings;
-        settings.standards.posix = true;
+        settings2.standards.posix = true;
 
         // Tokenize..
-        Tokenizer tokenizer(&settings, this);
+        Tokenizer tokenizer(&settings2, this);
         std::istringstream istr(code);
         if (!tokenizer.tokenize(istr, "test.cpp"))
             return "";
@@ -385,8 +409,7 @@ private:
         const unsigned int varId(Token::findmatch(tokenizer.tokens(), varname)->varId());
 
         // getcode..
-        CheckMemoryLeakInFunction checkMemoryLeak(&tokenizer, &settings, nullptr);
-        checkMemoryLeak.parse_noreturn();
+        CheckMemoryLeakInFunction checkMemoryLeak(&tokenizer, &settings2, nullptr);
         std::list<const Token *> callstack;
         callstack.push_back(0);
         CheckMemoryLeak::AllocType allocType, deallocType;
@@ -409,8 +432,10 @@ private:
     void testgetcode() {
         // alloc;
         ASSERT_EQUALS(";;alloc;", getcode("int *a = malloc(100);", "a"));
+        TODO_ASSERT_EQUALS(";;alloc;", ";;alloccallfunc;", getcode("int *a = ::malloc(100);", "a"));
         ASSERT_EQUALS(";;alloc;", getcode("int *a = new int;", "a"));
         ASSERT_EQUALS(";;alloc;", getcode("int *a = new int[10];", "a"));
+        ASSERT_EQUALS(";;alloc;", getcode("int **a = new int*[10];", "a"));
         ASSERT_EQUALS(";;alloc;", getcode("int * const a = new int[10];", "a"));
         ASSERT_EQUALS(";;alloc;", getcode("const int * const a = new int[10];", "a"));
         ASSERT_EQUALS(";;alloc;", getcode("int i = open(a,b);", "i"));
@@ -539,9 +564,9 @@ private:
 
         // exit..
         ASSERT_EQUALS(";;exit;", getcode("char *s; exit(0);", "s"));
-        ASSERT_EQUALS(";;exit;", getcode("char *s; _exit(0);", "s"));
+        ASSERT_EQUALS(";;callfunc;", getcode("char *s; _exit(0);", "s")); // not in std.cfg nor in gtk.cfg
         ASSERT_EQUALS(";;exit;", getcode("char *s; abort();", "s"));
-        ASSERT_EQUALS(";;exit;", getcode("char *s; err(0);", "s"));
+        ASSERT_EQUALS(";;callfunc;", getcode("char *s; err(0);", "s")); // not in std.cfg nor in gtk.cfg
         ASSERT_EQUALS(";;if{exit;}", getcode("char *s; if (a) { exit(0); }", "s"));
 
         // list_for_each
@@ -555,6 +580,8 @@ private:
         ASSERT_EQUALS(";;;dealloc;assign;;", getcode(";int res; res = close(res);", "res"));
 
         ASSERT_EQUALS(";;dealloc;", getcode("int f; e |= fclose(f);", "f"));
+        ASSERT_EQUALS(";;dealloc;", getcode("int f; e += fclose(f);", "f"));
+        ASSERT_EQUALS(";;dealloc;", getcode("int f; foo(fclose(f));", "f"));
 
         // fcloseall..
         ASSERT_EQUALS(";;alloc;;", getcode("char *s; s = malloc(10); fcloseall();", "s"));
@@ -2479,20 +2506,7 @@ private:
               "}");
         ASSERT_EQUALS("", errout.str());
 
-        check("char *a(char *a)\n"
-              "{\n"
-              "    return realloc(a, 10);\n"
-              "}\n"
-              "static void b()\n"
-              "{\n"
-              "    char *p = a(0);\n"
-              "    char *q = a(p);\n"
-              "    if (q)\n"
-              "        free(q);\n"
-              "    else\n"
-              "        free(p);\n"
-              "}");
-        ASSERT_EQUALS("", errout.str());
+        
 
         check("char *a()\n"
               "{\n"
@@ -2514,6 +2528,25 @@ private:
               "    g_free(p);\n"
               "}");
         ASSERT_EQUALS("", errout.str());
+    }
+
+    void allocfunc2a()
+    {
+        check("char *a(char *a)\n"
+              "{\n"
+              "    return realloc(a, 10);\n"
+              "}\n"
+              "static void b()\n"
+              "{\n"
+              "    char *p = a(0);\n"
+              "    char *q = a(p);\n"
+              "    if (q)\n"
+              "        free(q);\n"
+              "    else\n"
+              "        free(p);\n"
+              "}");
+        std::string s = errout.str();
+        ASSERT_EQUALS("", s);
     }
 
     void allocfunc3() {
@@ -3487,13 +3520,14 @@ private:
               "    int *p = malloc(3);\n"
               "    free(p);\n"
               "}\n");
-        ASSERT_EQUALS("[test.cpp:3]: (error) The given size 3 is mismatching\n", errout.str());
+        ASSERT_EQUALS("[test.cpp:3]: (error) The allocated size 3 is not a multiple of the underlying type's size.\n", errout.str());
+
         check("void foo()\n"
               "{\n"
               "    int *p = g_malloc(3);\n"
               "    g_free(p);\n"
               "}\n");
-        TODO_ASSERT_EQUALS("[test.cpp:3]: (error) The given size 3 is mismatching\n", "", errout.str());
+        TODO_ASSERT_EQUALS("[test.cpp:3]: (error) The allocated size 3 is not a multiple of the underlying type's size.\n", "", errout.str());
     }
 
 
@@ -4207,12 +4241,6 @@ private:
               "catch(...) {}\n"
               "}");
         ASSERT_EQUALS("[test.cpp:5]: (error) Memory leak: a\n", errout.str());
-    }
-
-    void garbageCode() {
-        ASSERT_THROW(check("void h(int l) {\n"
-                           "    while\n" // Don't crash (#3870)
-                           "}"), InternalError);
     }
 
     void ptrptr() {

@@ -51,7 +51,7 @@ private:
         tokenizer.simplifyTokenList2();
         const std::string str2(tokenizer.tokens()->stringifyList(0,true));
         if (str1 != str2)
-            warn("Unsimplified code in test case");
+            warnUnsimplified(str1, str2);
 
         // Check..
         CheckBoost checkBoost;
@@ -95,6 +95,16 @@ private:
         check("void f() {\n"
               "    BOOST_FOREACH(const int &i, get_data())\n"
               "        data.insert(i);\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        // Break after modification (#4788)
+        check("void f() {\n"
+              "    vector<int> data;\n"
+              "    BOOST_FOREACH(int i, data) {\n"
+              "        data.push_back(123);\n"
+              "        break;\n"
+              "    }\n"
               "}");
         ASSERT_EQUALS("", errout.str());
     }

@@ -66,8 +66,6 @@ public:
         eNone
     };
 
-	static std::string printType(Type tkType);
-
     explicit Token(Token **tokensBack);
     ~Token();
 
@@ -333,6 +331,12 @@ public:
     void isAttributeUnused(bool unused) {
         setFlag(fIsAttributeUnused, unused);
     }
+    bool isAttributeUsed() const {
+        return getFlag(fIsAttributeUsed);
+    }
+    void isAttributeUsed(bool unused) {
+        setFlag(fIsAttributeUsed, unused);
+    }
     bool isAttributePure() const {
         return getFlag(fIsAttributePure);
     }
@@ -390,7 +394,6 @@ public:
      */
     static int multiCompare(const Token *needle, const char *haystack, unsigned int varid);
 
-	// Line number in a file
     unsigned int linenr() const {
         return _linenr;
     }
@@ -478,8 +481,9 @@ public:
      * @param os The result is shifted into that output stream
      * @param varid Print varids. (Style: "varname@id")
      * @param attributes Print attributes of tokens like "unsigned" in front of it.
+     * @param macro Prints $ in front of the token if it was expanded from a macro.
      */
-    void stringify(std::ostream& os, bool varid, bool attributes) const;
+    void stringify(std::ostream& os, bool varid, bool attributes, bool macro) const;
 
     /**
      * Stringify a list of token, from current instance on.
@@ -615,9 +619,17 @@ public:
 
     /**
      * @return the first token of the next argument. Does only work on argument
-     * lists. Returns 0, if there is no next argument
+     * lists. Requires that Tokenizer::createLinks2() has been called before.
+     * Returns 0, if there is no next argument.
      */
     Token* nextArgument() const;
+
+    /**
+     * @return the first token of the next argument. Does only work on argument
+     * lists. Should be used only before Tokenizer::createLinks2() was called.
+     * Returns 0, if there is no next argument.
+     */
+    Token* nextArgumentBeforeCreateLinks2() const;
 
     /**
      * Returns the closing bracket of opening '<'. Should only be used if link()
@@ -650,7 +662,7 @@ public:
 
     const ValueFlow::Value * getValue(const MathLib::bigint val) const {
         for (auto it = values.begin(); it != values.end(); ++it) {
-            if (it->intvalue == val)
+            if (it->intvalue == val && !it->tokvalue)
                 return &(*it);
         }
         return NULL;
@@ -659,6 +671,8 @@ public:
     const ValueFlow::Value * getMaxValue(bool condition) const {
         const ValueFlow::Value *ret = nullptr;
         for (auto it = values.begin(); it != values.end(); ++it) {
+            if (it->tokvalue)
+                continue;
             if ((!ret || it->intvalue > ret->intvalue) &&
                 ((it->condition != NULL) == condition))
                 ret = &(*it);
@@ -668,6 +682,11 @@ public:
 
     const ValueFlow::Value * getValueLE(const MathLib::bigint val, const Settings *settings) const;
     const ValueFlow::Value * getValueGE(const MathLib::bigint val, const Settings *settings) const;
+
+    const Token *getValueTokenMaxStrLength() const;
+    const Token *getValueTokenMinStrSize() const;
+
+    const Token *getValueTokenDeadPointer() const;
 
 private:
 
@@ -737,7 +756,8 @@ private:
         fIsAttributePure        = (1 << 9),  // __attribute__((pure))
         fIsAttributeConst       = (1 << 10), // __attribute__((const))
         fIsAttributeNothrow     = (1 << 11), // __attribute__((nothrow))
-        fIsDeclspecNothrow      = (1 << 12)  // __declspec(nothrow)
+        fIsDeclspecNothrow      = (1 << 12), // __declspec(nothrow)
+        fIsAttributeUsed        = (1 << 13)  // __attribute__((used))
     };
 
     unsigned int _flags;
@@ -822,8 +842,6 @@ public:
     std::string expressionString() const;
 
     void printAst(bool verbose, bool xml, std::ostream &out) const;
-
-	void printAllTokens(std::ostream &out) const;
 
     void printValueFlow(bool xml, std::ostream &out) const;
 };

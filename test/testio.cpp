@@ -29,8 +29,11 @@ public:
     }
 
 private:
+    Settings settings;
 
     void run() {
+        LOAD_LIB_2(settings.library, "std.cfg");
+
         TEST_CASE(coutCerrMisusage);
 
         TEST_CASE(wrongMode_simple);
@@ -49,26 +52,28 @@ private:
         TEST_CASE(testPrintfArgument);
         TEST_CASE(testPosixPrintfScanfParameterPosition);  // #4900
 
+        LOAD_LIB_2(settings.library, "windows.cfg");
+
         TEST_CASE(testMicrosoftPrintfArgument); // ticket #4902
         TEST_CASE(testMicrosoftScanfArgument);
         TEST_CASE(testMicrosoftCStringFormatArguments); // ticket #4920
         TEST_CASE(testMicrosoftSecurePrintfArgument);
         TEST_CASE(testMicrosoftSecureScanfArgument);
+
+        TEST_CASE(testTernary); // ticket #6182
     }
 
     void check(const char code[], bool inconclusive = false, bool portability = false, Settings::PlatformType platform = Settings::Unspecified) {
         // Clear the error buffer..
         errout.str("");
 
-        Settings settings;
+        settings.clearEnabled();
         settings.addEnabled("warning");
         settings.addEnabled("style");
         if (portability)
             settings.addEnabled("portability");
         settings.inconclusive = inconclusive;
         settings.platform(platform);
-
-        settings.library = _lib;
 
         // Tokenize..
         Tokenizer tokenizer(&settings, this);
@@ -581,13 +586,30 @@ private:
         check("void foo()\n"
               "{\n"
               "    fflush(stdin);\n"
-              "}");
-        ASSERT_EQUALS("[test.cpp:3]: (error) fflush() called on input stream 'stdin' results in undefined behaviour.\n", errout.str());
+              "}", false, true);
+        ASSERT_EQUALS("[test.cpp:3]: (portability) fflush() called on input stream 'stdin' may result in undefined behaviour on non-linux systems.\n", errout.str());
 
         check("void foo()\n"
               "{\n"
               "    fflush(stdout);\n"
-              "}");
+              "}", false, true);
+        ASSERT_EQUALS("", errout.str());
+
+        check("void foo(FILE*& f) {\n"
+              "    f = fopen(path, \"r\");\n"
+              "    fflush(f);\n"
+              "}", false, true);
+        ASSERT_EQUALS("[test.cpp:3]: (portability) fflush() called on input stream 'f' may result in undefined behaviour on non-linux systems.\n", errout.str());
+
+        check("void foo(FILE*& f) {\n"
+              "    f = fopen(path, \"w\");\n"
+              "    fflush(f);\n"
+              "}", false, true);
+        ASSERT_EQUALS("", errout.str());
+
+        check("void foo(FILE*& f) {\n"
+              "    fflush(f);\n"
+              "}", false, true);
         ASSERT_EQUALS("", errout.str());
     }
 
@@ -595,8 +617,6 @@ private:
 
 
     void testScanf1() {
-        LOAD_LIB("std.cfg");
-
         check("void foo() {\n"
               "    int a, b;\n"
               "    FILE *file = fopen(\"test\", \"r\");\n"
@@ -615,8 +635,6 @@ private:
     }
 
     void testScanf2() {
-        LOAD_LIB("std.cfg");
-
         check("void foo() {\n"
               "    scanf(\"%5s\", bar);\n" // Width specifier given
               "    scanf(\"%5[^~]\", bar);\n" // Width specifier given
@@ -643,8 +661,6 @@ private:
     }
 
     void testScanf4() { // ticket #2553
-        LOAD_LIB("std.cfg");
-
         check("void f()\n"
               "{\n"
               "  char str [8];\n"
@@ -657,8 +673,6 @@ private:
 
 
     void testScanfArgument() {
-        LOAD_LIB("std.cfg");
-
         check("void foo() {\n"
               "    scanf(\"%1d\", &foo);\n"
               "    sscanf(bar, \"%1d\", &foo);\n"
@@ -2259,7 +2273,6 @@ private:
     }
 
     void testPrintfArgument() {
-        LOAD_LIB("std.cfg");
         check("void foo() {\n"
               "    printf(\"%u\");\n"
               "    printf(\"%u%s\", 123);\n"
@@ -3091,8 +3104,6 @@ private:
     }
 
     void testPosixPrintfScanfParameterPosition() { // #4900  - No support for parameters in format strings
-        LOAD_LIB("std.cfg");
-
         check("void foo() {"
               "  int bar;"
               "  printf(\"%1$d\", 1);"
@@ -3117,9 +3128,6 @@ private:
 
 
     void testMicrosoftPrintfArgument() {
-        LOAD_LIB("std.cfg");
-        LOAD_LIB("windows.cfg");
-
         check("void foo() {\n"
               "    size_t s;\n"
               "    ptrdiff_t p;\n"
@@ -3209,9 +3217,6 @@ private:
     }
 
     void testMicrosoftScanfArgument() {
-        LOAD_LIB("std.cfg");
-        LOAD_LIB("windows.cfg");
-
         check("void foo() {\n"
               "    size_t s;\n"
               "    ptrdiff_t p;\n"
@@ -3316,9 +3321,6 @@ private:
     }
 
     void testMicrosoftSecurePrintfArgument() {
-        LOAD_LIB("std.cfg");
-        LOAD_LIB("windows.cfg");
-
         check("void foo() {\n"
               "    int i;\n"
               "    unsigned int u;\n"
@@ -3509,8 +3511,6 @@ private:
     }
 
     void testMicrosoftSecureScanfArgument() {
-        LOAD_LIB("windows.cfg");
-
         check("void foo() {\n"
               "    int i;\n"
               "    unsigned int u;\n"
@@ -3641,6 +3641,14 @@ private:
               "}\n", false, false, Settings::Win32W);
         ASSERT_EQUALS("", errout.str());
     }
+
+    void testTernary() {  // ticket #6182
+        check("void test(const std::string &val) {\n"
+              "    printf(\"%s\n\", val.empty() ? \"I like to eat bananas\" : val.c_str());\n"
+              "}\n");
+        ASSERT_EQUALS("", errout.str());
+    }
+
 };
 
 REGISTER_TEST(TestIO)

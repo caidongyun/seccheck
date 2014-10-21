@@ -86,11 +86,10 @@ static bool checkRvalueExpression(const Token * const vartok)
     if (var == nullptr)
         return false;
 
-    const Token * const next = vartok->next();
-
     if (Token::Match(vartok->previous(), "& %var% [") && var->isPointer())
         return false;
 
+    const Token * const next = vartok->next();
     // &a.b[0]
     if (Token::Match(vartok, "%var% . %var% [") && !var->isPointer()) {
         const Variable *var2 = next->next()->variable();
@@ -119,17 +118,23 @@ static bool variableIsUsedInScope(const Token* start, unsigned int varId, const 
 
 void CheckAutoVariables::assignFunctionArg()
 {
-    if (!_settings->isEnabled("warning"))
+    bool style = _settings->isEnabled("style");
+    bool warning = _settings->isEnabled("warning");
+    if (!style && !warning)
         return;
+
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
     const std::size_t functions = symbolDatabase->functionScopes.size();
     for (std::size_t i = 0; i < functions; ++i) {
         const Scope * scope = symbolDatabase->functionScopes[i];
         for (const Token *tok = scope->classStart; tok && tok != scope->classEnd; tok = tok->next()) {
-            if (Token::Match(tok, "[;{}] %var% =") &&
+            if (Token::Match(tok, "[;{}] %var% =|++|--") &&
                 isNonReferenceArg(tok->next()) &&
                 !variableIsUsedInScope(Token::findsimplematch(tok->tokAt(2), ";"), tok->next()->varId(), scope)) {
-                errorUselessAssignmentPtrArg(tok->next());
+                if (tok->next()->variable()->isPointer() && warning)
+                    errorUselessAssignmentPtrArg(tok->next());
+                else if (style)
+                    errorUselessAssignmentArg(tok->next());
             }
         }
     }
@@ -274,12 +279,20 @@ void CheckAutoVariables::errorReturnAddressOfFunctionParameter(const Token *tok,
                 "value is invalid.");
 }
 
+void CheckAutoVariables::errorUselessAssignmentArg(const Token *tok)
+{
+    reportError(tok,
+                Severity::style,
+                "uselessAssignmentArg",
+                "Assignment of function parameter has no effect outside the function.");
+}
+
 void CheckAutoVariables::errorUselessAssignmentPtrArg(const Token *tok)
 {
     reportError(tok,
                 Severity::warning,
                 "uselessAssignmentPtrArg",
-                "Assignment of function parameter has no effect outside the function.");
+                "Assignment of function parameter has no effect outside the function. Did you forget dereferencing it?");
 }
 
 //---------------------------------------------------------------------------
@@ -358,6 +371,9 @@ static bool astHasAutoResult(const Token *tok)
 
 void CheckAutoVariables::returnReference()
 {
+    if (_tokenizer->isC())
+        return;
+
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
 
     const std::size_t functions = symbolDatabase->functionScopes.size();

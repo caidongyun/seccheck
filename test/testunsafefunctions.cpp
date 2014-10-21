@@ -102,7 +102,7 @@ private:
 			  "    rewind(pFile);\n"
               "}\n");
         std::string result = errout.str();
-        ASSERT_EQUALS("[test.cpp:4]: (style) [CERT FIO07-CPP] Unsafe function 'rewind' called. "
+        ASSERT_EQUALS("[test.cpp:4]: (style) [CERT FIO07-CPP] Prefer fseek() to rewind() function 'rewind' called. "
 			"It is recommended to use the function 'fseek' instead.\n", result);
     }
 

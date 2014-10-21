@@ -80,7 +80,7 @@ namespace {
     }
 
     /** Is given variable an unsigned variable */
-    static bool isUnsigned(const Variable *var)
+    static bool isUnsignedF(const Variable *var)
     {
         if (var == 0)
         {
@@ -96,6 +96,17 @@ namespace {
         }
 
         return false;
+    }
+
+    /** Is given variable an unsigned variable */
+    static bool isUnsigned(const Variable *var)
+    {
+        if (var == 0)
+        {
+            return false;
+        }
+
+        return var->typeEndToken()->isUnsigned();
     }
 
     static bool isFloatVariable(const Token* tok)
@@ -126,6 +137,34 @@ namespace {
         }
 
         return (tok->type() == Token::eVariable) && isUnsigned(tok->variable());
+    }
+
+    static bool isNumberOrVariable(const Token *tok)
+    {
+        return (tok->type() == Token::eVariable) || (tok->type() == Token::eNumber);
+    }
+
+    static bool isBitOperatorOnNoUnsignedVariable(const Token *tok)
+    {
+        if ((tok == 0) || (tok->previous() == 0) || (tok->next() == 0))
+        {
+            return false;
+        }
+
+        if (tok->type() != Token::eBitOp)
+        {
+            return false;
+        }
+
+        Token* prev = tok->previous();
+        Token* next = tok->next();
+
+        if (!isNumberOrVariable(prev) || !isNumberOrVariable(next))
+        {
+            return false;
+        }
+
+        return !isUnsignedVariable(prev) || !isUnsignedVariable(next);
     }
 
     static bool isFloatComparison(const Token* tok)
@@ -235,12 +274,9 @@ void CheckMiscellaneous::improperArithmetic()
                     timetOperError(tok);
                 }
             }
-			else if (tok->type() == Token::eBitOp)
+			else if (isBitOperatorOnNoUnsignedVariable(tok))
             {
-                if (!isUnsignedVariable(tok->next()) || !isUnsignedVariable(tok->previous()))
-                {
-                    SignedBitOperError(tok);
-                }
+                SignedBitOperError(tok);
             }
         }
     }

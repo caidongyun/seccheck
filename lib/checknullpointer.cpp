@@ -187,7 +187,7 @@ bool CheckNullPointer::isPointerDeRef(const Token *tok, bool &unknown)
         return true;
     if (Token::Match(parent->previous(), "%var% (") && tok->strAt(1) == ")") {
         const Variable* var = tok->tokAt(-2)->variable();
-        if (var && !var->isPointer() && !var->isArray() && Token::Match(var->typeStartToken(), "std :: string|wstring !!::"))
+        if (var && !var->isPointer() && !var->isArray() && var->isStlStringType())
             return true;
     }
 
@@ -217,45 +217,12 @@ bool CheckNullPointer::isPointerDeRef(const Token *tok, bool &unknown)
         else if (parent->astOperand1() && parent->astOperand2() == tok)
             ovar = parent->astOperand1()->variable();
     }
-    if (ovar && !ovar->isPointer() && !ovar->isArray() && Token::Match(ovar->typeStartToken(), "std :: string|wstring !!::"))
+    if (ovar && !ovar->isPointer() && !ovar->isArray() && ovar->isStlStringType())
         return true;
 
     // assume that it's not a dereference (no false positives)
     return false;
 }
-
-
-// check if function can assign pointer
-bool CheckNullPointer::CanFunctionAssignPointer(const Token *functiontoken, unsigned int varid, bool& unknown)
-{
-    if (Token::Match(functiontoken, "if|while|for|switch|sizeof|catch"))
-        return false;
-
-    unsigned int argumentNumber = 0;
-    for (const Token *arg = functiontoken->tokAt(2); arg; arg = arg->nextArgument()) {
-        if (Token::Match(arg, "%varid% [,)]", varid)) {
-            const Function* func = functiontoken->function();
-            if (!func) { // Unknown function
-                unknown = true;
-                return true; // assume that the function might assign the pointer
-            }
-
-            const Variable* var = func->getArgumentVar(argumentNumber);
-            if (!var) { // Unknown variable
-                unknown = true;
-                return true;
-            } else if (var->isReference()) // Assume every pointer passed by reference is assigned
-                return true;
-            else
-                return false;
-        }
-        ++argumentNumber;
-    }
-
-    // pointer is not passed
-    return false;
-}
-
 
 
 void CheckNullPointer::nullPointerLinkedList()
@@ -382,11 +349,8 @@ void CheckNullPointer::nullPointerByDeRefAndChec()
 void CheckNullPointer::nullPointer()
 {
     nullPointerLinkedList();
-
-    if (_settings->isEnabled("warning")) {
-        nullPointerByDeRefAndChec();
-        nullPointerDefaultArgument();
-    }
+    nullPointerByDeRefAndChec();
+    nullPointerDefaultArgument();
 }
 
 /** Dereferencing null constant (simplified token list) */
@@ -427,7 +391,7 @@ void CheckNullPointer::nullConstantDereference()
             else if (Token::Match(tok->previous(), "!!. %var% (") && (tok->previous()->str() != "::" || tok->strAt(-2) == "std")) {
                 if (Token::simpleMatch(tok->tokAt(2), "0 )") && tok->varId()) { // constructor call
                     const Variable *var = tok->variable();
-                    if (var && !var->isPointer() && !var->isArray() && Token::Match(var->typeStartToken(), "std :: string|wstring !!::"))
+                    if (var && !var->isPointer() && !var->isArray() && var->isStlStringType())
                         nullPointerError(tok);
                 } else { // function call
                     std::list<const Token *> var;
@@ -461,13 +425,13 @@ void CheckNullPointer::nullConstantDereference()
             }
 
             const Variable *ovar = nullptr;
-            if (Token::Match(tok, "0 ==|!= %var% !!."))
+            if (Token::Match(tok, "0 ==|!=|>|>=|<|<= %var% !!."))
                 ovar = tok->tokAt(2)->variable();
-            else if (Token::Match(tok, "%var% ==|!= 0"))
+            else if (Token::Match(tok, "%var% ==|!=|>|>=|<|<= 0"))
                 ovar = tok->variable();
             else if (Token::Match(tok, "%var% =|+ 0 )|]|,|;|+"))
                 ovar = tok->variable();
-            if (ovar && !ovar->isPointer() && !ovar->isArray() && Token::Match(ovar->typeStartToken(), "std :: string|wstring !!::"))
+            if (ovar && !ovar->isPointer() && !ovar->isArray() && ovar->isStlStringType() && tok->tokAt(2)->originalName() != "'\\0'")
                 nullPointerError(tok);
         }
     }
@@ -501,6 +465,9 @@ void CheckNullPointer::removeAssignedVarFromSet(const Token* tok, std::set<unsig
 */
 void CheckNullPointer::nullPointerDefaultArgument()
 {
+    if (!_settings->isEnabled("warning"))
+        return;
+
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
     const std::size_t functions = symbolDatabase->functionScopes.size();
     for (std::size_t i = 0; i < functions; ++i) {

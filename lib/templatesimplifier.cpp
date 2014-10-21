@@ -246,8 +246,8 @@ unsigned int TemplateSimplifier::templateParameters(const Token *tok)
             continue;
         }
 
-        // Skip '='
-        if (tok && tok->str() == "=")
+        // Skip '=', '?', ':'
+        if (tok && Token::Match(tok, "=|?|:"))
             tok = tok->next();
         if (!tok)
             return 0;
@@ -285,9 +285,9 @@ unsigned int TemplateSimplifier::templateParameters(const Token *tok)
             return 0;
 
         // Function pointer or prototype..
-        while (tok && (tok->str() == "(" || tok->str() == "[")) {
+        while (Token::Match(tok, "(|[")) {
             tok = tok->link()->next();
-            while (tok && Token::Match(tok, "const|volatile")) // Ticket #5786: Skip function cv-qualifiers
+            while (Token::Match(tok, "const|volatile")) // Ticket #5786: Skip function cv-qualifiers
                 tok = tok->next();
         }
         if (!tok)
@@ -303,7 +303,7 @@ unsigned int TemplateSimplifier::templateParameters(const Token *tok)
             return 0;
 
         // ,/>
-        while (tok->str() == ">" || tok->str() == ">>") {
+        while (Token::Match(tok, ">|>>")) {
             if (level == 0)
                 return numberOfParameters;
             --level;
@@ -472,11 +472,19 @@ std::list<Token *> TemplateSimplifier::getTemplateDeclarations(Token *tokens, bo
             Token *parmEnd = tok->next()->findClosingBracket();
             codeWithTemplates = true;
 
+            int indentlevel = 0;
             for (const Token *tok2 = parmEnd; tok2; tok2 = tok2->next()) {
+                if (tok2->str() == "(")
+                    ++indentlevel;
+                else if (tok2->str() == ")")
+                    --indentlevel;
+
+                if (indentlevel) // In an argument list; move to the next token
+                    continue;
+
                 // Just a declaration => ignore this
                 if (tok2->str() == ";")
                     break;
-
                 // Implementation => add to "templates"
                 if (tok2->str() == "{") {
                     templates.push_back(tok);
@@ -556,7 +564,7 @@ void TemplateSimplifier::useDefaultArgumentValues(const std::list<Token *> &temp
                 ++templateParmDepth;
 
             // end of template parameters?
-            if (tok->str() == ">" || tok->str() == ">>") {
+            if (Token::Match(tok, ">|>>")) {
                 if (Token::Match(tok, ">|>> class|struct %var%"))
                     classname = tok->strAt(2);
                 templateParmDepth -= (1 + (tok->str() == ">>"));
@@ -600,11 +608,16 @@ void TemplateSimplifier::useDefaultArgumentValues(const std::list<Token *> &temp
                 for (std::size_t i = (templatepar - eq.size()); it != eq.end() && i < usedpar; ++i)
                     ++it;
                 while (it != eq.end()) {
+                    int indentlevel = 0;
                     tok->insertToken(",");
                     tok = tok->next();
                     const Token *from = (*it)->next();
                     std::stack<Token *> links;
-                    while (from && (!links.empty() || (from->str() != "," && from->str() != ">"))) {
+                    while (from && (!links.empty() || (from->str() != "," && (indentlevel || from->str() != ">")))) {
+                        if (from->str() == "<")
+                            ++indentlevel;
+                        else if (from->str() == ">")
+                            --indentlevel;
                         tok->insertToken(from->str(), from->originalName());
                         tok = tok->next();
                         if (Token::Match(tok, "(|["))
@@ -709,7 +722,7 @@ void TemplateSimplifier::expandTemplate(
     std::list<Token *> &templateInstantiations)
 {
     for (const Token *tok3 = tokenlist.front(); tok3; tok3 = tok3 ? tok3->next() : nullptr) {
-        if (tok3->str() == "{" || tok3->str() == "(" || tok3->str() == "[")
+        if (Token::Match(tok3, "{|(|["))
             tok3 = tok3->link();
 
         // Start of template..
@@ -830,11 +843,11 @@ static bool isLowerThanShift(const Token* lower)
 }
 static bool isLowerThanPlusMinus(const Token* lower)
 {
-    return isLowerThanShift(lower) || lower->str() == "<<" || lower->str() == ">>";
+    return isLowerThanShift(lower) || Token::Match(lower, "<<|>>");
 }
 static bool isLowerThanMulDiv(const Token* lower)
 {
-    return isLowerThanPlusMinus(lower) || lower->str() == "+" || lower->str() == "-";
+    return isLowerThanPlusMinus(lower) || Token::Match(lower, "+|-");
 }
 static bool isLowerEqualThanMulDiv(const Token* lower)
 {
@@ -849,13 +862,14 @@ static std::string ShiftInt(const char cop, const Token* left, const Token* righ
     const MathLib::bigint leftInt = MathLib::toLongNumber(left->str());
     const MathLib::bigint rightInt = MathLib::toLongNumber(right->str());
     const bool rightIntIsPositive = rightInt >= 0;
-    const bool leftIntIsPositive = leftInt >= 0;
-    const bool leftOperationIsNotLeftShift = left->previous()->str() != "<<";
-    const bool operandIsLeftShift = right->previous()->str() == "<<";
 
     if (cop == '<') {
+        const bool leftOperationIsNotLeftShift = left->previous()->str() != "<<";
+        const bool operandIsLeftShift = right->previous()->str() == "<<";
+
         // Ensure that its not a shift operator as used for streams
         if (leftOperationIsNotLeftShift && operandIsLeftShift && rightIntIsPositive) {
+            const bool leftIntIsPositive = leftInt >= 0;
             if (!leftIntIsPositive) { // In case the left integer is negative, e.g. -1000 << 16. Do not simplify.
                 return left->str() + " << " + right->str();
             }
@@ -1073,7 +1087,7 @@ bool TemplateSimplifier::simplifyCalculations(Token *_tokens)
             }
 
             // Remove parentheses around number..
-            if (Token::Match(tok->tokAt(-2), "%any% ( %num% )") && !tok->tokAt(-2)->isName() && tok->strAt(-2) != ">") {
+            if (Token::Match(tok->tokAt(-2), "%op%|< ( %num% )") && !tok->tokAt(-2)->isName() && tok->strAt(-2) != ">") {
                 tok = tok->previous();
                 tok->deleteThis();
                 tok->deleteNext();
@@ -1209,7 +1223,7 @@ bool TemplateSimplifier::simplifyTemplateInstantiations(
         for (const Token *tok3 = tok2->tokAt(2); tok3 && (indentlevel > 0 || tok3->str() != ">"); tok3 = tok3->next()) {
             // #2648 - unhandled parentheses => bail out
             // #2721 - unhandled [ => bail out
-            if (tok3->str() == "(" || tok3->str() == "[") {
+            if (Token::Match(tok3, "(|[")) {
                 typeForNewNameStr.clear();
                 break;
             }

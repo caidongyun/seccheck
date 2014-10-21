@@ -314,6 +314,8 @@ void ExecutionPath::checkScope(const Token *tok, std::list<ExecutionPath *> &che
                     if (tok->varId())
                         ExecutionPath::bailOutVar(checks, tok->varId());
                 }
+                if (!tok)
+                    break;
             }
         }
 
@@ -361,13 +363,13 @@ void ExecutionPath::checkScope(const Token *tok, std::list<ExecutionPath *> &che
         }
 
         // ; { ... }
-        if (tok && Token::Match(tok->previous(), "[;{}:] {")) {
+        if (Token::Match(tok->previous(), "[;{}:] {")) {
             ExecutionPath::checkScope(tok->next(), checks);
             tok = tok->link();
             continue;
         }
 
-        if (tok && tok->str() == "if" && tok->next() && tok->next()->str() == "(") {
+        if (tok->str() == "if" && tok->next() && tok->next()->str() == "(") {
             // what variable ids should the numberOfIf be counted for?
             std::set<unsigned int> countif;
 
@@ -407,13 +409,12 @@ void ExecutionPath::checkScope(const Token *tok, std::list<ExecutionPath *> &che
 
                 // parse next "if"..
                 tok = tok->tokAt(2);
-                if (tok && tok->str() == "if")
-                    continue;
-
                 if (!tok) {
                     ExecutionPath::bailOut(newchecks);
                     return;
                 }
+                if (tok->str() == "if")
+                    continue;
 
                 // there is no "if"..
                 ExecutionPath::checkScope(tok->next(), checks);
@@ -444,15 +445,9 @@ void ExecutionPath::checkScope(const Token *tok, std::list<ExecutionPath *> &che
             }
         }
 
-
-        {
-            tok = check->parse(*tok, checks);
-            if (checks.empty())
-                return;
-        }
-
-        if (!tok)
-            break;
+        tok = check->parse(*tok, checks);
+        if (!tok || checks.empty())
+            return;
 
         // return/throw ends all execution paths
         if (tok->str() == "return" ||

@@ -38,7 +38,7 @@ bool Preprocessor::missingSystemIncludeFlag;
 
 char Preprocessor::macroChar = char(1);
 
-Preprocessor::Preprocessor(Settings *settings, ErrorLogger *errorLogger) : _settings(settings), _errorLogger(errorLogger), _foundUnhandledChars(false)
+Preprocessor::Preprocessor(Settings *settings, ErrorLogger *errorLogger) : _settings(settings), _errorLogger(errorLogger)
 {
 
 }
@@ -482,11 +482,12 @@ std::string Preprocessor::removeComments(const std::string &str, const std::stri
         unsigned char ch = static_cast<unsigned char>(str[i]);
         if (ch & 0x80) {
             std::ostringstream errmsg;
-            errmsg << "The code contains characters that are unhandled. "
-                   << "Neither unicode nor extended ASCII are supported. "
-                   << "(line=" << lineno << ", character code=" << std::hex << (int(ch) & 0xff) << ")";
-            writeError(filename, lineno, _errorLogger, "syntaxError", errmsg.str());
-            _foundUnhandledChars = true;
+            errmsg << "(character code = 0x" << std::hex << (int(ch) & 0xff) << ")";
+            std::string info = errmsg.str();
+            errmsg.str("");
+            errmsg << "The code contains unhandled characters " << info << ". Checking continues, but do not expect valid results.\n"
+                   << "The code contains characters that are unhandled " << info << ". Neither unicode nor extended ASCII are supported. Checking continues, but do not expect valid results.";
+            writeError(filename, lineno, _errorLogger, "unhandledCharacters", errmsg.str());
         }
 
         if (_settings && _settings->terminated())
@@ -1320,16 +1321,9 @@ std::list<std::string> Preprocessor::getcfgs(const std::string &filedata, const 
             if (par != 0) {
                 std::ostringstream lineStream;
                 lineStream << __LINE__;
-
-                ErrorLogger::ErrorMessage errmsg;
-                ErrorLogger::ErrorMessage::FileLocation loc;
-                loc.setfile(filename);
-                loc.line = linenr;
-                errmsg._callStack.push_back(loc);
-                errmsg._severity = Severity::fromString("error");
-                errmsg.setmsg("mismatching number of '(' and ')' in this line: " + def);
-                errmsg._id  = "preprocessor" + lineStream.str();
-                _errorLogger->reportErr(errmsg);
+                std::string errorId = "preprocessor" + lineStream.str();
+                std::string errorText = "mismatching number of '(' and ')' in this line: " + def;
+                writeError(filename, linenr, _errorLogger, errorId, errorText);
                 ret.clear();
                 return ret;
             }
@@ -1733,6 +1727,19 @@ void Preprocessor::simplifyCondition(const std::map<std::string, std::string> &c
 
 bool Preprocessor::match_cfg_def(std::map<std::string, std::string> cfg, std::string def)
 {
+    /*
+        std::cout << "cfg: \"";
+        for (std::map<std::string, std::string>::const_iterator it = cfg.begin(); it != cfg.end(); ++it)
+        {
+            std::cout << it->first;
+            if (!it->second.empty())
+                std::cout << "=" << it->second;
+            std::cout << ";";
+        }
+        std::cout << "\"  ";
+        std::cout << "def: \"" << def << "\"\n";
+    */
+
     simplifyVarMap(cfg);
     simplifyCondition(cfg, def, true);
 
@@ -1767,8 +1774,7 @@ std::string Preprocessor::getcode(const std::string &filedata, const std::string
     std::stack<unsigned int> lineNumbers;
     std::istringstream istr(filedata);
     std::string line;
-    while (std::getline(istr, line)) 
-	{
+    while (std::getline(istr, line)) {
         ++lineno;
 
         if (_settings && _settings->terminated())
@@ -2961,7 +2967,7 @@ bool Preprocessor::validateCfg(const std::string &code, const std::string &cfg)
                 if (pos2 < code.size() && (std::isalnum((unsigned char)code[pos2]) || code[pos2] == '_'))
                     continue;
                 // macro is used in code, return false
-                if (_settings->isEnabled("information"))
+                if (_settings && _settings->isEnabled("information"))
                     validateCfgError(cfg, macro);
                 return false;
             }

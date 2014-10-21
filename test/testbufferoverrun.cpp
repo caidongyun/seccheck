@@ -59,9 +59,7 @@ private:
 
         // Ensure that the test case is not bad.
         if (verify && str1 != str2) {
-            warn(("Unsimplified code in test case. It looks like this test "
-                  "should either be cleaned up or moved to TestTokenizer or "
-                  "TestSimplifyTokens instead.\nstr1="+str1+"\nstr2="+str2).c_str());
+            warnUnsimplified(str1, str2);
         }
 
         // Check for buffer overruns..
@@ -171,6 +169,7 @@ private:
         TEST_CASE(array_index_44); // #3979
         TEST_CASE(array_index_45); // #4207 - calling function with variable number of parameters (...)
         TEST_CASE(array_index_46); // #4840 - two-statement for loop
+        TEST_CASE(array_index_47); // #5849
         TEST_CASE(array_index_multidim);
         TEST_CASE(array_index_switch_in_for);
         TEST_CASE(array_index_for_in_for);   // FP: #2634
@@ -223,6 +222,8 @@ private:
         TEST_CASE(buffer_overrun_bailoutIfSwitch);  // ticket #2378 : bailoutIfSwitch
         TEST_CASE(buffer_overrun_function_array_argument);
         TEST_CASE(possible_buffer_overrun_1); // #3035
+
+        TEST_CASE(valueflow_string); // using ValueFlow string values in checking
 
         // It is undefined behaviour to point out of bounds of an array
         // the address beyond the last element is in bounds
@@ -287,12 +288,8 @@ private:
         TEST_CASE(recursive_long_time);
 
         TEST_CASE(crash1);  // Ticket #1587 - crash
-        TEST_CASE(crash2);  // Ticket #2607 - crash
-        TEST_CASE(crash3);  // Ticket #3034 - crash
-        TEST_CASE(crash4);  // Ticket #5426 - crash
-        TEST_CASE(crash5);  // TIcket #5595 - crash
-
-        TEST_CASE(garbage1);  // Ticket #5203
+        TEST_CASE(crash2);  // Ticket #3034 - crash
+        TEST_CASE(crash3);  // Ticket #5426 - crash
 
         TEST_CASE(executionPaths1);
         TEST_CASE(executionPaths2);
@@ -1596,6 +1593,16 @@ private:
         ASSERT_EQUALS("", errout.str());
     }
 
+    void array_index_47() {
+        // #5849
+        check("int s[4];\n"
+              "void f() {\n"
+              "    for (int i = 2; i < 0; i++)\n"
+              "        s[i] = 5; \n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+    }
+
     void array_index_multidim() {
         check("void f()\n"
               "{\n"
@@ -2118,6 +2125,10 @@ private:
               "    char *str[3];\n"
               "    do_something(&str[0][5]);\n"
               "}", false, "test.cpp", false);
+        ASSERT_EQUALS("", errout.str());
+
+        check("class X { static const int x[100]; };\n" // #6070
+              "const int X::x[100] = {0};", false, "test.cpp", false);
         ASSERT_EQUALS("", errout.str());
     }
 
@@ -2893,6 +2904,30 @@ private:
         ASSERT_EQUALS("", errout.str());
     }
 
+    void valueflow_string() { // using ValueFlow string values in checking
+        checkstd("void f() {\n"
+                 "  char buf[3];\n"
+                 "  const char *x = s;\n"
+                 "  if (cond) x = \"abcde\";\n"
+                 "  strcpy(buf,x);\n" // <- buffer overflow when x is "abcde"
+                 "}");
+        ASSERT_EQUALS("[test.cpp:5]: (error) Buffer is accessed out of bounds: buf\n", errout.str());
+
+        checkstd("void f() {\n"
+                 "  const char *x = s;\n"
+                 "  if (cond) x = \"abcde\";\n"
+                 "  memcpy(buf,x,20);\n" // <- buffer overflow when x is "abcde"
+                 "}");
+        ASSERT_EQUALS("[test.cpp:4]: (error) Buffer is accessed out of bounds.\n", errout.str());
+
+        check("char f() {\n"
+              "  const char *x = s;\n"
+              "  if (cond) x = \"abcde\";\n"
+              "  return x[20];\n" // <- array index out of bounds when x is "abcde"
+              "}");
+        ASSERT_EQUALS("[test.cpp:4]: (error) Array 'x[6]' accessed at index 20, which is out of bounds.\n", errout.str());
+    }
+
     void pointer_out_of_bounds_1() {
         check("void f() {\n"
               "    char a[10];\n"
@@ -3137,6 +3172,17 @@ private:
               "    snprintf(pString, 1024, \"ab\");\n"
               "}");
         ASSERT_EQUALS("", errout.str());
+
+        // #6141 FP: Unknown type is assumed to have size 0
+        check("typedef struct {\n"
+              "    CHAR s[42];\n"
+              "} sct_t;\n"
+              "void foo() {\n"
+              "    sct_t p;\n"
+              "    snprintf(p.s, 42, \"abcdef\");\n"
+              "}\n");
+        ASSERT_EQUALS("", errout.str());
+
     }
 
     void strncat1() {
@@ -3699,10 +3745,6 @@ private:
     }
 
     void crash2() {
-        check("struct C {} {} x");
-    }
-
-    void crash3() {
         check("void a(char *p) {\n"
               "    f( { if(finally_arg); } );\n"
               "}\n"
@@ -3713,17 +3755,9 @@ private:
               "}");
     }
 
-    void crash4() {
+    void crash3() {
         check("struct b { unknown v[0]; };\n"
               "void d() { struct b *f; f = malloc(108); }");
-    }
-
-    void crash5() {
-        check("static f() { int i; int source[1] = { 1 }; for (i = 0; i < 4; i++) (u, if (y u.x e)) }", true, "test.cpp", false); // Garbage code
-    }
-
-    void garbage1() { // Ticket #5203
-        check("int f ( int* r ) { {  int s[2] ; f ( s ) ; if ( ) } }");
     }
 
     void epcheck(const char code[], const char filename[] = "test.cpp") {
@@ -3930,6 +3964,15 @@ private:
               "}");
 
         ASSERT_EQUALS("", errout.str());
+
+        // #5835
+        checkstd("int main(int argc, char* argv[]) {\n"
+                 "    char prog[10];\n"
+                 "    sprintf(prog, \"%s\", argv[0]);\n"
+                 "    sprintf(prog, \"%s\", argv[0]);\n"
+                 "}");
+        ASSERT_EQUALS("[test.cpp:3]: (error) Buffer overrun possible for long command line arguments.\n"
+                      "[test.cpp:4]: (error) Buffer overrun possible for long command line arguments.\n", errout.str());
     }
 
     void scope() {

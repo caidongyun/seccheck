@@ -20,6 +20,7 @@
 #include "options.h"
 
 #include <iostream>
+#include <cstdio>
 #include <list>
 
 std::ostringstream errout;
@@ -73,15 +74,20 @@ TestFixture::TestFixture(const std::string &_name)
 }
 
 
-bool TestFixture::runTest(const char testname[])
+bool TestFixture::prepareTest(const char testname[])
 {
+    // Check if tests should be executed
     if (testToRun.empty() || testToRun == testname) {
+        // Tests will be executed - prepare them
         ++countTests;
         if (quiet_tests) {
-            std::cout << '.';
+            std::putchar('.'); // Use putchar to write through redirection of std::cout/cerr
+            std::fflush(stdout);
         } else {
             std::cout << classname << "::" << testname << std::endl;
         }
+        _lib = Library();
+        currentTest = classname + "::" + testname;
         return true;
     }
     return false;
@@ -92,7 +98,7 @@ static std::string writestr(const std::string &str, bool gccStyle = false)
     std::ostringstream ostr;
     if (gccStyle)
         ostr << '\"';
-    for (auto i = str.begin(); i != str.end(); ++i) {
+    for (std::string::const_iterator i = str.begin(); i != str.end(); ++i) {
         if (*i == '\n') {
             ostr << "\\n";
             if ((i+1) != str.end() && !gccStyle)
@@ -232,12 +238,23 @@ void TestFixture::run(const std::string &str)
     if (quiet_tests) {
         std::cout << '\n' << classname << ':';
     }
-    run();
+    if (quiet_tests) {
+        REDIRECT;
+        run();
+    } else
+        run();
 }
 
 void TestFixture::warn(const char msg[])
 {
     warnings << "Warning: " << currentTest << " " << msg << std::endl;
+}
+
+void TestFixture::warnUnsimplified(const std::string& unsimplified, const std::string& simplified)
+{
+    warn(("Unsimplified code in test case. It looks like this test "
+          "should either be cleaned up or moved to TestTokenizer or "
+          "TestSimplifyTokens instead.\nactual=" + unsimplified + "\nexpected=" + simplified).c_str());
 }
 
 void TestFixture::processOptions(const options& args)
@@ -260,7 +277,7 @@ std::size_t TestFixture::runTests(const options& args)
 
     const std::list<TestFixture *> &tests = TestRegistry::theInstance().tests();
 
-    for (auto it = tests.begin(); it != tests.end(); ++it) {
+    for (std::list<TestFixture *>::const_iterator it = tests.begin(); it != tests.end(); ++it) {
         if (classname.empty() || (*it)->classname == classname) {
             (*it)->processOptions(args);
             (*it)->run(testname);
@@ -284,7 +301,7 @@ std::size_t TestFixture::runTests(const options& args)
 
     if (!missingLibs.empty()) {
         std::cerr << "Missing libraries: ";
-        for (auto i = missingLibs.begin(); i != missingLibs.end(); ++i)
+        for (std::set<std::string>::const_iterator i = missingLibs.begin(); i != missingLibs.end(); ++i)
             std::cerr << *i << "  ";
         std::cerr << std::endl << std::endl;
     }

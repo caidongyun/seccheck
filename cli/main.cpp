@@ -20,7 +20,7 @@
 /**
  *
  * @mainpage Cppcheck
- * @version 1.66
+ * @version 1.67
  *
  * @section overview_sec Overview
  * Cppcheck is a simple tool for static analysis of C/C++ code.
@@ -86,7 +86,7 @@ void CheckOther::checkZeroDivision()
  *   - Macros are expanded
  * -# Tokenize the file (see Tokenizer)
  * -# Run the runChecks of all check classes.
- * -# Simplify the tokenlist (Tokenizer::simplifyTokenList)
+ * -# Simplify the tokenlist (Tokenizer::simplifyTokenList2)
  * -# Run the runSimplifiedChecks of all check classes
  *
  * When errors are found, they are reported back to the CppCheckExecutor through the ErrorLogger interface
@@ -94,6 +94,9 @@ void CheckOther::checkZeroDivision()
 
 
 #include "cppcheckexecutor.h"
+
+#include <cstdio>
+#include <cstdlib>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -119,7 +122,21 @@ int main(int argc, char* argv[])
     GetModuleFileNameA(NULL, exename, sizeof(exename)/sizeof(exename[0])-1);
     argv[0] = exename;
 #endif
-    return exec.check(argc, argv);
+
+#ifdef NDEBUG
+    try {
+#endif
+        return exec.check(argc, argv);
+#ifdef NDEBUG
+    } catch (const InternalError& e) {
+        printf("%s\n", e.errorMessage.c_str());
+    } catch (const std::exception& error) {
+        printf("%s\n", error.what());
+    } catch (...) {
+        printf("Unknown exception\n");
+    }
+    return EXIT_FAILURE;
+#endif
 }
 
 

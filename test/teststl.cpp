@@ -548,6 +548,14 @@ private:
         ASSERT_EQUALS("[test.cpp:3]: (error) When ii==foo.size(), foo[ii] is out of bounds.\n", errout.str());
 
         check("void foo(const std::string& foo, unsigned int ii) {\n"
+              "    do {\n"
+              "       foo[ii] = 'x';\n"
+              "       ++i;\n"
+              "    } while(ii <= foo.length());\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:3]: (error) When ii==foo.size(), foo[ii] is out of bounds.\n", errout.str());
+
+        check("void foo(const std::string& foo, unsigned int ii) {\n"
               "    if (anything()) {\n"
               "    } else if (ii <= foo.length()) {\n"
               "       foo[ii] = 'x';\n"
@@ -2564,6 +2572,13 @@ private:
               "    std::string strValue = CMap[1];\n"
               "    std::string strValue2 = CMap[1];\n"
               "}\n", true);
+        ASSERT_EQUALS("[test.cpp:3]: (style, inconclusive) Reading from empty STL container\n", errout.str());
+
+        // #4306
+        check("void f(std::vector<int> v) {\n"
+              "    v.clear();\n"
+              "    for(int i = 0; i < v.size(); i++) { cout << v[i]; }\n"
+              "}", true);
         ASSERT_EQUALS("[test.cpp:3]: (style, inconclusive) Reading from empty STL container\n", errout.str());
     }
 };

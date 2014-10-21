@@ -308,12 +308,14 @@ void CheckStl::stlOutOfBounds()
     for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         const Token* tok = i->classDef;
         // only interested in conditions
-        if ((i->type != Scope::eFor && i->type != Scope::eWhile && i->type != Scope::eIf) || !tok)
+        if ((i->type != Scope::eFor && i->type != Scope::eWhile && i->type != Scope::eIf && i->type != Scope::eDo) || !tok)
             continue;
 
         if (i->type == Scope::eFor)
             tok = Token::findsimplematch(tok->tokAt(2), ";");
-        else
+        else if (i->type == Scope::eDo) {
+            tok = tok->linkAt(1)->tokAt(2);
+        } else
             tok = tok->next();
 
         // check if the for loop condition is wrong
@@ -331,7 +333,7 @@ void CheckStl::stlOutOfBounds()
             // variable id for the container variable
             const unsigned int declarationId = container->declarationId();
 
-            for (const Token *tok3 = tok->tokAt(8); tok3 && tok3 != i->classEnd; tok3 = tok3->next()) {
+            for (const Token *tok3 = i->classStart; tok3 && tok3 != i->classEnd; tok3 = tok3->next()) {
                 if (tok3->varId() == declarationId) {
                     if (Token::Match(tok3->next(), ". size|length ( )"))
                         break;
@@ -498,8 +500,10 @@ void CheckStl::erase()
 
     for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i) {
         const Token* const tok = i->classDef;
+        if (!tok)
+            continue;
 
-        if (tok && i->type == Scope::eFor) {
+        if (i->type == Scope::eFor) {
             for (const Token *tok2 = tok->tokAt(2); tok2; tok2 = tok2->next()) {
                 if (tok2->str() == ";") {
                     if (Token::Match(tok2, "; %var% !=")) {
@@ -548,11 +552,12 @@ void CheckStl::pushback()
             if (Token::Match(tok, "%var% = & %var% [")) {
                 // Variable id for pointer
                 const unsigned int pointerId(tok->varId());
+                if (pointerId == 0)
+                    continue;
 
                 // Variable id for the container variable
                 const unsigned int containerId(tok->tokAt(3)->varId());
-
-                if (pointerId == 0 || containerId == 0)
+                if (containerId == 0)
                     continue;
 
                 bool invalidPointer = false;
@@ -703,11 +708,10 @@ void CheckStl::stlBoundaries()
         for (const Token* tok = scope->classStart->next(); tok != scope->classEnd; tok = tok->next()) {
             // Declaring iterator..
             if (tok->str() == "<" && Token::Match(tok->previous(), "bitset|list|forward_list|map|multimap|multiset|priority_queue|queue|set|stack|hash_map|hash_multimap|hash_set|unordered_map|unordered_multimap|unordered_set|unordered_multiset")) {
-                const std::string& container_name(tok->strAt(-1));
-                if (tok->link())
-                    tok = tok->link();
-                else
+                if (!tok->link())
                     continue;
+                const std::string& container_name(tok->strAt(-1));
+                tok = tok->link();
 
                 if (Token::Match(tok, "> :: iterator|const_iterator %var% =|;")) {
                     const unsigned int iteratorid(tok->tokAt(3)->varId());
@@ -754,10 +758,12 @@ static bool if_findCompare(const Token * const tokBack, bool str)
 
     if (Token::Match(tok,",|==|!="))
         return true;
-    if (str && tok->isComparisonOp())
-        return true;
-    if (tok->isArithmeticalOp()) // result is used in some calculation
-        return true;  // TODO: check if there is a comparison of the result somewhere
+    if (tok) {
+        if (str && tok->isComparisonOp())
+            return true;
+        if (tok->isArithmeticalOp()) // result is used in some calculation
+            return true;  // TODO: check if there is a comparison of the result somewhere
+    }
     return false;
 }
 
@@ -797,7 +803,7 @@ void CheckStl::if_find()
                     const Token * decl = var->typeStartToken();
                     const unsigned int varid = tok->varId();
 
-                    bool str = Token::Match(decl, "std :: string|wstring &| %varid%", varid);
+                    bool str = var->isStlStringType() && !var->isArrayOrPointer();
                     if (if_findCompare(tok->linkAt(3), str))
                         continue;
 
@@ -854,7 +860,7 @@ void CheckStl::if_find()
                             if_findError(tok, true);
                     }
 
-                    else if (decl && decl->str() == "string") {
+                    else if (var->isStlStringType()) {
                         decl = decl->next();
                         if ((Token::Match(decl, "* &| %varid%", varid) ||
                              Token::Match(decl, "&| %varid% [ ]| %any% ]| ", varid)) && performance)
@@ -1547,10 +1553,14 @@ void CheckStl::readingEmptyStlContainer()
         if (i->type != Scope::eFunction)
             continue;
 
+        const Token* restartTok = nullptr;
         for (const Token *tok = i->classStart->next(); tok != i->classEnd; tok = tok->next()) {
-            if (Token::Match(tok, "for|while|do|}")) { // Loops and end of scope clear the sets.
+            if (Token::Match(tok, "for|while")) { // Loops and end of scope clear the sets.
+                restartTok = tok->linkAt(1); // Check condition to catch looping over empty containers
+            } else if (tok == restartTok || Token::Match(tok, "do|}")) {
                 empty_map.clear();
                 empty_nonmap.clear();
+                restartTok = nullptr;
             }
 
             if (!tok->varId())

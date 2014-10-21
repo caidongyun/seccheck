@@ -148,10 +148,12 @@ void Variables::alias(unsigned int varid1, unsigned int varid2, bool replace)
     VariableUsage *var1 = find(varid1);
     VariableUsage *var2 = find(varid2);
 
+    if (!var1 || !var2)
+        return;
+
     // alias to self
     if (varid1 == varid2) {
-        if (var1)
-            var1->use(_varReadInScope);
+        var1->use(_varReadInScope);
         return;
     }
 
@@ -677,8 +679,7 @@ void CheckUnusedVar::checkFunctionVariableUsage_iterateScopes(const Scope* const
                      i->typeEndToken()->isStandardType() ||
                      isRecordTypeWithoutSideEffects(i->type()) ||
                      (i->isStlType() &&
-                      i->typeStartToken()->strAt(2) != "lock_guard" &&
-                      i->typeStartToken()->strAt(2) != "unique_lock"))
+                      !Token::Match(i->typeStartToken()->tokAt(2), "lock_guard|unique_lock|shared_ptr|unique_ptr|auto_ptr")))
                 type = Variables::standard;
             if (type == Variables::none || isPartOfClassStructUnion(i->typeStartToken()))
                 continue;
@@ -686,7 +687,7 @@ void CheckUnusedVar::checkFunctionVariableUsage_iterateScopes(const Scope* const
             for (; defValTok; defValTok = defValTok->next()) {
                 if (defValTok->str() == "[")
                     defValTok = defValTok->link();
-                else if (defValTok->str() == "(" || defValTok->str() == "=") {
+                else if (defValTok->str() == "(" || defValTok->str() == "{" || defValTok->str() == "=") {
                     variables.addVar(&*i, type, true);
                     break;
                 } else if (defValTok->str() == ";" || defValTok->str() == "," || defValTok->str() == ")") {
@@ -706,13 +707,17 @@ void CheckUnusedVar::checkFunctionVariableUsage_iterateScopes(const Scope* const
                             variables.read(tok->varId(), i->nameToken());
                 } else
                     doAssignment(variables, i->nameToken(), false, scope);
-            } else if (Token::Match(defValTok, "( %var% )")) // Variables used to initialize the variable read.
-                variables.readAll(defValTok->next()->varId(), i->nameToken()); // ReadAll?
+            }
         }
     }
 
     // Check variable usage
-    for (const Token *tok = scope->classDef->next(); tok && tok != scope->classEnd; tok = tok->next()) {
+    const Token *tok;
+    if (scope->type == Scope::eFunction)
+        tok = scope->classStart->next();
+    else
+        tok = scope->classDef->next();
+    for (; tok && tok != scope->classEnd; tok = tok->next()) {
         if (tok->str() == "for" || tok->str() == "while" || tok->str() == "do") {
             for (auto i = scope->nestedList.begin(); i != scope->nestedList.end(); ++i) {
                 if ((*i)->classDef == tok) { // Find associated scope
@@ -724,7 +729,7 @@ void CheckUnusedVar::checkFunctionVariableUsage_iterateScopes(const Scope* const
             if (!tok)
                 break;
         }
-        if (tok->str() == "{") {
+        if (tok->str() == "{" && tok != scope->classStart && !tok->previous()->varId()) {
             for (auto i = scope->nestedList.begin(); i != scope->nestedList.end(); ++i) {
                 if ((*i)->classStart == tok) { // Find associated scope
                     checkFunctionVariableUsage_iterateScopes(*i, variables, false); // Scan child scope
@@ -1008,8 +1013,8 @@ void CheckUnusedVar::checkFunctionVariableUsage_iterateScopes(const Scope* const
             variables.read(tok->varId(), tok);
         }
 
-        else if (Token::Match(tok, "[{,] %var% [,}]")) {
-            variables.read(tok->next()->varId(), tok);
+        else if (Token::Match(tok->previous(), "[{,] %var% [,}]")) {
+            variables.read(tok->varId(), tok);
         }
 
         else if (tok->varId() && Token::Match(tok, "%var% .")) {
@@ -1039,8 +1044,10 @@ void CheckUnusedVar::checkFunctionVariableUsage_iterateScopes(const Scope* const
         else if (tok->isAssignmentOp()) {
             for (const Token *tok2 = tok->next(); tok2 && tok2->str() != ";"; tok2 = tok2->next()) {
                 if (tok2->varId()) {
-                    if (tok2->next()->isAssignmentOp())
+                    if (tok2->strAt(1) == "=")
                         variables.write(tok2->varId(), tok);
+                    else if (tok2->next()->isAssignmentOp())
+                        variables.use(tok2->varId(), tok);
                     else
                         variables.read(tok2->varId(), tok);
                 }
@@ -1073,11 +1080,9 @@ void CheckUnusedVar::checkFunctionVariableUsage()
              it != variables.varUsage().end();
              ++it) {
             const Variables::VariableUsage &usage = it->second;
-            const std::string &varname = usage._var->name();
-            const Variable* var = symbolDatabase->getVariableFromVarId(it->first);
 
             // variable has been marked as unused so ignore it
-            if (usage._var->nameToken()->isAttributeUnused())
+            if (usage._var->nameToken()->isAttributeUnused() || usage._var->nameToken()->isAttributeUsed())
                 continue;
 
             // skip things that are only partially implemented to prevent false positives
@@ -1085,6 +1090,9 @@ void CheckUnusedVar::checkFunctionVariableUsage()
                 usage._type == Variables::pointerArray ||
                 usage._type == Variables::referenceArray)
                 continue;
+
+            const std::string &varname = usage._var->name();
+            const Variable* var = symbolDatabase->getVariableFromVarId(it->first);
 
             // variable has had memory allocated for it, but hasn't done
             // anything with that memory other than, perhaps, freeing it
@@ -1212,9 +1220,7 @@ void CheckUnusedVar::checkStructMemberUsage()
 
             if (Token::Match(tok->next(), "%type% %var% [;[]"))
                 varname = tok->strAt(2);
-            else if (Token::Match(tok->next(), "%type% %type% %var% [;[]"))
-                varname = tok->strAt(3);
-            else if (Token::Match(tok->next(), "%type% * %var% [;[]"))
+            else if (Token::Match(tok->next(), "%type% %type%|* %var% [;[]"))
                 varname = tok->strAt(3);
             else if (Token::Match(tok->next(), "%type% %type% * %var% [;[]"))
                 varname = tok->strAt(4);

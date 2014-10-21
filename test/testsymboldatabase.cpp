@@ -49,15 +49,6 @@ public:
     }
 
 private:
-    void createSymbolDatabase(const char code[]) {
-        errout.str("");
-        Settings settings;
-        Tokenizer tokenizer(&settings, this);
-        std::istringstream istr(code);
-        tokenizer.tokenize(istr, "test.cpp");
-        tokenizer.getSymbolDatabase();
-    }
-
     const Scope si;
     const Token* vartok;
     const Token* typetok;
@@ -104,6 +95,8 @@ private:
 
         TEST_CASE(test_isVariableDeclarationCanHandleNull);
         TEST_CASE(test_isVariableDeclarationIdentifiesSimpleDeclaration);
+        TEST_CASE(test_isVariableDeclarationIdentifiesInitialization);
+        TEST_CASE(test_isVariableDeclarationIdentifiesCpp11Initialization);
         TEST_CASE(test_isVariableDeclarationIdentifiesScopedDeclaration);
         TEST_CASE(test_isVariableDeclarationIdentifiesStdDeclaration);
         TEST_CASE(test_isVariableDeclarationIdentifiesScopedStdDeclaration);
@@ -124,6 +117,7 @@ private:
         TEST_CASE(isVariableDeclarationIdentifiesNestedTemplateVariable);
         TEST_CASE(isVariableDeclarationIdentifiesReference);
         TEST_CASE(isVariableDeclarationDoesNotIdentifyTemplateClass);
+        TEST_CASE(isVariableDeclarationDoesNotIdentifyCppCast);
         TEST_CASE(isVariableDeclarationPointerConst);
         TEST_CASE(isVariableDeclarationRValueRef);
         TEST_CASE(isVariableStlType);
@@ -148,6 +142,7 @@ private:
         TEST_CASE(testConstructors);
         TEST_CASE(functionDeclarationTemplate);
         TEST_CASE(functionDeclarations);
+        TEST_CASE(constructorInitialization);
         TEST_CASE(memberFunctionOfUnknownClassMacro1);
         TEST_CASE(memberFunctionOfUnknownClassMacro2);
         TEST_CASE(memberFunctionOfUnknownClassMacro3);
@@ -219,10 +214,11 @@ private:
         TEST_CASE(symboldatabase41); // ticket #5197 (unknown macro)
         TEST_CASE(symboldatabase42); // only put variables in variable list
         TEST_CASE(symboldatabase43); // #4738
+        TEST_CASE(symboldatabase44);
+        TEST_CASE(symboldatabase45); // #6125
+        TEST_CASE(symboldatabase46); // #6171 (anonymous namespace)
 
         TEST_CASE(isImplicitlyVirtual);
-
-        TEST_CASE(garbage);
 
         TEST_CASE(isFunction); // UNKNOWN_MACRO(a,b) { .. }
 
@@ -245,6 +241,8 @@ private:
         TEST_CASE(varTypesOther);    // (un)known
 
         TEST_CASE(functionPrototype); // ticket #5867
+
+        TEST_CASE(lambda); // ticket #5867
     }
 
     void array() const {
@@ -278,6 +276,34 @@ private:
         ASSERT(false == v.isArray());
         ASSERT(false == v.isPointer());
         ASSERT(false == v.isReference());
+    }
+
+    void test_isVariableDeclarationIdentifiesInitialization() {
+        reset();
+        givenACodeSampleToTokenize simpleDeclaration("int x (1);");
+        bool result = si.isVariableDeclaration(simpleDeclaration.tokens(), vartok, typetok);
+        ASSERT_EQUALS(true, result);
+        ASSERT_EQUALS("x", vartok->str());
+        ASSERT_EQUALS("int", typetok->str());
+        Variable v(vartok, typetok, vartok->previous(), 0, Public, 0, 0);
+        ASSERT(false == v.isArray());
+        ASSERT(false == v.isPointer());
+        ASSERT(false == v.isReference());
+        ASSERT(true == v.isIntegralType());
+    }
+
+    void test_isVariableDeclarationIdentifiesCpp11Initialization() {
+        reset();
+        givenACodeSampleToTokenize simpleDeclaration("int x {1};");
+        bool result = si.isVariableDeclaration(simpleDeclaration.tokens(), vartok, typetok);
+        ASSERT_EQUALS(true, result);
+        ASSERT_EQUALS("x", vartok->str());
+        ASSERT_EQUALS("int", typetok->str());
+        Variable v(vartok, typetok, vartok->previous(), 0, Public, 0, 0);
+        ASSERT(false == v.isArray());
+        ASSERT(false == v.isPointer());
+        ASSERT(false == v.isReference());
+        ASSERT(true == v.isIntegralType());
     }
 
     void test_isVariableDeclarationIdentifiesScopedDeclaration() {
@@ -566,6 +592,13 @@ private:
         ASSERT_EQUALS(false, result);
     }
 
+    void isVariableDeclarationDoesNotIdentifyCppCast() {
+        reset();
+        givenACodeSampleToTokenize var("reinterpret_cast <char *> (code)[0] = 0;");
+        bool result = si.isVariableDeclaration(var.tokens(), vartok, typetok);
+        ASSERT_EQUALS(false, result);
+    }
+
     void isVariableDeclarationPointerConst() {
         reset();
         givenACodeSampleToTokenize var("std::string const* s;");
@@ -604,6 +637,7 @@ private:
             ASSERT_EQUALS(true, v.isStlType());
             ASSERT_EQUALS(true, v.isStlType(types));
             ASSERT_EQUALS(false, v.isStlType(no_types));
+            ASSERT_EQUALS(true, v.isStlStringType());
         }
         {
             reset();
@@ -619,6 +653,7 @@ private:
             ASSERT_EQUALS(true, v.isStlType());
             ASSERT_EQUALS(true, v.isStlType(types));
             ASSERT_EQUALS(false, v.isStlType(no_types));
+            ASSERT_EQUALS(false, v.isStlStringType());
         }
         {
             reset();
@@ -631,6 +666,7 @@ private:
             const char* types[] = { "bitset", "set", "vector" };
             ASSERT_EQUALS(false, v.isStlType());
             ASSERT_EQUALS(false, v.isStlType(types));
+            ASSERT_EQUALS(false, v.isStlStringType());
         }
     }
 
@@ -775,7 +811,7 @@ private:
     }
 
     void hasClassFunction() {
-        GET_SYMBOL_DB("class Fred { void func(); }; Fred::func() { }\n")
+        GET_SYMBOL_DB("class Fred { void func(); }; void Fred::func() { }\n")
 
         // 3 scopes: Global, Class, and Function
         ASSERT(db && db->scopeList.size() == 3);
@@ -1012,6 +1048,19 @@ private:
             ASSERT(foo_int && foo_int->tokenDef->strAt(2) == "int");
 
             ASSERT(&foo_int->argumentList.front() == db->getVariableFromVarId(1));
+        }
+    }
+
+    void constructorInitialization() {
+        GET_SYMBOL_DB("std::string logfile;\n"
+                      "std::ofstream log(logfile.c_str(), std::ios::out);");
+
+        // 1 scope: Global
+        ASSERT(db && db->scopeList.size() == 1);
+
+        if (db && !db->scopeList.empty()) {
+            // No functions
+            ASSERT(db->scopeList.front().functionList.empty());
         }
     }
 
@@ -1877,6 +1926,72 @@ private:
         ASSERT_EQUALS("", errout.str());
     }
 
+    void symboldatabase44() {
+        GET_SYMBOL_DB("int i { 1 };\n"
+                      "int j ( i );\n"
+                      "void foo() {\n"
+                      "    int k { 1 };\n"
+                      "    int l ( 1 );\n"
+                      "}");
+        ASSERT(db != nullptr);
+        ASSERT_EQUALS(4U, db->getVariableListSize() - 1);
+        ASSERT_EQUALS(2U, db->scopeList.size());
+        for (std::size_t i = 1U; i < db->getVariableListSize(); i++)
+            ASSERT(db->getVariableFromVarId(i) != nullptr);
+    }
+
+    void symboldatabase45() {
+        GET_SYMBOL_DB("typedef struct {\n"
+                      "    unsigned long bits;\n"
+                      "} S;\n"
+                      "struct T {\n"
+                      "    S span;\n"
+                      "    int flags;\n"
+                      "};\n"
+                      "struct T f(int x) {\n"
+                      "    return (struct T) {\n"
+                      "        .span = (S) { 0UL },\n"
+                      "        .flags = (x ? 256 : 0),\n"
+                      "    };\n"
+                      "}");
+
+        ASSERT(db != nullptr);
+        ASSERT_EQUALS(4U, db->getVariableListSize() - 1);
+        for (std::size_t i = 1U; i < db->getVariableListSize(); i++)
+            ASSERT(db->getVariableFromVarId(i) != nullptr);
+
+        ASSERT_EQUALS(4U, db->scopeList.size());
+        std::list<Scope>::const_iterator scope = db->scopeList.begin();
+        ASSERT_EQUALS(Scope::eGlobal, scope->type);
+        ++scope;
+        ASSERT_EQUALS(Scope::eStruct, scope->type);
+        ++scope;
+        ASSERT_EQUALS(Scope::eStruct, scope->type);
+        ++scope;
+        ASSERT_EQUALS(Scope::eFunction, scope->type);
+    }
+
+    void symboldatabase46() { // #6171 (anonymous namespace)
+        GET_SYMBOL_DB("struct S { };\n"
+                      "namespace {\n"
+                      "    struct S { };\n"
+                      "}");
+
+        ASSERT(db != nullptr);
+        ASSERT_EQUALS(4U, db->scopeList.size());
+        std::list<Scope>::const_iterator scope = db->scopeList.begin();
+        ASSERT_EQUALS(Scope::eGlobal, scope->type);
+        ++scope;
+        ASSERT_EQUALS(Scope::eStruct, scope->type);
+        ASSERT_EQUALS(scope->className, "S");
+        ++scope;
+        ASSERT_EQUALS(Scope::eNamespace, scope->type);
+        ASSERT_EQUALS(scope->className, "");
+        ++scope;
+        ASSERT_EQUALS(Scope::eStruct, scope->type);
+        ASSERT_EQUALS(scope->className, "S");
+    }
+
     void isImplicitlyVirtual() {
         {
             GET_SYMBOL_DB("class Base {\n"
@@ -1988,27 +2103,6 @@ private:
                           "}");
             //ASSERT(db && db->findScopeByName("InfiniteA") && !db->findScopeByName("InfiniteA")->functionList.front().isImplicitlyVirtual());
             TODO_ASSERT_EQUALS(1, 0, db->findScopeByName("InfiniteA")->functionList.size());
-        }
-    }
-
-    void garbage() {
-        {
-            GET_SYMBOL_DB("void f( { u = 1 ; } ) { }");
-            (void)db;
-        }
-        {
-            GET_SYMBOL_DB("{ }; void namespace A::f; { g() { int } }");
-            (void)db;
-        }
-        {
-            ASSERT_THROW(createSymbolDatabase("class Foo {}; class Bar : public Foo"), InternalError);
-        }
-        {
-            ASSERT_THROW(createSymbolDatabase("YY_DECL { switch (yy_act) {\n"
-                                              "    case 65: YY_BREAK\n"
-                                              "    case YY_STATE_EOF(block):\n"
-                                              "        yyterminate(); \n"
-                                              "} }"), InternalError); // #5663
         }
     }
 
@@ -2369,14 +2463,16 @@ private:
             if (f) {
                 ASSERT_EQUALS("f", f->nameToken()->str());
                 ASSERT_EQUALS(false, f->isIntegralType());
-                ASSERT_EQUALS(false, f->isFloatingType());
+                ASSERT_EQUALS(true, f->isFloatingType());
+                ASSERT_EQUALS(true, f->isArrayOrPointer());
             }
             const Variable *scf = db->getVariableFromVarId(2);
             ASSERT(scf != nullptr);
             if (scf) {
                 ASSERT_EQUALS("scf", scf->nameToken()->str());
                 ASSERT_EQUALS(false, scf->isIntegralType());
-                ASSERT_EQUALS(false, scf->isFloatingType());
+                ASSERT_EQUALS(true, scf->isFloatingType());
+                ASSERT_EQUALS(true, scf->isArrayOrPointer());
             }
         }
         {
@@ -2386,7 +2482,8 @@ private:
             if (fa) {
                 ASSERT_EQUALS("fa", fa->nameToken()->str());
                 ASSERT_EQUALS(false, fa->isIntegralType());
-                ASSERT_EQUALS(false, fa->isFloatingType());
+                ASSERT_EQUALS(true, fa->isFloatingType());
+                ASSERT_EQUALS(true, fa->isArrayOrPointer());
             }
         }
     }
@@ -2418,6 +2515,28 @@ private:
               "    return func4(x);\n"
               "}\n", true);
         ASSERT_EQUALS("", errout.str());
+    }
+
+    void lambda() {
+        GET_SYMBOL_DB("void func() {\n"
+                      "    float y = 0.0f;\n"
+                      "    auto lambda = [&]()\n"
+                      "    {\n"
+                      "        float x = 1.0f;\n"
+                      "        y += 10.0f - x;\n"
+                      "    }\n"
+                      "    lambda();\n"
+                      "}");
+
+        ASSERT(db && db->scopeList.size() == 3);
+        if (db && db->scopeList.size() == 3) {
+            std::list<Scope>::const_iterator scope = db->scopeList.begin();
+            ASSERT_EQUALS(Scope::eGlobal, scope->type);
+            ++scope;
+            ASSERT_EQUALS(Scope::eFunction, scope->type);
+            ++scope;
+            ASSERT_EQUALS(Scope::eLambda, scope->type);
+        }
     }
 };
 

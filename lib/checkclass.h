@@ -68,6 +68,7 @@ public:
         checkClass.operatorEqToSelf();
         checkClass.initializerListOrder();
         checkClass.initializationListUsage();
+        checkClass.checkSelfInitialization();
 
         checkClass.virtualDestructor();
         checkClass.checkConst();
@@ -116,11 +117,15 @@ public:
     /** @brief Check initializer list order */
     void initializerListOrder();
 
+    /** @brief Suggest using initialization list */
     void initializationListUsage();
+
+    /** @brief Check for initialization of a member with itself */
+    void checkSelfInitialization();
 
     void copyconstructors();
 
-    /** @brief call of pure virtual funcion */
+    /** @brief call of pure virtual function */
     void checkPureVirtualFunctionCall();
 
     /** @brief Check duplicated inherited members */
@@ -139,6 +144,7 @@ private:
     void unusedPrivateFunctionError(const Token *tok, const std::string &classname, const std::string &funcname);
     void memsetError(const Token *tok, const std::string &memfunc, const std::string &classname, const std::string &type);
     void memsetErrorReference(const Token *tok, const std::string &memfunc, const std::string &type);
+    void memsetErrorFloat(const Token *tok, const std::string &type);
     void mallocOnClassError(const Token* tok, const std::string &memfunc, const Token* classTok, const std::string &classname);
     void mallocOnClassWarning(const Token* tok, const std::string &memfunc, const Token* classTok);
     void operatorEqReturnError(const Token *tok, const std::string &className);
@@ -150,6 +156,7 @@ private:
     void checkConstError2(const Token *tok1, const Token *tok2, const std::string &classname, const std::string &funcname, bool suggestStatic);
     void initializerListError(const Token *tok1,const Token *tok2, const std::string & classname, const std::string &varname);
     void suggestInitializationList(const Token *tok, const std::string& varname);
+    void selfInitializationError(const Token* tok, const std::string& varname);
     void callsPureVirtualFunctionError(const Function & scopeFunction, const std::list<const Token *> & tokStack, const std::string &purefuncname);
     void duplInheritedMembersError(const Token* tok1, const Token* tok2, const std::string &derivedname, const std::string &basename, const std::string &variablename, bool derivedIsStruct, bool baseIsStruct);
 
@@ -163,6 +170,8 @@ private:
         c.operatorEqVarError(0, "classname", "", false);
         c.unusedPrivateFunctionError(0, "classname", "funcname");
         c.memsetError(0, "memfunc", "classname", "class");
+        c.memsetErrorReference(0, "memfunc", "class");
+        c.memsetErrorFloat(0, "class");
         c.mallocOnClassWarning(0, "malloc", 0);
         c.mallocOnClassError(0, "malloc", 0, "std::string");
         c.operatorEqReturnError(0, "class");
@@ -174,6 +183,7 @@ private:
         c.checkConstError(0, "class", "function", true);
         c.initializerListError(0, 0, "class", "variable");
         c.suggestInitializationList(0, "variable");
+        c.selfInitializationError(0, "var");
         c.duplInheritedMembersError(0, 0, "class", "class", "variable", false, false);
     }
 
@@ -183,22 +193,23 @@ private:
 
     std::string classInfo() const {
         return "Check the code for each class.\n"
-               "* Missing constructors and copy constructors\n"
-               //"* Missing allocation of memory in copy constructor\n"
-               "* Are all variables initialized by the constructors?\n"
-               "* Are all variables assigned by 'operator='?\n"
-               "* Warn if memset, memcpy etc are used on a class\n"
-               "* Warn if memory for classes is allocated with malloc()\n"
-               "* If it's a base class, check that the destructor is virtual\n"
-               "* Are there unused private functions?\n"
-               "* 'operator=' should return reference to self\n"
-               "* 'operator=' should check for assignment to self\n"
-               "* Constness for member functions\n"
-               "* Order of initializations\n"
-               "* Suggest usage of initialization list\n"
-               "* Suspicious subtraction from 'this'\n"
-               "* Call of pure virtual function in constructor/destructor\n"
-               "* Duplicated inherited data members\n";
+               "- Missing constructors and copy constructors\n"
+               //"- Missing allocation of memory in copy constructor\n"
+               "- Are all variables initialized by the constructors?\n"
+               "- Are all variables assigned by 'operator='?\n"
+               "- Warn if memset, memcpy etc are used on a class\n"
+               "- Warn if memory for classes is allocated with malloc()\n"
+               "- If it's a base class, check that the destructor is virtual\n"
+               "- Are there unused private functions?\n"
+               "- 'operator=' should return reference to self\n"
+               "- 'operator=' should check for assignment to self\n"
+               "- Constness for member functions\n"
+               "- Order of initializations\n"
+               "- Suggest usage of initialization list\n"
+               "- Initialization of a member with itself\n"
+               "- Suspicious subtraction from 'this'\n"
+               "- Call of pure virtual function in constructor/destructor\n"
+               "- Duplicated inherited data members\n";
     }
 
     // operatorEqRetRefThis helper functions

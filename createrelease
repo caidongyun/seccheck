@@ -45,6 +45,8 @@
 # ./dmake
 # git commit -a -m "Makefile: Set debug mode"
 #
+# Update download link on index.php main page
+#
 # Generate the manual.pdf, manual.html and version.txt
 # make
 # ./seccheck --version > version.txt
@@ -58,7 +60,9 @@
 #
 # compile new democlient:
 # ssh -t danielmarjamaki,cppcheck@shell.sourceforge.net
-# ./build.sh 1.43
+# ./build-cppcheck.sh 1.43
+#
+# run daca with new release
 
 # Tag to use
 tag=$1

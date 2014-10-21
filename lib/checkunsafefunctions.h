@@ -64,6 +64,7 @@ private:
 
 		const char* unsafe_int_function_tips = "[CERT INT06-CPP] string token to integer";
 		const char* raw_memory_function_tips = "[CERT MEM08-CPP] Raw memory";
+        const char* FIO07_function_tips = "[CERT FIO07-CPP] Prefer fseek() to rewind()";
 		const char* cstyle_fio_function_tips = "[CERT FIO17-CPP] C-style input and output";
 		const char* cstyle_fio_stream_func_tips = "[CERT FIO12-CPP] Unsafe stream";
         // Unsafe functions, which messages suggest only one alternative and doesn't contain additional information.
@@ -77,7 +78,7 @@ private:
             {"strcat", "strncat", "Obsolete"},
             {"sprintf", "snprintf", "Obsolete"},
 			{"vsprintf", "vsnprintf", "Obsolete"},
-			{"rewind", "fseek", "[CERT FIO07-CPP] Unsafe"},
+			{"rewind", "fseek", FIO07_function_tips},
 			{"fopen", "fopen_s", "[CERT FIO06-CPP] Unsafe create file"},
 			{"malloc", "new and delete", raw_memory_function_tips},
 			{"calloc", "new and delete", raw_memory_function_tips},

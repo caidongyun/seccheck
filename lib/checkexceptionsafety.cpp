@@ -53,13 +53,13 @@ void CheckExceptionSafety::destructors()
                     }
 
                     // Skip uncaught execptions
-                    if (Token::simpleMatch(tok, "if ( ! std :: uncaught_exception ( ) ) {")) {
+                    else if (Token::simpleMatch(tok, "if ( ! std :: uncaught_exception ( ) ) {")) {
                         tok = tok->next()->link(); // end of if ( ... )
                         tok = tok->next()->link(); // end of { ... }
                     }
 
                     // throw found within a destructor
-                    if (tok->str() == "throw") {
+                    else if (tok->str() == "throw") {
                         destructorsError(tok, scope->className);
                         break;
                     }
@@ -93,7 +93,7 @@ void CheckExceptionSafety::deallocThrow()
             tok = tok->next();
             if (Token::simpleMatch(tok, "[ ]"))
                 tok = tok->tokAt(2);
-            if (!tok)
+            if (!tok || tok == scope->classEnd)
                 break;
             if (!Token::Match(tok, "%var% ;"))
                 continue;

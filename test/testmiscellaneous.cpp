@@ -33,6 +33,12 @@ private:
     void run() {
         TEST_CASE(time_t_oper);
         TEST_CASE(time_t_oper_good);
+        TEST_CASE(bitwise_var_good);
+        TEST_CASE(bitwise_var_good2);
+        TEST_CASE(bitwise_var_good3);
+        TEST_CASE(bitwise_var_good4);
+        TEST_CASE(bitwise_var_bad1);
+        TEST_CASE(bitwise_var_bad2);
     }
 
     void check(const char code[]) {
@@ -84,6 +90,85 @@ private:
             );
         std::string s = errout.str();
         ASSERT_EQUALS("", 
+            s);
+    }
+
+    void bitwise_var_good() {
+        check("void foo()\n"
+              "{\n"
+              "    unsigned int a = 10, b = 20;\n"
+              "    unsigned int c = a & b;\n"
+              "}");
+        std::string s = errout.str();
+        ASSERT_EQUALS("", 
+            s);
+    }
+
+    void bitwise_var_good2() {
+        check("void foo()\n"
+              "{\n"
+              "    unsigned int a = 10; const unsigned int b = 20;\n"
+              "    unsigned int c = a & b;\n"
+              "}");
+        std::string s = errout.str();
+        ASSERT_EQUALS("", 
+            s);
+    }
+
+    // the default type of const number is int
+    void bitwise_var_good3() {
+        check("void foo()\n"
+              "{\n"
+              "    unsigned int a = 10; int b = 20;\n"
+              "    unsigned int c = a & 40;\n"
+              "}");
+        std::string s = errout.str();
+        ASSERT_EQUALS("[test.cpp:4]: (warning) Bitwise operators should only be used with unsigned integer operands.\n", 
+            s);
+    }
+
+    // Not a bitwise operator
+    void bitwise_var_good4() {
+        check("void foo()\n"
+              "{\n"
+              "    int a;\n"
+              "    int* c = &a;\n"
+              "}");
+        std::string s = errout.str();
+        ASSERT_EQUALS("", 
+            s);
+    }
+
+    void bitwise_var_bad1() {
+        check("void foo()\n"
+              "{\n"
+              "    unsigned int a = 10; int b = 20;\n"
+              "    unsigned int c = a & b;\n"
+              "}");
+        std::string s = errout.str();
+        ASSERT_EQUALS("[test.cpp:4]: (warning) Bitwise operators should only be used with unsigned integer operands.\n", 
+            s);
+    }
+
+    void bitwise_var_bad2() {
+        check("void foo()\n"
+              "{\n"
+              "    unsigned int a = 10; int b = 20;\n"
+              "    unsigned int c = a & (-10);\n"
+              "}");
+        std::string s = errout.str();
+        ASSERT_EQUALS("[test.cpp:4]: (warning) Bitwise operators should only be used with unsigned integer operands.\n", 
+            s);
+    }
+
+    void bitwise_var_bad3() {
+        check("void foo()\n"
+              "{\n"
+              "    unsigned int a = 10; int b = 20;\n"
+              "    unsigned int c = a & (1.2);\n"
+              "}");
+        std::string s = errout.str();
+        ASSERT_EQUALS("[test.cpp:4]: (warning) Bitwise operators should only be used with unsigned integer operands.\n", 
             s);
     }
 };

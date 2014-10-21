@@ -516,7 +516,7 @@ private:
         ASSERT(settings.isEnabled("missingInclude"));
     }
 
-#ifndef NDEBUG
+#ifdef CHECK_INTERNAL
     void enabledInternal() {
         REDIRECT;
         const char *argv[] = {"seccheck", "--enable=internal", "file.cpp"};

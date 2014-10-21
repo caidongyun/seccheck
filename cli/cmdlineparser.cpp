@@ -531,6 +531,9 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
             case Library::BAD_ATTRIBUTE_VALUE:
                 errmsg = "Bad attribute value";
                 break;
+            case Library::UNSUPPORTED_FORMAT:
+                errmsg = "File is of unsupported format version";
+                break;
             }
             if (!err.reason.empty())
                 errmsg += " '" + err.reason + "'";
@@ -654,7 +657,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
                 const std::string& name((*it)->name());
                 const std::string info((*it)->classInfo());
                 if (!name.empty() && !info.empty())
-                    doc << "===" << name << "===\n"
+                    doc << "## " << name << " ##\n"
                         << info << "\n";
             }
 
@@ -677,7 +680,7 @@ bool CmdLineParser::ParseFromArgs(int argc, const char* const argv[])
             else {
                 std::string message("seccheck: error: unrecognized showtime mode: \"");
                 message += showtimeMode;
-                message +=  "\".";
+                message +=  "\". Supported modes: file, summary, top5.";
                 PrintMessage(message);
                 return false;
             }

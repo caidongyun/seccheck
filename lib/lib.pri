@@ -15,6 +15,7 @@ HEADERS += $${BASEPATH}check.h \
            $${BASEPATH}checkboost.h \
            $${BASEPATH}checkbufferoverrun.h \
            $${BASEPATH}checkclass.h \
+           $${BASEPATH}checkcondition.h \
            $${BASEPATH}checkexceptionsafety.h \
            $${BASEPATH}checkinternal.h \
            $${BASEPATH}checkio.h \
@@ -27,9 +28,12 @@ HEADERS += $${BASEPATH}check.h \
            $${BASEPATH}checkpostfixoperator.h \
            $${BASEPATH}checksizeof.h \
            $${BASEPATH}checkstl.h \
+           $${BASEPATH}checkstring.h \
+           $${BASEPATH}checktype.h \
            $${BASEPATH}checkuninitvar.h \
            $${BASEPATH}checkunusedfunctions.h \
            $${BASEPATH}checkunusedvar.h \
+           $${BASEPATH}checkvaarg.h \
            $${BASEPATH}cppcheck.h \
            $${BASEPATH}errorlogger.h \
            $${BASEPATH}executionpath.h \
@@ -57,6 +61,7 @@ SOURCES += $${BASEPATH}check.cpp \
            $${BASEPATH}checkboost.cpp \
            $${BASEPATH}checkbufferoverrun.cpp \
            $${BASEPATH}checkclass.cpp \
+           $${BASEPATH}checkcondition.cpp \
            $${BASEPATH}checkexceptionsafety.cpp \
            $${BASEPATH}checkinternal.cpp \
            $${BASEPATH}checkio.cpp \
@@ -69,9 +74,12 @@ SOURCES += $${BASEPATH}check.cpp \
            $${BASEPATH}checkpostfixoperator.cpp \
            $${BASEPATH}checksizeof.cpp \
            $${BASEPATH}checkstl.cpp \
+           $${BASEPATH}checkstring.cpp \
+           $${BASEPATH}checktype.cpp \
            $${BASEPATH}checkuninitvar.cpp \
            $${BASEPATH}checkunusedfunctions.cpp \
            $${BASEPATH}checkunusedvar.cpp \
+           $${BASEPATH}checkvaarg.cpp \
            $${BASEPATH}cppcheck.cpp \
            $${BASEPATH}errorlogger.cpp \
            $${BASEPATH}executionpath.cpp \

@@ -222,6 +222,10 @@ void CheckLeakAutoVar::checkScope(const Token * const startToken,
                 continue;
             }
 
+            // non-pod variable
+            if (_tokenizer->isCPP() && (!var || !var->typeStartToken()->isStandardType()))
+                continue;
+
             // Don't check reference variables
             if (var && var->isReference())
                 continue;
@@ -278,6 +282,10 @@ void CheckLeakAutoVar::checkScope(const Token * const startToken,
                     varInfo2.erase(tok->tokAt(2)->varId());
                 } else if (Token::Match(tok->next(), "( 0 < %var% )|&&")) {
                     varInfo2.erase(tok->tokAt(4)->varId());
+                } else if (Token::Match(tok->next(), "( %var% == -1 )|&&")) {
+                    varInfo1.erase(tok->tokAt(2)->varId());
+                } else if (Token::Match(tok->next(), "( -1 == %var% )|&&")) {
+                    varInfo1.erase(tok->tokAt(4)->varId());
                 }
 
                 checkScope(tok2->next(), &varInfo1, notzero);
@@ -395,6 +403,9 @@ void CheckLeakAutoVar::functionCall(const Token *tok, VarInfo *varInfo, const in
     std::map<unsigned int, std::string> &possibleUsage = varInfo->possibleUsage;
 
     for (const Token *arg = tok->tokAt(2); arg; arg = arg->nextArgument()) {
+        if (arg->str() == "new")
+            arg = arg->next();
+
         if ((Token::Match(arg, "%var% [-,)]") && arg->varId() > 0) ||
             (Token::Match(arg, "& %var%") && arg->next()->varId() > 0)) {
 

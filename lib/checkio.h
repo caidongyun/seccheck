@@ -133,6 +133,7 @@ private:
         c.useClosedFileError(0);
         c.seekOnAppendedFileError(0);
         c.invalidScanfError(0, false);
+        c.invalidScanfError(0, true);
         c.wrongPrintfScanfArgumentsError(0,"printf",3,2);
         c.invalidScanfArgTypeError_s(0, 1, "s", NULL);
         c.invalidScanfArgTypeError_int(0, 1, "d", NULL, false);
@@ -149,20 +150,20 @@ private:
     }
 
     static std::string myName() {
-        return "IO";
+        return "IO using format string";
     }
 
     std::string classInfo() const {
-        return "Check input/output operations.\n"
-               "* Bad usage of the function 'sprintf' (overlapping data)\n"
-               "* Missing or wrong width specifiers in 'scanf' format string\n"
-               "* Use a file that has been closed\n"
-               "* File input/output without positioning results in undefined behaviour\n"
-               "* Read to a file that has only been opened for writing (or vice versa)\n"
-               "* Repositioning operation on a file opened in append mode\n"
-               "* Using fflush() on an input stream\n"
-               "* Invalid usage of output stream. For example: 'std::cout << std::cout;'\n"
-               "* Wrong number of arguments given to 'printf' or 'scanf;'\n";
+        return "Check format string input/output operations.\n"
+               "- Bad usage of the function 'sprintf' (overlapping data)\n"
+               "- Missing or wrong width specifiers in 'scanf' format string\n"
+               "- Use a file that has been closed\n"
+               "- File input/output without positioning results in undefined behaviour\n"
+               "- Read to a file that has only been opened for writing (or vice versa)\n"
+               "- Repositioning operation on a file opened in append mode\n"
+               "- Using fflush() on an input stream\n"
+               "- Invalid usage of output stream. For example: 'std::cout << std::cout;'\n"
+               "- Wrong number of arguments given to 'printf' or 'scanf;'\n";
     }
 };
 /// @}

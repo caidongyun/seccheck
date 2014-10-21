@@ -46,7 +46,7 @@ class CPPCHECKLIB Library {
 public:
     Library();
 
-    enum ErrorCode { OK, FILE_NOT_FOUND, BAD_XML, BAD_ELEMENT, MISSING_ATTRIBUTE, BAD_ATTRIBUTE, BAD_ATTRIBUTE_VALUE };
+    enum ErrorCode { OK, FILE_NOT_FOUND, BAD_XML, BAD_ELEMENT, MISSING_ATTRIBUTE, BAD_ATTRIBUTE, BAD_ATTRIBUTE_VALUE, UNSUPPORTED_FORMAT };
 
     class Error {
     public:
@@ -123,6 +123,7 @@ public:
     std::set<std::string> leakignore;
     std::set<std::string> functionconst;
     std::set<std::string> functionpure;
+    std::set<std::string> useretval;
 
     bool isnoreturn(const std::string &name) const {
         auto it = _noreturn.find(name);
@@ -264,7 +265,7 @@ public:
         return emptyString;
     }
 
-    std::string blockend(const std::string &file) const {
+    const std::string& blockend(const std::string &file) const {
         std::string end;
         const auto map_it
             = _executableblocks.find(Path::getFilenameExtensionInLowerCase(file));
@@ -385,6 +386,7 @@ private:
         std::set<std::string> _blocks;
     };
     int allocid;
+    std::set<std::string> _files;
     std::map<std::string, int> _alloc; // allocation functions
     std::map<std::string, int> _dealloc; // deallocation functions
     std::map<std::string, bool> _noreturn; // is function noreturn?
