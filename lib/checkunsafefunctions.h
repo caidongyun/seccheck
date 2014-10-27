@@ -90,6 +90,7 @@ private:
 			{"scanf", "C++ streams", cstyle_fio_function_tips},
 			{"setbuf", "setvbuf", cstyle_fio_stream_func_tips},
 			{"system", "POSIX execve or other exec family", "[CERT ENV04-CPP] Unsafe C99 Command interpreter"},
+            {"rand", "random() on *nix or CryptGenRandom() on Windows", "[CERT MSC30-CPP] Generating pseudorandom numbers"},
 			{"atol", "strtol", unsafe_int_function_tips},
 			{"atoi", "strtol", unsafe_int_function_tips},
             {"atoll", "strtoll", unsafe_int_function_tips},
