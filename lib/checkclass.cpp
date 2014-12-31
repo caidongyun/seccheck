@@ -852,26 +852,26 @@ void CheckClass::privateFunctions()
         if (Token::findsimplematch(scope->classStart, "; __property ;", scope->classEnd))
             continue;
 
-        std::list<const Function*> privateFunctions;
+        std::list<const Function*> privateFunctions1;
         for (auto func = scope->functionList.begin(); func != scope->functionList.end(); ++func) {
             // Get private functions..
             if (func->type == Function::eFunction && func->access == Private && !func->isOperator) // TODO: There are smarter ways to check private operator usage
-                privateFunctions.push_back(&*func);
+                privateFunctions1.push_back(&*func);
         }
 
         // Bailout for overridden virtual functions of base classes
         if (!scope->definedType->derivedFrom.empty()) {
             // Check virtual functions
-            for (auto it = privateFunctions.begin(); it != privateFunctions.end();) {
+            for (auto it = privateFunctions1.begin(); it != privateFunctions1.end();) {
                 if ((*it)->isImplicitlyVirtual(true)) // Give true as default value to be returned if we don't see all base classes
-                    privateFunctions.erase(it++);
+                    privateFunctions1.erase(it++);
                 else
                     ++it;
             }
         }
 
-        while (!privateFunctions.empty()) {
-            const std::string& funcName = privateFunctions.front()->tokenDef->str();
+        while (!privateFunctions1.empty()) {
+            const std::string& funcName = privateFunctions1.front()->tokenDef->str();
             // Check that all private functions are used
             bool used = checkFunctionUsage(funcName, &*scope); // Usage in this class
             // Check in friend classes
@@ -884,9 +884,9 @@ void CheckClass::privateFunctions()
             }
 
             if (!used)
-                unusedPrivateFunctionError(privateFunctions.front()->tokenDef, scope->className, funcName);
+                unusedPrivateFunctionError(privateFunctions1.front()->tokenDef, scope->className, funcName);
 
-            privateFunctions.pop_front();
+            privateFunctions1.pop_front();
         }
     }
 }

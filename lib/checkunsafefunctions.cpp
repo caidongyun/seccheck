@@ -44,7 +44,7 @@ public:
 	SuspiciousNames()
 	{
 		_Containers.insert("password");
-		_Containers.insert("pwd");		
+		_Containers.insert("pwd");
 		_Containers.insert("passwd");
 	}
 
@@ -70,6 +70,14 @@ bool CheckUnsafeFunctions::isWinExecuteFunction(const Token* tok)
 	return false;
 }
 
+// Does a token of a statement call another function?
+static bool isFunctionCall(const Token* tok)
+{
+    return tok->isName() && tok->varId()==Token::eVariable
+                && (tok->next() && tok->next()->str() == "(")
+				&& isNotMemberFunction(tok);
+}
+
 void CheckUnsafeFunctions::unsafeFunctions()
 {
     const SymbolDatabase *symbolDatabase = _tokenizer->getSymbolDatabase();
@@ -84,9 +92,7 @@ void CheckUnsafeFunctions::unsafeFunctions()
         const Scope* scope = symbolDatabase->functionScopes[i];
         for (const Token* tok = scope->classStart; tok != scope->classEnd; tok = tok->next()) {
 			// Only check cpp file for unsafe functions
-            if (_tokenizer->isCPP() 
-				&& tok->isName() && tok->varId()==0 && (tok->next() && tok->next()->str() == "(") 
-				&& isNotMemberFunction(tok)) {
+            if (_tokenizer->isCPP() && isFunctionCall(tok)) {
 
                 auto it = _unsafeFunctions.find(tok->str());
                 if (it != _unsafeFunctions.end()) {
@@ -96,11 +102,11 @@ void CheckUnsafeFunctions::unsafeFunctions()
             }
 
 			if ((tok->type() == Token::eVariable) && isSuspiciousName(tok->str())) {
-				// 
-                reportError(tok, Severity::style, 
+				//
+                reportError(tok, Severity::style,
 					"suspiciousVariableName:"+tok->str(), "Suspicious variable name: "
-					+ tok->str() + " maybe identify the hard-coded password.\n" 
-					+ "Hard coded passwords are like backdoor access to the system, " 
+					+ tok->str() + " maybe identify the hard-coded password.\n"
+					+ "Hard coded passwords are like backdoor access to the system, "
 					+ "so it should not be used.");
 			}
 

@@ -212,9 +212,6 @@ void CheckUnusedFunctions::parseTokens(const Tokenizer &tokenizer, const char Fi
     }
 }
 
-
-
-
 void CheckUnusedFunctions::check(ErrorLogger * const errorLogger)
 {
     for (auto it = _functions.begin(); it != _functions.end(); ++it) {
