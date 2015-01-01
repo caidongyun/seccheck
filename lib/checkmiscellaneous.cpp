@@ -139,6 +139,16 @@ namespace {
         return (tok->type() == Token::eVariable) && isUnsigned(tok->variable());
     }
 
+    static bool isSignedChar(const Token* tok)
+    {
+        if (tok == 0)
+        {
+            return false;
+        }
+
+        return (tok->type() == Token::eVariable) && !isUnsigned(tok->variable());
+    }
+
     static bool isNumberOrVariable(const Token *tok)
     {
         return (tok->type() == Token::eVariable) || (tok->type() == Token::eNumber);
@@ -206,6 +216,9 @@ namespace {
 
         return false;
     }
+
+    const string CTYPE_CHAR_FUNCS = "isalnum|isalpha|isascii|isblank|iscntrl|isdigit|isgraph|"
+                "islower|isprint|ispunct|isspace|isupper|isxdigit|toascii|toupper|tolower";
 }
 
 void CheckMiscellaneous::floatEqualsError(const Token *tok)
@@ -238,6 +251,19 @@ void CheckMiscellaneous::SignedBitOperError(const Token *tok)
 				"Bitwise operators should only be used with unsigned integer operands, "
                 "as the results of some bitwise operations on signed integers is implementation defined. "
 				"Please see: CERT C++ Secure Coding Standard INT13-CPP. Use bitwise operators only on unsigned operands.");
+}
+
+// STR37-C
+// see https://www.securecoding.cert.org/confluence/pages/viewpage.action?pageId=20087109 
+void CheckMiscellaneous::SignedCharError(const Token *tok)
+{
+    reportError(tok, Severity::warning,
+                "SignedCharError",
+                "Arguments to character handling functions must be representable as an unsigned char.\n"
+				"The header <ctype.h> declares several functions useful for classifying and mapping characters. "
+                "In all cases the argument is an int, "
+                "the value of which shall be representable as an unsigned char or shall equal the value of the macro EOF. "
+				"Please see: CERT C++ Secure Coding Standard STR37-C.");
 }
 
 void CheckMiscellaneous::improperArithmetic()
@@ -277,6 +303,20 @@ void CheckMiscellaneous::improperArithmetic()
 			else if (isBitOperatorOnNoUnsignedVariable(tok))
             {
                 SignedBitOperError(tok);
+            }
+            else if (Token::Match(tok, "isalnum|isalpha|isascii|isblank|iscntrl|isdigit|isgraph|"
+                "islower|isprint|ispunct|isspace|isupper|isxdigit|toascii|toupper|tolower ( %var% )"))
+            {
+                // VOID STR37-CPP
+                // STR37-C
+                // see https://www.securecoding.cert.org/confluence/pages/viewpage.action?pageId=20087109
+                // Should check the parameter type of unsigned char. 
+                const Token* varTk = tok->tokAt(2);
+
+                if (isSignedChar(varTk))
+                {
+                    SignedCharError(varTk);
+                }
             }
         }
     }

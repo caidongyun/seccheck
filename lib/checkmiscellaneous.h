@@ -60,6 +60,7 @@ private:
 	void floatEqualsError(const Token *tok);
     void timetOperError(const Token *tok);
     void SignedBitOperError(const Token *tok);
+    void SignedCharError(const Token *tok);
 
     void getErrorMessages(ErrorLogger *errorLogger, const Settings *settings) const {
         CheckMiscellaneous c(0, settings, errorLogger);

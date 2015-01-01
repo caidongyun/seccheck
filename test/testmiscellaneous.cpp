@@ -39,6 +39,8 @@ private:
         TEST_CASE(bitwise_var_good4);
         TEST_CASE(bitwise_var_bad1);
         TEST_CASE(bitwise_var_bad2);
+        TEST_CASE(signed_char_err1);
+        TEST_CASE(signed_char_err2);
     }
 
     void check(const char code[]) {
@@ -169,6 +171,28 @@ private:
               "}");
         std::string s = errout.str();
         ASSERT_EQUALS("[test.cpp:4]: (warning) Bitwise operators should only be used with unsigned integer operands.\n", 
+            s);
+    }
+
+    void signed_char_err1() {
+        check("bool foo(const char* s)\n"
+              "{\n"
+              "    const char *t = s;\n"
+              "    return isspace(*t);\n"
+              "}");
+        std::string s = errout.str();
+        ASSERT_EQUALS("[test.cpp:4]: (warning) Arguments to character handling functions must be representable as an unsigned char.\n", 
+            s);
+    }
+
+    void signed_char_err2() {
+        check("void foo()\n"
+              "{\n"
+              "    const char a = 'a';\n"
+              "    isspace(a);\n"
+              "}");
+        std::string s = errout.str();
+        ASSERT_EQUALS("[test.cpp:4]: (warning) Arguments to character handling functions must be representable as an unsigned char.\n", 
             s);
     }
 };
