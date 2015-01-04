@@ -266,6 +266,16 @@ void CheckMiscellaneous::SignedCharError(const Token *tok)
 				"Please see: CERT C++ Secure Coding Standard STR37-C.");
 }
 
+void CheckMiscellaneous::modifyStdError(const Token *tok)
+{
+    reportError(tok, Severity::warning,
+                "ModifyStdNamespaceError",
+                "Do not modify the standard namespaces.\n"
+				"The standard library introduces the namespace std for standards-provided declarations such as std::string, std::vector, and std::for_each. "
+                "However, it is undefined behavior to introduce new declarations in namespace std, except under special circumstances. "
+				"Please see: CERT C++ Secure Coding Standard MSC34-CPP.");
+}
+
 void CheckMiscellaneous::improperArithmetic()
 {
 	// TODO
@@ -303,6 +313,12 @@ void CheckMiscellaneous::improperArithmetic()
 			else if (isBitOperatorOnNoUnsignedVariable(tok))
             {
                 SignedBitOperError(tok);
+            }
+            else if (Token::simpleMatch(tok, "namespace std {"))
+            {
+                // MSC34-CPP. Do not modify the standard namespaces
+                // see https://www.securecoding.cert.org/confluence/pages/viewpage.action?pageId=30605359
+                SignedCharError(tok);
             }
             else if (Token::Match(tok, "isalnum|isalpha|isascii|isblank|iscntrl|isdigit|isgraph|"
                 "islower|isprint|ispunct|isspace|isupper|isxdigit|toascii|toupper|tolower ( %var% )"))
