@@ -41,6 +41,8 @@ private:
         TEST_CASE(bitwise_var_bad2);
         TEST_CASE(signed_char_err1);
         TEST_CASE(signed_char_err2);
+        TEST_CASE(modify_std_err1);
+        TEST_CASE(modify_std_ok1);
     }
 
     void check(const char code[]) {
@@ -50,14 +52,20 @@ private:
         Settings settings;
         settings.addEnabled("performance");
 
+        // FOR DEBUG
+        //settings.debug = true;
+        //settings.debugwarnings = true;
+
         // Tokenize..
         Tokenizer tokenizer(&settings, this);
         std::istringstream istr(code);
         tokenizer.tokenize(istr, "test.cpp");
 
+        //tokenizer.printDebugOutput();
+
         // Check char variable usage..
         CheckMiscellaneous checker(&tokenizer, &settings, this);
-        checker.improperArithmetic();
+        checker.runChecks();
     }
 
     // vector container copying by parameter
@@ -194,6 +202,23 @@ private:
         std::string s = errout.str();
         ASSERT_EQUALS("[test.cpp:4]: (warning) Arguments to character handling functions must be representable as an unsigned char.\n", 
             s);
+    }
+
+    void modify_std_err1() {
+        check("namespace std { void foo()\n"
+              "{\n"
+              "} }");
+        std::string s = errout.str();
+        ASSERT_EQUALS("[test.cpp:1]: (warning) Do not modify the standard namespaces.\n", 
+            s);
+    }
+
+    void modify_std_ok1() {
+        check("namespace std2 { void foo()\n"
+              "{\n"
+              "} }");
+        std::string s = errout.str();
+        ASSERT_EQUALS("", s);
     }
 };
 

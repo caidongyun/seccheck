@@ -47,14 +47,10 @@ public:
 
     void runSimplifiedChecks(const Tokenizer *tokenizer, const Settings *settings, ErrorLogger *errorLogger) {
         CheckMiscellaneous c(tokenizer, settings, errorLogger);
-        c.improperArithmetic();
+        c.runChecks();
     }
-
-    /** Check for improper floating arithmetic
-	* See CERT C++ Secure Coding Standard:
-	* FLP00-CPP. Understand the limitations of floating-point numbers
-	*/
-    void improperArithmetic();
+        
+    void runChecks();
 
 private:
 	void floatEqualsError(const Token *tok);

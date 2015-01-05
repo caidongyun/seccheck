@@ -276,7 +276,11 @@ void CheckMiscellaneous::modifyStdError(const Token *tok)
 				"Please see: CERT C++ Secure Coding Standard MSC34-CPP.");
 }
 
-void CheckMiscellaneous::improperArithmetic()
+/** Check for improper floating arithmetic
+* See CERT C++ Secure Coding Standard:
+* FLP00-CPP. Understand the limitations of floating-point numbers
+*/
+void CheckMiscellaneous::runChecks()
 {
 	// TODO
 	//if (!_settings->isEnabled("portability"))
@@ -288,7 +292,8 @@ void CheckMiscellaneous::improperArithmetic()
     const std::size_t functions = symbolDatabase->functionScopes.size();
 
 	// Check assignments
-    for (std::size_t i = 0; i < functions; ++i) {
+    for (std::size_t i = 0; i < functions; ++i) 
+    {
         const Scope * scope = symbolDatabase->functionScopes[i];
         for (const Token *tok = scope->classStart; tok && tok != scope->classEnd; tok = tok->next()) {
 			if (tok->type() == Token::eComparisonOp)
@@ -314,12 +319,6 @@ void CheckMiscellaneous::improperArithmetic()
             {
                 SignedBitOperError(tok);
             }
-            else if (Token::simpleMatch(tok, "namespace std {"))
-            {
-                // MSC34-CPP. Do not modify the standard namespaces
-                // see https://www.securecoding.cert.org/confluence/pages/viewpage.action?pageId=30605359
-                SignedCharError(tok);
-            }
             else if (Token::Match(tok, "isalnum|isalpha|isascii|isblank|iscntrl|isdigit|isgraph|"
                 "islower|isprint|ispunct|isspace|isupper|isxdigit|toascii|toupper|tolower ( %var% )"))
             {
@@ -334,6 +333,16 @@ void CheckMiscellaneous::improperArithmetic()
                     SignedCharError(varTk);
                 }
             }
+        }
+    }
+
+    for (auto i = symbolDatabase->scopeList.begin(); i != symbolDatabase->scopeList.end(); ++i)
+    {
+        if ((i->type == Scope::eNamespace) && (i->className == "std"))
+        {
+            // MSC34-CPP. Do not modify the standard namespaces
+            // see https://www.securecoding.cert.org/confluence/pages/viewpage.action?pageId=30605359
+            modifyStdError(i->classDef);
         }
     }
 }
