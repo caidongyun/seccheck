@@ -80,25 +80,6 @@ namespace {
     }
 
     /** Is given variable an unsigned variable */
-    static bool isUnsignedF(const Variable *var)
-    {
-        if (var == 0)
-        {
-            return false;
-        }
-
-        for (const Token *type = var->typeStartToken(); type && type->isName(); type = type->next())
-        {
-            if ((type->str() == "unsigned") ||(type->str() == "DWORD") || (type->str() == "WORD"))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /** Is given variable an unsigned variable */
     static bool isUnsigned(const Variable *var)
     {
         if (var == 0)
@@ -276,6 +257,18 @@ void CheckMiscellaneous::modifyStdError(const Token *tok)
 				"Please see: CERT C++ Secure Coding Standard MSC34-CPP.");
 }
 
+void CheckMiscellaneous::returnErrnoError(const Token *tok)
+{
+    reportError(tok, Severity::warning,
+                "FunctionReturnErrnoError",
+                "Functions that return errno should change to a return type of errno_t.\n"
+				"Many existing functions that return errno are declared as returning a value of type int. "
+                "It is semantically unclear by looking at the function declaration or prototype "
+                "if these functions return an error status or a value or worse, some combination of the two. "
+                "TR 24731-1 introduces the new type errno_t instead. "
+				"Please see: CERT C++ Secure Coding Standard DCL09-CPP.");
+}
+
 /** Check for improper floating arithmetic
 * See CERT C++ Secure Coding Standard:
 * FLP00-CPP. Understand the limitations of floating-point numbers
@@ -332,6 +325,13 @@ void CheckMiscellaneous::runChecks()
                 {
                     SignedCharError(varTk);
                 }
+            }
+            else if (Token::simpleMatch(tok, "return errno ;"))
+            {
+                returnErrnoError(tok);
+            }
+            else
+            {
             }
         }
     }

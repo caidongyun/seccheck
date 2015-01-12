@@ -553,7 +553,7 @@ bool Token::Match(const Token *tok, const char pattern[], unsigned int varid)
         if (*p == '\0')
             break;
 
-        if (!tok) {
+        if (nullptr == tok) {
             // If we have no tokens, pattern "!!else" should return true
             if (p[0] == '!' && p[1] == '!' && p[2] != '\0') {
                 while (*p && *p != ' ')

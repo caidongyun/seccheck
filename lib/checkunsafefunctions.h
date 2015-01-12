@@ -67,6 +67,7 @@ private:
         const char* FIO07_function_tips = "[CERT FIO07-CPP] Prefer fseek() to rewind()";
 		const char* cstyle_fio_function_tips = "[CERT FIO17-CPP] C-style input and output";
 		const char* cstyle_fio_stream_func_tips = "[CERT FIO12-CPP] Unsafe stream";
+        const char* exception_func_tips = "[CERT ERR34-CPP] Do not use setjmp() or longjmp()";
         // Unsafe functions, which messages suggest only one alternative and doesn't contain additional information.
         const struct {
             const char* bad;
@@ -91,6 +92,8 @@ private:
 			{"setbuf", "setvbuf", cstyle_fio_stream_func_tips},
 			{"system", "POSIX execve or other exec family", "[CERT ENV04-CPP] Unsafe C99 Command interpreter"},
             {"rand", "random() on *nix or CryptGenRandom() on Windows", "[CERT MSC30-CPP] Generating pseudorandom numbers"},
+            {"setjmp", "throw and catch", exception_func_tips},
+			{"longjmp", "throw and catch", exception_func_tips},
 			{"atol", "strtol", unsafe_int_function_tips},
 			{"atoi", "strtol", unsafe_int_function_tips},
             {"atoll", "strtoll", unsafe_int_function_tips},

@@ -58,6 +58,7 @@ private:
     void SignedBitOperError(const Token *tok);
     void SignedCharError(const Token *tok);
     void modifyStdError(const Token *tok);
+    void returnErrnoError(const Token *tok);
 
     void getErrorMessages(ErrorLogger *errorLogger, const Settings *settings) const {
         CheckMiscellaneous c(0, settings, errorLogger);

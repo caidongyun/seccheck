@@ -41,6 +41,7 @@ private:
 		TEST_CASE(tc_fopen);
 		TEST_CASE(tc_setbuf);
 		TEST_CASE(tc_system);
+        TEST_CASE(tc_setjmp);
     }
 
     void check(const char code[]) {
@@ -177,6 +178,21 @@ private:
 		std::string result = errout.str();
         ASSERT_EQUALS("[test.cpp:3]: (style) [CERT ENV04-CPP] Unsafe C99 Command interpreter function 'system' called. "
 			"It is recommended to use the function 'POSIX execve or other exec family' instead.\n", result);
+    }
+
+    void tc_setjmp() {
+        check(
+            "static jmp_buf env;\n"
+            "int foo()\n"
+              "{\n"
+              "    if (setjmp(env) == 0) { \n"
+			  "    return 1;\n"
+              "    }\n"
+              "    return 0;\n"
+              "}\n");
+		std::string result = errout.str();
+        ASSERT_EQUALS("[test.cpp:4]: (style) [CERT ERR34-CPP] Do not use setjmp() or longjmp() function 'setjmp' called. "
+            "It is recommended to use the function 'throw and catch' instead.\n", result);
     }
 };
 

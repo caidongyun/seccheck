@@ -43,6 +43,7 @@ private:
         TEST_CASE(signed_char_err2);
         TEST_CASE(modify_std_err1);
         TEST_CASE(modify_std_ok1);
+        TEST_CASE(return_errno_err1);
     }
 
     void check(const char code[]) {
@@ -219,6 +220,16 @@ private:
               "} }");
         std::string s = errout.str();
         ASSERT_EQUALS("", s);
+    }
+
+    void return_errno_err1() {
+        check("int foo()\n"
+              "{\n"
+              "    errno = 0;\n"
+              "    return errno;\n"
+              "}");
+        std::string s = errout.str();
+        ASSERT_EQUALS("[test.cpp:4]: (warning) Functions that return errno should change to a return type of errno_t.\n", s);
     }
 };
 
