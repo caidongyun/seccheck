@@ -44,6 +44,7 @@ private:
         TEST_CASE(modify_std_err1);
         TEST_CASE(modify_std_ok1);
         TEST_CASE(return_errno_err1);
+        TEST_CASE(tc_float_loop_err);
     }
 
     void check(const char code[]) {
@@ -230,6 +231,28 @@ private:
               "}");
         std::string s = errout.str();
         ASSERT_EQUALS("[test.cpp:4]: (warning) Functions that return errno should change to a return type of errno_t.\n", s);
+    }
+
+    void tc_float_loop_err() {
+        check("float foo(int count)\n"
+              "{\n"
+              "    float sum = 0.0f;\n"
+              "    for (float i = 0; i < count; i++) { sum += i; }\n"
+              "    return sum;\n"
+              "}");
+        std::string s = errout.str();
+        ASSERT_EQUALS("[test.cpp:4]: (warning) Do not use floating-point variables as loop counters.\n", s);
+    }
+
+    void tc_int_loop_ok() {
+        check("int foo(int count)\n"
+              "{\n"
+              "    int sum = 0;\n"
+              "    for (int i = 0; i < count; i++) { sum += i; }\n"
+              "    return sum;\n"
+              "}");
+        std::string s = errout.str();
+        ASSERT_EQUALS("", s);
     }
 };
 

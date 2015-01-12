@@ -269,6 +269,16 @@ void CheckMiscellaneous::returnErrnoError(const Token *tok)
 				"Please see: CERT C++ Secure Coding Standard DCL09-CPP.");
 }
 
+void CheckMiscellaneous::floatLoopError(const Token *tok)
+{
+    reportError(tok, Severity::warning,
+                "FloatNumberAsLoopCounterError",
+                "Do not use floating-point variables as loop counters.\n"
+				"Different implementations have different precision limitations, "
+                "and to keep code portable, floating-point variables should not be used as loop counters. "
+				"Please see: CERT C++ Secure Coding Standard FLP30-CPP.");
+}
+
 /** Check for improper floating arithmetic
 * See CERT C++ Secure Coding Standard:
 * FLP00-CPP. Understand the limitations of floating-point numbers
@@ -330,9 +340,26 @@ void CheckMiscellaneous::runChecks()
             {
                 returnErrnoError(tok);
             }
+            else if (Token::simpleMatch(tok, "for ( double") || Token::simpleMatch(tok, "for ( float"))
+            {
+                // see: https://www.securecoding.cert.org/confluence/display/seccode/FLP30-C.+Do+not+use+floating-point+variables+as+loop+counters 
+                floatLoopError(tok);
+            }
             else
             {
             }
+
+            /*
+            else if (Token::Match(tok, "[;{}] %var% :"))
+            {
+                if ((tok->scope()->type == Scope::eTry) || (tok->scope()->type == Scope::eTry))
+                {
+                    // goto label within try or catch block
+                    // Visual C++ or gcc will generate compile errors, so ingore it. 
+                    // VOID MSC35-CPP
+                }
+            }
+            */
         }
     }
 
