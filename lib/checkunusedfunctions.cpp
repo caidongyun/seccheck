@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -165,31 +165,24 @@ void CheckUnusedFunctions::parseTokens(const Tokenizer &tokenizer, const char Fi
 
         const Token *funcname = nullptr;
 
-        if (tok->scope()->isExecutable() && Token::Match(tok->next(), "%var% (")) {
+        if (tok->scope()->isExecutable() && Token::Match(tok, "%var% (")) {
+            funcname = tok;
+        } else if (tok->scope()->isExecutable() && Token::Match(tok, "%var% <") && Token::simpleMatch(tok->linkAt(1), "> (")) {
+            funcname = tok;
+        } else if (Token::Match(tok, "[;{}.,()[=+-/|!?:]")) {
             funcname = tok->next();
-        }
-
-        else if (tok->scope()->isExecutable() && Token::Match(tok->next(), "%var% <") && Token::simpleMatch(tok->linkAt(2), "> (")) {
-            funcname = tok->next();
-        }
-
-        else if (Token::Match(tok, "[;{}.,()[=+-/|!?:] &| %var% [(),;]:}]")) {
-            funcname = tok->next();
-            if (funcname->str() == "&")
+            if (funcname && funcname->str() == "&")
                 funcname = funcname->next();
-        }
-
-        else if (Token::Match(tok, "[;{}.,()[=+-/|!?:] &| %var% :: %var%")) {
-            funcname = tok->next();
-            if (funcname->str() == "&")
+            if (funcname && funcname->str() == "::")
                 funcname = funcname->next();
-            while (Token::Match(funcname,"%var% :: %var%"))
+            while (Token::Match(funcname, "%var% :: %var%"))
                 funcname = funcname->tokAt(2);
-            if (!Token::Match(funcname, "%var% [(),;:}]"))
+
+            if (!Token::Match(funcname, "%var% [(),;]:}]"))
                 continue;
         }
 
-        else
+        if (!funcname)
             continue;
 
         // funcname ( => Assert that the end parentheses isn't followed by {
@@ -211,6 +204,9 @@ void CheckUnusedFunctions::parseTokens(const Tokenizer &tokenizer, const char Fi
         }
     }
 }
+
+
+
 
 void CheckUnusedFunctions::check(ErrorLogger * const errorLogger)
 {
@@ -259,4 +255,18 @@ void CheckUnusedFunctions::unusedFunctionError(ErrorLogger * const errorLogger,
         errorLogger->reportErr(errmsg);
     else
         reportError(errmsg);
+}
+
+Check::FileInfo *CheckUnusedFunctions::getFileInfo(const Tokenizer *tokenizer, const Settings *settings) const
+{
+    if (settings->isEnabled("unusedFunction") && settings->_jobs == 1)
+        instance.parseTokens(*tokenizer, tokenizer->list.getFiles().front().c_str(), settings);
+    return nullptr;
+
+}
+
+void CheckUnusedFunctions::analyseWholeProgram(const std::list<Check::FileInfo*> &fileInfo, ErrorLogger &errorLogger)
+{
+    (void)fileInfo;
+    instance.check(&errorLogger);
 }

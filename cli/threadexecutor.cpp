@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -143,7 +143,7 @@ int ThreadExecutor::handleRead(int rpipe, unsigned int &result)
 
 bool ThreadExecutor::checkLoadAverage(size_t nchildren)
 {
-#ifdef __CYGWIN__  // getloadavg() is unsupported on Cygwin.
+#if defined(__CYGWIN__) || defined(__QNX__)  // getloadavg() is unsupported on Cygwin, Qnx.
     return true;
 #else
     if (!nchildren || !_settings._loadAverage) {

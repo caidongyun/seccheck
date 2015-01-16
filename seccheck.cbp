@@ -122,7 +122,6 @@
 		<Unit filename="lib/checkcomplexcopying.cpp" />
 		<Unit filename="lib/checkexceptionsafety.cpp" />
 		<Unit filename="lib/checkexceptionsafety.h" />
-		<Unit filename="lib/checkfloatarithmetic.cpp" />
 		<Unit filename="lib/checkintegers.cpp" />
 		<Unit filename="lib/checkmemoryleak.cpp" />
 		<Unit filename="lib/checkmemoryleak.h" />

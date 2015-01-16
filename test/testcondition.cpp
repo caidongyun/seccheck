@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1061,6 +1061,49 @@ private:
               "    }\n"
               "}");
         ASSERT_EQUALS("", errout.str());
+
+        {
+            // #6095 - calling member function that might change the state
+            check("void f() {\n"
+                  "  const Fred fred;\n" // <- fred is const, warn
+                  "  if (fred.isValid()) {\n"
+                  "    fred.dostuff();\n"
+                  "    if (!fred.isValid()) {}\n"
+                  "  }\n"
+                  "}");
+            ASSERT_EQUALS("[test.cpp:3] -> [test.cpp:5]: (warning) Opposite conditions in nested 'if' blocks lead to a dead code block.\n", errout.str());
+
+            check("class Fred { public: void dostuff() const; };\n"
+                  "void f() {\n"
+                  "  Fred fred;\n"
+                  "  if (fred.isValid()) {\n"
+                  "    fred.dostuff();\n" // <- dostuff() is const, warn
+                  "    if (!fred.isValid()) {}\n"
+                  "  }\n"
+                  "}");
+            ASSERT_EQUALS("[test.cpp:4] -> [test.cpp:6]: (warning) Opposite conditions in nested 'if' blocks lead to a dead code block.\n", errout.str());
+
+            check("void f() {\n"
+                  "  Fred fred;\n"
+                  "  if (fred.isValid()) {\n"
+                  "    fred.dostuff();\n"
+                  "    if (!fred.isValid()) {}\n"
+                  "  }\n"
+                  "}");
+            ASSERT_EQUALS("", errout.str());
+
+            // #6385 "crash in Variable::getFlag()"
+            check("class TranslationHandler {\n"
+                  "QTranslator *mTranslator;\n"
+                  "void SetLanguage() {\n"
+                  "   if (mTranslator) {\n"
+                  "             qApp->removeTranslator(mTranslator);\n"
+                  "        }\n"
+                  "   }\n"
+                  "};");
+            ASSERT_EQUALS("", errout.str()); // just don't crash...
+
+        }
 
         // #5731 - fp when undeclared variable is used
         check("void f() {\n"

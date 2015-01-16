@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,7 +88,7 @@ struct Filepointer {
     unsigned int op_indent;
     enum AppendMode { UNKNOWN_AM, APPEND, APPEND_EX };
     AppendMode append_mode;
-    Filepointer(OpenMode mode_ = UNKNOWN_OM)
+    explicit Filepointer(OpenMode mode_ = UNKNOWN_OM)
         : mode(mode_), mode_indent(0), lastOperation(NONE), op_indent(0), append_mode(UNKNOWN_AM) {
     }
 };
@@ -1547,6 +1547,20 @@ bool CheckIO::ArgumentInfo::isStdVectorOrString()
                     tempToken->str("wchar_t");
                 typeToken = tempToken;
                 return true;
+            }
+        }
+    } else if (variableInfo->type()) {
+        const Scope * classScope = variableInfo->type()->classScope;
+        if (classScope) {
+            std::list<Function>::const_iterator functions;
+            for (functions = classScope->functionList.begin();
+                 functions != classScope->functionList.end(); ++functions) {
+                if (functions->name() == "operator[]") {
+                    if (Token::Match(functions->retDef, "%type% &")) {
+                        typeToken = functions->retDef;
+                        return true;
+                    }
+                }
             }
         }
     }

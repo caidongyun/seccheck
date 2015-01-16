@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -190,6 +190,7 @@ private:
         TEST_CASE(array_index_string_literal);
         TEST_CASE(array_index_same_struct_and_var_name); // #4751 - not handled well when struct name and var name is same
         TEST_CASE(array_index_valueflow);
+        TEST_CASE(array_index_function_parameter);
 
         TEST_CASE(buffer_overrun_1_standard_functions);
         TEST_CASE(buffer_overrun_1_posix_functions);
@@ -232,6 +233,7 @@ private:
         // char *p2 = a + 11   // UB
         TEST_CASE(pointer_out_of_bounds_1);
         TEST_CASE(pointer_out_of_bounds_2);
+        TEST_CASE(pointer_out_of_bounds_sub);
 
         TEST_CASE(sprintf1);
         TEST_CASE(sprintf2);
@@ -316,6 +318,8 @@ private:
         TEST_CASE(writeOutsideBufferSize)
 
         TEST_CASE(negativeMemoryAllocationSizeError) // #389
+
+        TEST_CASE(garbage1) // #6303
     }
 
 
@@ -436,6 +440,14 @@ private:
               "    str[16] = 0;\n"
               "}");
         ASSERT_EQUALS("[test.cpp:5]: (error) Array 'str[16]' accessed at index 16, which is out of bounds.\n", errout.str());
+
+        check("void a(int i)\n" // valueflow
+              "{\n"
+              "    char *str = new char[0x10];\n"
+              "    str[i] = 0;\n"
+              "}\n"
+              "void b() { a(16); }");
+        ASSERT_EQUALS("[test.cpp:4]: (error) Array 'str[16]' accessed at index 16, which is out of bounds.\n", errout.str());
     }
 
 
@@ -2130,6 +2142,23 @@ private:
         check("class X { static const int x[100]; };\n" // #6070
               "const int X::x[100] = {0};", false, "test.cpp", false);
         ASSERT_EQUALS("", errout.str());
+
+        check("namespace { class X { static const int x[100]; };\n" // #6232
+              "const int X::x[100] = {0}; }", false, "test.cpp", false);
+        ASSERT_EQUALS("", errout.str());
+    }
+
+    void array_index_function_parameter() {
+        check("void f(char a[10]) {\n"
+              "  a[20] = 0;\n" // <- cppcheck warn here even though it's not a definite access out of bounds
+              "}");
+        ASSERT_EQUALS("[test.cpp:2]: (error) Array 'a[10]' accessed at index 20, which is out of bounds.\n", errout.str());
+
+        check("void f(char a[10]) {\n" // #6353 - reassign 'a'
+              "  a += 4;\n"
+              "  a[-1] = 0;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
     }
 
     void buffer_overrun_1_posix_functions() {
@@ -2933,7 +2962,26 @@ private:
               "    char a[10];\n"
               "    char *p = a + 100;\n"
               "}");
-        ASSERT_EQUALS("[test.cpp:3]: (portability) Undefined behaviour: Pointer arithmetic result does not point into or just past the end of the array.\n", errout.str());
+        ASSERT_EQUALS("[test.cpp:3]: (portability) Undefined behaviour, pointer arithmetic 'a+100' is out of bounds.\n", errout.str());
+
+        check("void f() {\n"
+              "    char a[10];\n"
+              "    return a + 100;\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:3]: (portability) Undefined behaviour, pointer arithmetic 'a+100' is out of bounds.\n", errout.str());
+
+        check("void f(int i) {\n"
+              "    char x[10];\n"
+              "    if (i == 123) {}\n"
+              "    dostuff(x+i);\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:4]: (portability) Undefined behaviour, when 'i' is 123 the pointer arithmetic 'x+i' is out of bounds.\n", errout.str());
+
+        check("void f() {\n" // #6350 - fp when there is cast of buffer
+              "  wchar_t buf[64];\n"
+              "  p = (unsigned char *) buf + sizeof (buf);\n"
+              "}", false, "6350.c", false);
+        ASSERT_EQUALS("", errout.str());
     }
 
     void pointer_out_of_bounds_2() {
@@ -2942,7 +2990,7 @@ private:
               "    p += 100;\n"
               "    free(p);"
               "}");
-        ASSERT_EQUALS("[test.cpp:3]: (portability) Undefined behaviour: Pointer arithmetic result does not point into or just past the end of the buffer.\n", errout.str());
+        ASSERT_EQUALS("[test.cpp:3]: (portability) Undefined behaviour, pointer arithmetic 'p+100' is out of bounds.\n", errout.str());
 
         check("void f() {\n"
               "    char *p = malloc(10);\n"
@@ -2969,6 +3017,28 @@ private:
               "    free(p);"
               "}");
         ASSERT_EQUALS("", errout.str());
+    }
+
+    void pointer_out_of_bounds_sub() {
+        check("void f() {\n"
+              "    char x[10];\n"
+              "    return x-1;\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:3]: (portability) Undefined behaviour, pointer arithmetic 'x-1' is out of bounds.\n", errout.str());
+
+        check("void f(int i) {\n"
+              "    char x[10];\n"
+              "    if (i == 123) {}\n"
+              "    dostuff(x-i);\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:4]: (portability) Undefined behaviour, when 'i' is 123 the pointer arithmetic 'x-i' is out of bounds.\n", errout.str());
+
+        check("void f(int i) {\n"
+              "    char x[10];\n"
+              "    if (i == -20) {}\n"
+              "    dostuff(x-i);\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:4]: (portability) Undefined behaviour, when 'i' is -20 the pointer arithmetic 'x-i' is out of bounds.\n", errout.str());
     }
 
     void sprintf1() {
@@ -3394,6 +3464,11 @@ private:
               "    return f->c[10];\n"
               "}");
         ASSERT_EQUALS("[test.cpp:5]: (error) Array 'f.c[10]' accessed at index 10, which is out of bounds.\n", errout.str());
+
+        check("static const size_t MAX_SIZE = UNAVAILABLE_TO_CPPCHECK;\n"
+              "struct Thing { char data[MAX_SIZE]; };\n"
+              "char f4(const Thing& t) { return !t.data[0]; }");
+        ASSERT_EQUALS("", errout.str());
 
         check("void foo()\n"
               "{\n"
@@ -4257,6 +4332,14 @@ private:
               "   free(a);\n"
               "}\n");
         ASSERT_EQUALS("[test.cpp:4]: (error) Memory allocation size is negative.\n", errout.str());
+    }
+
+    void garbage1() {
+        check("void foo() {\n"
+              "char *a = malloc(10);\n"
+              "a[0]\n"
+              "}\n");
+        ASSERT_EQUALS("", errout.str());
     }
 };
 

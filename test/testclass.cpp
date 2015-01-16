@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -143,6 +143,8 @@ private:
         TEST_CASE(const60); // ticket #3322
         TEST_CASE(const61); // ticket #5606
         TEST_CASE(const62); // ticket #5701
+        TEST_CASE(const63); // ticket #5983
+        TEST_CASE(const64); // ticket #6268
         TEST_CASE(const_handleDefaultParameters);
         TEST_CASE(const_passThisToMemberOfOtherClass);
         TEST_CASE(assigningPointerToPointerIsNotAConstOperation);
@@ -557,8 +559,30 @@ private:
 
         checkOpertorEq("class A\n"
                        "{\n"
+                       "public:\n"
+                       "    void goo() {}"
+                       "    void operator=(const A&)=delete;\n"
+                       "};");
+        ASSERT_EQUALS("", errout.str());
+
+        checkOpertorEq("class A\n"
+                       "{\n"
                        "private:\n"
                        "    void operator=(const A&);\n"
+                       "};");
+        ASSERT_EQUALS("", errout.str());
+
+        checkOpertorEq("class A\n"
+                       "{\n"
+                       "protected:\n"
+                       "    void operator=(const A&);\n"
+                       "};");
+        ASSERT_EQUALS("", errout.str());
+
+        checkOpertorEq("class A\n"
+                       "{\n"
+                       "private:\n"
+                       "    void operator=(const A&)=delete;\n"
                        "};");
         ASSERT_EQUALS("", errout.str());
 
@@ -595,6 +619,12 @@ private:
                        "    void operator=(const A&);\n"
                        "};");
         ASSERT_EQUALS("[test.cpp:3]: (style) 'A::operator=' should return 'A &'.\n", errout.str());
+
+        checkOpertorEq("struct A\n"
+                       "{\n"
+                       "    void operator=(const A&)=delete;\n"
+                       "};");
+        ASSERT_EQUALS("", errout.str());
     }
 
     void operatorEq2() {
@@ -4824,7 +4854,7 @@ private:
                    "  void set(const Key& key) {\n"
                    "      inherited::set(inherited::Key(key));\n"
                    "  }\n"
-                   "};\n");
+                   "};\n", 0, false);
         ASSERT_EQUALS("", errout.str());
     }
 
@@ -4839,6 +4869,68 @@ private:
                    "             return _hash[key];\n"
                    "         }\n"
                    "};");
+        ASSERT_EQUALS("", errout.str());
+    }
+
+    void const63() {
+        checkConst("struct A {\n"
+                   "    std::string s;\n"
+                   "    void clear() {\n"
+                   "         std::string* p = &s;\n"
+                   "         p->clear();\n"
+                   "     }\n"
+                   "};");
+        ASSERT_EQUALS("", errout.str());
+
+        checkConst("struct A {\n"
+                   "    std::string s;\n"
+                   "    void clear() {\n"
+                   "         std::string& r = s;\n"
+                   "         r.clear();\n"
+                   "     }\n"
+                   "};");
+        ASSERT_EQUALS("", errout.str());
+
+        checkConst("struct A {\n"
+                   "    std::string s;\n"
+                   "    void clear() {\n"
+                   "         std::string& r = sth; r = s;\n"
+                   "         r.clear();\n"
+                   "     }\n"
+                   "};");
+        ASSERT_EQUALS("[test.cpp:3]: (style, inconclusive) Technically the member function 'A::clear' can be const.\n", errout.str());
+
+        checkConst("struct A {\n"
+                   "    std::string s;\n"
+                   "    void clear() {\n"
+                   "         const std::string* p = &s;\n"
+                   "         p->somefunction();\n"
+                   "     }\n"
+                   "};");
+        ASSERT_EQUALS("[test.cpp:3]: (style, inconclusive) Technically the member function 'A::clear' can be const.\n", errout.str());
+
+        checkConst("struct A {\n"
+                   "    std::string s;\n"
+                   "    void clear() {\n"
+                   "         const std::string& r = s;\n"
+                   "         r.somefunction();\n"
+                   "     }\n"
+                   "};");
+        ASSERT_EQUALS("[test.cpp:3]: (style, inconclusive) Technically the member function 'A::clear' can be const.\n", errout.str());
+    }
+
+    void const64() {
+        checkConst("namespace B {\n"
+                   "    namespace D {\n"
+                   "        typedef int DKIPtr;\n"
+                   "    }\n"
+                   "    class ZClass  {\n"
+                   "        void set(const ::B::D::DKIPtr& p) {\n"
+                   "            membervariable = p;\n"
+                   "        }\n"
+                   "        ::B::D::DKIPtr membervariable;\n"
+                   "    };\n"
+                   "}");
         ASSERT_EQUALS("", errout.str());
     }
 

@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -130,7 +130,8 @@ void CheckAutoVariables::assignFunctionArg()
         for (const Token *tok = scope->classStart; tok && tok != scope->classEnd; tok = tok->next()) {
             if (Token::Match(tok, "[;{}] %var% =|++|--") &&
                 isNonReferenceArg(tok->next()) &&
-                !variableIsUsedInScope(Token::findsimplematch(tok->tokAt(2), ";"), tok->next()->varId(), scope)) {
+                !variableIsUsedInScope(Token::findsimplematch(tok->tokAt(2), ";"), tok->next()->varId(), scope) &&
+                !Token::findsimplematch(tok, "goto", scope->classEnd)) {
                 if (tok->next()->variable()->isPointer() && warning)
                     errorUselessAssignmentPtrArg(tok->next());
                 else if (style)

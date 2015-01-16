@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -2112,7 +2112,10 @@ static bool openHeader(std::string &filename, const std::list<std::string> &incl
 
 std::string Preprocessor::handleIncludes(const std::string &code, const std::string &filePath, const std::list<std::string> &includePaths, std::map<std::string,std::string> &defs, std::set<std::string> &pragmaOnce, std::list<std::string> includes)
 {
-    const std::string path(filePath.substr(0, 1 + filePath.find_last_of("\\/")));
+    std::string path;
+    std::string::size_type sep_pos = filePath.find_last_of("\\/");
+    if (sep_pos != std::string::npos)
+        path = filePath.substr(0, 1 + sep_pos);
 
     // current #if indent level.
     std::stack<bool>::size_type indent = 0;
@@ -2325,7 +2328,9 @@ void Preprocessor::handleIncludes(std::string &code, const std::string &filePath
     std::list<std::string> paths;
     std::string path;
     path = filePath;
-    path.erase(1 + path.find_last_of("\\/"));
+    std::string::size_type sep_pos = path.find_last_of("\\/");
+    if (sep_pos != std::string::npos)
+        path.erase(1 + sep_pos);
     paths.push_back(path);
     std::string::size_type pos = 0;
     std::string::size_type endfilePos = 0;
@@ -3155,10 +3160,10 @@ std::string Preprocessor::expandMacros(const std::string &code, std::string file
                     }
 
                     // get parameters from line..
+                    if (macro->params().size() && pos >= line.length())
+                        break;
                     std::vector<std::string> params;
                     std::string::size_type pos2 = pos;
-                    if (macro->params().size() && pos2 >= line.length())
-                        break;
 
                     // number of newlines within macro use
                     unsigned int numberOfNewlines = 0;

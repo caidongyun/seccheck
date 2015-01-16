@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -281,7 +281,7 @@ public:
      */
     bool configurationExcluded(const std::string &file) const {
         for (auto i=configExcludePaths.begin(); i!=configExcludePaths.end(); ++i) {
-            if (file.length() >= i->length() && file.compare(0,i->length(),*i)==0) {
+            if (file.length()>=i->length() && file.compare(0,i->length(),*i)==0) {
                 return true;
             }
         }

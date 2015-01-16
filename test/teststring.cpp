@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -98,6 +98,33 @@ private:
     }
 
     void alwaysTrueFalseStringCompare() {
+        check("void f() {\n"
+              "  if (strcmp(\"A\",\"A\")){}\n"
+              "  if (strncmp(\"A\",\"A\",1)){}\n"
+              "  if (strcasecmp(\"A\",\"A\")){}\n"
+              "  if (strncasecmp(\"A\",\"A\",1)){}\n"
+              "  if (memcmp(\"A\",\"A\",1)){}\n"
+              "  if (strverscmp(\"A\",\"A\")){}\n"
+              "  if (bcmp(\"A\",\"A\",1)){}\n"
+              "  if (wcsncasecmp(L\"A\",L\"A\",1)){}\n"
+              "  if (wcsncmp(L\"A\",L\"A\",1)){}\n"
+              "  if (wmemcmp(L\"A\",L\"A\",1)){}\n"
+              "  if (wcscmp(L\"A\",L\"A\")){}\n"
+              "  if (wcscasecmp(L\"A\",L\"A\")){}\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:2]: (warning) Unnecessary comparison of static strings.\n"
+                      "[test.cpp:3]: (warning) Unnecessary comparison of static strings.\n"
+                      "[test.cpp:4]: (warning) Unnecessary comparison of static strings.\n"
+                      "[test.cpp:5]: (warning) Unnecessary comparison of static strings.\n"
+                      "[test.cpp:6]: (warning) Unnecessary comparison of static strings.\n"
+                      "[test.cpp:7]: (warning) Unnecessary comparison of static strings.\n"
+                      "[test.cpp:8]: (warning) Unnecessary comparison of static strings.\n"
+                      "[test.cpp:9]: (warning) Unnecessary comparison of static strings.\n"
+                      "[test.cpp:10]: (warning) Unnecessary comparison of static strings.\n"
+                      "[test.cpp:11]: (warning) Unnecessary comparison of static strings.\n"
+                      "[test.cpp:12]: (warning) Unnecessary comparison of static strings.\n"
+                      "[test.cpp:13]: (warning) Unnecessary comparison of static strings.\n", errout.str());
+
         check_preprocess_suppress(
             "#define MACRO \"00FF00\"\n"
             "int main()\n"

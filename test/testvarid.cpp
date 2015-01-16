@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -137,6 +137,7 @@ private:
         TEST_CASE(varid_pointerToArray); // #2645
         TEST_CASE(varid_cpp11initialization); // #4344
         TEST_CASE(varid_inheritedMembers); // #4101
+        TEST_CASE(varid_header); // #6386
 
         TEST_CASE(varidclass1);
         TEST_CASE(varidclass2);
@@ -1632,6 +1633,28 @@ private:
                       "3: A ( int x@2 ) : x@1 ( x@2 ) { }\n"
                       "4: } ;\n",
                       tokenize(code4));
+
+        const char code5[] = "class A {\n"
+                             "  A(int x) noexcept : x(x) {}\n"
+                             "  int x;\n"
+                             "};";
+        ASSERT_EQUALS("\n\n##file 0\n"
+                      "1: class A {\n"
+                      "2: A ( int x@1 ) noexcept : x@2 ( x@1 ) { }\n"
+                      "3: int x@2 ;\n"
+                      "4: } ;\n",
+                      tokenize(code5));
+
+        const char code6[] = "class A {\n"
+                             "  A(int x) noexcept(true) : x(x) {}\n"
+                             "  int x;\n"
+                             "};";
+        ASSERT_EQUALS("\n\n##file 0\n"
+                      "1: class A {\n"
+                      "2: A ( int x@1 ) noexcept ( true ) : x@2 ( x@1 ) { }\n"
+                      "3: int x@2 ;\n"
+                      "4: } ;\n",
+                      tokenize(code6));
     }
 
     void varid_operator() {
@@ -1963,6 +1986,18 @@ private:
                                "        a = 0;\n"
                                "    }\n"
                                "};"));
+    }
+
+    void varid_header() {
+        ASSERT_EQUALS("\n\n##file 0\n"
+                      "1: class A ;\n"
+                      "2: struct B {\n"
+                      "3: void setData ( const A & a@1 ) ;\n"
+                      "4: } ;\n",
+                      tokenize("class A;\n"
+                               "struct B {\n"
+                               "    void setData(const A & a);\n"
+                               "}; ", false, "test.h"));
     }
 
     void varidclass1() {

@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -144,6 +144,7 @@ private:
         TEST_CASE(simplifyTypedef107); // ticket #3963 - bad code => segmentation fault
         TEST_CASE(simplifyTypedef108); // ticket #4777
         TEST_CASE(simplifyTypedef109); // ticket #1823 - rvalue reference
+        TEST_CASE(simplifyTypedef110); // ticket #6268
 
         TEST_CASE(simplifyTypedefFunction1);
         TEST_CASE(simplifyTypedefFunction2); // ticket #1685
@@ -153,6 +154,8 @@ private:
         TEST_CASE(simplifyTypedefFunction6);
         TEST_CASE(simplifyTypedefFunction7);
         TEST_CASE(simplifyTypedefFunction8);
+        TEST_CASE(simplifyTypedefFunction9);
+        TEST_CASE(simplifyTypedefFunction10); // #5191
 
         TEST_CASE(simplifyTypedefShadow);  // #4445 - shadow variable
     }
@@ -2398,6 +2401,68 @@ private:
         ASSERT_EQUALS("", errout.str());
     }
 
+    void simplifyTypedef110() {
+        const char code[] = "namespace A {\n"
+                            "    namespace B {\n"
+                            "        namespace D {\n"
+                            "            typedef int DKIPtr;\n"
+                            "        }\n"
+                            "        struct ZClass {\n"
+                            "            void set1(const A::B::D::DKIPtr& p) {\n"
+                            "                membervariable1 = p;\n"
+                            "            }\n"
+                            "            void set2(const ::A::B::D::DKIPtr& p) {\n"
+                            "                membervariable2 = p;\n"
+                            "            }\n"
+                            "            void set3(const B::D::DKIPtr& p) {\n"
+                            "                membervariable3 = p;\n"
+                            "            }\n"
+                            "            void set4(const ::B::D::DKIPtr& p) {\n"
+                            "                membervariable4 = p;\n"
+                            "            }\n"
+                            "            void set5(const C::D::DKIPtr& p) {\n"
+                            "                membervariable5 = p;\n"
+                            "            }\n"
+                            "            A::B::D::DKIPtr membervariable1;\n"
+                            "            ::A::B::D::DKIPtr membervariable2;\n"
+                            "            B::D::DKIPtr membervariable3;\n"
+                            "            ::B::D::DKIPtr membervariable4;\n"
+                            "            C::D::DKIPtr membervariable5;\n"
+                            "        };\n"
+                            "    }\n"
+                            "}";
+        const char expected[] = "namespace A { "
+                                "namespace B { "
+                                "struct ZClass { "
+                                "void set1 ( const int & p ) { "
+                                "membervariable1 = p ; "
+                                "} "
+                                "void set2 ( const int & p ) { "
+                                "membervariable2 = p ; "
+                                "} "
+                                "void set3 ( const int & p ) { "
+                                "membervariable3 = p ; "
+                                "} "
+                                "void set4 ( const :: B :: D :: DKIPtr & p ) { "
+                                "membervariable4 = p ; "
+                                "} "
+                                "void set5 ( const C :: D :: DKIPtr & p ) { "
+                                "membervariable5 = p ; "
+                                "} "
+                                "int membervariable1 ; "
+                                "int membervariable2 ; "
+                                "int membervariable3 ; "
+                                ":: B :: D :: DKIPtr membervariable4 ; "
+                                "C :: D :: DKIPtr membervariable5 ; "
+                                "} ; "
+                                "} "
+                                "}";
+
+        checkSimplifyTypedef(code);
+        ASSERT_EQUALS(expected, tok(code));
+        ASSERT_EQUALS("", errout.str());
+    }
+
     void simplifyTypedefFunction1() {
         {
             const char code[] = "typedef void (*my_func)();\n"
@@ -2968,6 +3033,111 @@ private:
                             "void f(f_expand   *(*get_fexp(int))){}\n";
         checkSimplifyTypedef(code);
         TODO_ASSERT_EQUALS("", "[test.cpp:2]: (debug) Function::addArguments found argument 'int' with varid 0.\n", errout.str());  // make sure that there is no internal error
+    }
+
+    void simplifyTypedefFunction9() {
+        {
+            const char code[] = "typedef ::C (::C::* func1)();\n"
+                                "typedef ::C (::C::* func2)() const;\n"
+                                "typedef ::C (::C::* func3)() volatile;\n"
+                                "typedef ::C (::C::* func4)() const volatile;\n"
+                                "func1 f1;\n"
+                                "func2 f2;\n"
+                                "func3 f3;\n"
+                                "func4 f4;";
+
+            // The expected result..
+            const std::string expected(":: C ( :: C :: * f1 ) ( ) ; "
+                                       ":: C ( :: C :: * f2 ) ( ) const ; "
+                                       ":: C ( :: C :: * f3 ) ( ) ; "
+                                       ":: C ( :: C :: * f4 ) ( ) const ;");
+            ASSERT_EQUALS(expected, tok(code));
+
+            checkSimplifyTypedef(code);
+            ASSERT_EQUALS("", errout.str());
+        }
+
+        {
+            const char code[] = "typedef B::C (B::C::* func1)();\n"
+                                "typedef B::C (B::C::* func2)() const;\n"
+                                "typedef B::C (B::C::* func3)() volatile;\n"
+                                "typedef B::C (B::C::* func4)() const volatile;\n"
+                                "func1 f1;\n"
+                                "func2 f2;\n"
+                                "func3 f3;\n"
+                                "func4 f4;";
+
+            // The expected result..
+            const std::string expected("B :: C * f1 ; "
+                                       "B :: C ( B :: C :: * f2 ) ( ) const ; "
+                                       "B :: C * f3 ; "
+                                       "B :: C ( B :: C :: * f4 ) ( ) const ;");
+            ASSERT_EQUALS(expected, tok(code));
+
+            checkSimplifyTypedef(code);
+            ASSERT_EQUALS("", errout.str());
+        }
+
+        {
+            const char code[] = "typedef ::B::C (::B::C::* func1)();\n"
+                                "typedef ::B::C (::B::C::* func2)() const;\n"
+                                "typedef ::B::C (::B::C::* func3)() volatile;\n"
+                                "typedef ::B::C (::B::C::* func4)() const volatile;\n"
+                                "func1 f1;\n"
+                                "func2 f2;\n"
+                                "func3 f3;\n"
+                                "func4 f4;";
+
+            // The expected result..
+            const std::string expected(":: B :: C ( :: B :: C :: * f1 ) ( ) ; "
+                                       ":: B :: C ( :: B :: C :: * f2 ) ( ) const ; "
+                                       ":: B :: C ( :: B :: C :: * f3 ) ( ) ; "
+                                       ":: B :: C ( :: B :: C :: * f4 ) ( ) const ;");
+            ASSERT_EQUALS(expected, tok(code));
+
+            checkSimplifyTypedef(code);
+            ASSERT_EQUALS("", errout.str());
+        }
+
+        {
+            const char code[] = "typedef A::B::C (A::B::C::* func1)();\n"
+                                "typedef A::B::C (A::B::C::* func2)() const;\n"
+                                "typedef A::B::C (A::B::C::* func3)() volatile;\n"
+                                "typedef A::B::C (A::B::C::* func4)() const volatile;\n"
+                                "func1 f1;\n"
+                                "func2 f2;\n"
+                                "func3 f3;\n"
+                                "func4 f4;";
+
+            // The expected result..
+            const std::string expected("A :: B :: C * f1 ; "
+                                       "A :: B :: C ( A :: B :: C :: * f2 ) ( ) const ; "
+                                       "A :: B :: C * f3 ; "
+                                       "A :: B :: C ( A :: B :: C :: * f4 ) ( ) const ;");
+            ASSERT_EQUALS(expected, tok(code));
+
+            checkSimplifyTypedef(code);
+            ASSERT_EQUALS("", errout.str());
+        }
+    }
+
+    void simplifyTypedefFunction10() {
+        const char code[] = "enum Format_E1 { FORMAT11 FORMAT12 } Format_T1;\n"
+                            "namespace MySpace {\n"
+                            "   enum Format_E2 { FORMAT21 FORMAT22 } Format_T2;\n"
+                            "}\n"
+                            "typedef Format_E1 (**PtrToFunPtr_Type1)();\n"
+                            "typedef MySpace::Format_E2 (**PtrToFunPtr_Type2)();\n"
+                            "PtrToFunPtr_Type1 t1;\n"
+                            "PtrToFunPtr_Type2 t2;\n";
+        ASSERT_EQUALS("int Format_T1 ; "
+                      "namespace MySpace "
+                      "{ "
+                      "int Format_T2 ; "
+                      "} "
+                      "int ( * * t1 ) ( ) ; "
+                      "int ( * * t2 ) ( ) ;",
+                      tok(code,false));
     }
 
     void simplifyTypedefShadow() { // shadow variable (#4445)

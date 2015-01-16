@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ private:
 
     void run() {
         LOAD_LIB_2(settings.library, "std.cfg");
+        LOAD_LIB_2(settings.library, "windows.cfg");
 
         TEST_CASE(coutCerrMisusage);
 
@@ -52,8 +53,6 @@ private:
         TEST_CASE(testPrintfArgument);
         TEST_CASE(testPosixPrintfScanfParameterPosition);  // #4900
 
-        LOAD_LIB_2(settings.library, "windows.cfg");
-
         TEST_CASE(testMicrosoftPrintfArgument); // ticket #4902
         TEST_CASE(testMicrosoftScanfArgument);
         TEST_CASE(testMicrosoftCStringFormatArguments); // ticket #4920
@@ -61,6 +60,7 @@ private:
         TEST_CASE(testMicrosoftSecureScanfArgument);
 
         TEST_CASE(testTernary); // ticket #6182
+        TEST_CASE(testUnsignedConst); // ticket #6132
     }
 
     void check(const char code[], bool inconclusive = false, bool portability = false, Settings::PlatformType platform = Settings::Unspecified) {
@@ -3101,6 +3101,19 @@ private:
         ASSERT_EQUALS("[test.cpp:4]: (warning) %s in format string (no. 1) requires 'char *' but the argument type is 'std::string'.\n"
                       "[test.cpp:4]: (warning) %s in format string (no. 2) requires 'char *' but the argument type is 'int'.\n", errout.str());
 
+        check("template <class T, size_t S>\n"
+              "struct Array {\n"
+              "    T data[S];\n"
+              "    T & operator [] (size_t i) { return data[i]; }\n"
+              "};\n"
+              "void foo() {\n"
+              "    Array<int, 10> array1;\n"
+              "    Array<float, 10> array2;\n"
+              "    printf(\"%u %u\", array1[0], array2[0]);\n"
+              "}\n");
+        ASSERT_EQUALS("[test.cpp:9]: (warning) %u in format string (no. 1) requires 'unsigned int' but the argument type is 'int'.\n"
+                      "[test.cpp:9]: (warning) %u in format string (no. 2) requires 'unsigned int' but the argument type is 'float'.\n", errout.str());
+
     }
 
     void testPosixPrintfScanfParameterPosition() { // #4900  - No support for parameters in format strings
@@ -3213,6 +3226,18 @@ private:
               "    printf(\"%Ix %Ix %Ix\", lp, wp, lr);\n"
               "}\n", false, false, Settings::Win32A);
         ASSERT_EQUALS("", errout.str());
+
+        check("void foo(UINT32 a, ::UINT32 b, Fred::UINT32 c) {\n"
+              "    printf(\"%d %d %d\n\", a, b, c);\n"
+              "};\n", false, false, Settings::Win32A);
+        ASSERT_EQUALS("[test.cpp:2]: (warning) %d in format string (no. 1) requires 'int' but the argument type is 'UINT32 {aka unsigned int}'.\n"
+                      "[test.cpp:2]: (warning) %d in format string (no. 2) requires 'int' but the argument type is 'UINT32 {aka unsigned int}'.\n", errout.str());
+
+        check("void foo(LPCVOID a, ::LPCVOID b, Fred::LPCVOID c) {\n"
+              "    printf(\"%d %d %d\n\", a, b, c);\n"
+              "};\n", false, false, Settings::Win32A);
+        ASSERT_EQUALS("[test.cpp:2]: (warning) %d in format string (no. 1) requires 'int' but the argument type is 'const void *'.\n"
+                      "[test.cpp:2]: (warning) %d in format string (no. 2) requires 'int' but the argument type is 'const void *'.\n", errout.str());
 
     }
 
@@ -3645,6 +3670,14 @@ private:
     void testTernary() {  // ticket #6182
         check("void test(const std::string &val) {\n"
               "    printf(\"%s\n\", val.empty() ? \"I like to eat bananas\" : val.c_str());\n"
+              "}\n");
+        ASSERT_EQUALS("", errout.str());
+    }
+
+    void testUnsignedConst() {  // ticket #6321
+        check("void test() {\n"
+              "    unsigned const x = 5;\n"
+              "    printf(\"%u\", x);\n"
               "}\n");
         ASSERT_EQUALS("", errout.str());
     }

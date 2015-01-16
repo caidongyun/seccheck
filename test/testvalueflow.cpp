@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -403,6 +403,12 @@ private:
                "}";
         ASSERT_EQUALS(false, testValueOfX(code, 2U, 37));
 
+        code = "void f(int x) {\n"
+               "  a = x;\n"
+               "  for (; x!=1; x++) { }\n"
+               "}";
+        ASSERT_EQUALS(false, testValueOfX(code, 2U, 1));
+
         code = "void f(menu *x) {\n"
                "  a = x->parent;\n"
                "  for (i=0;(i<10) && (x!=0); i++) { x = x->next; }\n"
@@ -732,6 +738,14 @@ private:
         ASSERT_EQUALS(true, testValueOfX(code, 4U, 32));
 
         code = "void f() {\n"
+               "    int x = 33;\n"
+               "    if (x==33) goto fail;\n"
+               "    a[x]=0;\n"
+               "fail:\n"
+               "}";
+        ASSERT_EQUALS(false, testValueOfX(code, 4U, 33));
+
+        code = "void f() {\n"
                "    int x = 32;\n"
                "    if (a==1) { z=x+12; }\n"
                "    if (a==2) { z=x+32; }\n"
@@ -833,6 +847,27 @@ private:
                "  a = x;\n"  // <- x is not 3
                "}";
         ASSERT_EQUALS(false, testValueOfX(code, 6U, 3));
+
+        // pointer/reference to x
+        code = "int f(void) {\n"
+               "  int x = 2;\n"
+               "  int *px = &x;\n"
+               "  for (int i = 0; i < 1; i++) {\n"
+               "    *px = 1;\n"
+               "  }\n"
+               "  return x;\n"
+               "}";
+        ASSERT_EQUALS(false, testValueOfX(code, 7U, 2));
+
+        code = "int f(void) {\n"
+               "  int x = 5;\n"
+               "  int &rx = x;\n"
+               "  for (int i = 0; i < 1; i++) {\n"
+               "    rx = 1;\n"
+               "  }\n"
+               "  return x;\n"
+               "}";
+        ASSERT_EQUALS(false, testValueOfX(code, 7U, 5));
 
         // break
         code = "void f() {\n"
@@ -1116,12 +1151,22 @@ private:
         ASSERT_EQUALS(false, testValueOfX(code, 3U, 10));
 
         code = "void f() {\n"
-               "    for (int x = 2; x < 1; x++)\n"
+               "    int x;\n"
+               "    for (x = 2; x < 1; x++)\n"
                "        a[x] = 0;\n" // <- not 2
-               "    b = x;\n" // <- TODO: this is 2
+               "    b = x;\n" // 2
                "}";
-        ASSERT_EQUALS(false, testValueOfX(code, 3U, 2));
-        TODO_ASSERT_EQUALS(true, false, testValueOfX(code, 4U, 2));
+        ASSERT_EQUALS(false, testValueOfX(code, 4U, 2));
+        ASSERT_EQUALS(true, testValueOfX(code, 5U, 2));
+
+        code = "void f() {\n"
+               "    int x;\n"
+               "    for (x = 2; x < 1; ++x)\n"
+               "        a[x] = 0;\n" // <- not 2
+               "    b = x;\n" // 2
+               "}";
+        ASSERT_EQUALS(false, testValueOfX(code, 4U, 2));
+        ASSERT_EQUALS(true, testValueOfX(code, 5U, 2));
 
         code = "void f(int a) {\n"
                "    for (int x = a; x < 10; x++)\n"
@@ -1158,6 +1203,14 @@ private:
                "        0 : a[x];\n"
                "}";
         ASSERT_EQUALS(false, testValueOfX(code, 4U, 0));
+
+        code = "void f() {\n" // #5223
+               "    for (int x = 0; x < 300 && x < 18; x++)\n"
+               "        x;\n"
+               "}";
+        ASSERT_EQUALS(true, testValueOfX(code, 3U, 0));
+        ASSERT_EQUALS(true, testValueOfX(code, 3U, 17));
+        ASSERT_EQUALS(false, testValueOfX(code, 3U, 299));
 
         code = "void f() {\n"
                "    int x;\n"

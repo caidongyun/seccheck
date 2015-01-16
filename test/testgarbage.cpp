@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -116,13 +116,6 @@ private:
         {
             const char code[] ="enum ABC { A,B, typedef enum { C } };";
             ASSERT_THROW(checkCode(code), InternalError);
-        }
-
-        {
-            // #3314 - don't report syntax error.
-            const char code[] ="struct A { typedef B::C (A::*f)(); };";
-            checkCode(code);
-            ASSERT_EQUALS("[test.cpp:1]: (debug) Failed to parse 'typedef B :: C ( A :: * f ) ( ) ;'. The checking continues anyway.\n", errout.str());
         }
     }
 

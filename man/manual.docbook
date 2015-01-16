@@ -3,9 +3,9 @@
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
 <book>
   <bookinfo>
-    <title>Cppcheck 1.66</title>
+    <title>Cppcheck 1.68</title>
 
-    <date>2013-12-23</date>
+    <date>2014-09-28</date>
   </bookinfo>
 
   <chapter>
@@ -847,6 +847,80 @@ Checking noreturn.c...
     </section>
 
     <section>
+      <title>use-retval</title>
+
+      <para>As long as nothing else is specified, cppcheck assumes that ignoring the return value of a function is ok:</para>
+
+      <programlisting>bool test(const char* a, const char* b)
+{
+    strcmp(a, b);  // &lt;- bug: The call of strcmp does not have side-effects, but the return value is ignored.
+    return true;
+}</programlisting>
+
+      <para>In case <literal>strcmp</literal> has side effects, such as assigning the result to one of the parameters passed to it, nothing bad would happen:</para>
+
+      <programlisting># cppcheck useretval.c 
+Checking useretval.c...</programlisting>
+
+      <para>If a proper <literal>lib.cfg</literal> is provided, the bug is
+      detected:</para>
+
+      <programlisting># cppcheck --library=lib.cfg --enable=warning useretval.c 
+Checking useretval.c...
+[noreturn.c:3]: (warning) Return value of function strcmp() is not used.</programlisting>
+
+      <para>Here is a minimal <literal>lib.cfg</literal> file:</para>
+
+      <programlisting>&lt;?xml version="1.0"?&gt;
+&lt;def&gt;
+  &lt;function name="strcmp"&gt;
+    &lt;use-retval/&gt;
+  &lt;/function&gt;
+&lt;/def&gt;</programlisting>
+    </section>
+
+    <section>
+      <title>define</title>
+
+      <para>Libraries can be used to define preprocessor macros as well. For example:</para>
+
+      <programlisting>&lt;?xml version="1.0"?&gt;
+&lt;def&gt;
+  &lt;define name="NULL_VALUE" value="0"/&gt;
+&lt;/def&gt;</programlisting>
+
+      <para>Each occurence of "NULL_VALUE" in the code would then be replaced by "0" at preprocessor stage.</para>
+    </section>
+
+    <section>
+      <title>podtype</title>
+
+      <para>Lots of code relies on typedefs providing platform independant types. "podtype"-tags can be used to provide necessary information to cppcheck to support them. Without further information, cppcheck does not understand the type "uint16_t" in the following example:</para>
+
+      <programlisting>void test() {
+    uint16_t a;
+}</programlisting>
+
+      <para>No message about variable 'a' being unused is printed:</para>
+
+      <programlisting># cppcheck --enable=style unusedvar.cpp 
+Checking unusedvar.cpp...</programlisting>
+
+      <para>If uint16_t is defined in a library as follows, the result improves:</para>
+
+      <programlisting>&lt;?xml version="1.0"?&gt;
+&lt;def&gt;
+  &lt;podtype name="uint16_t" sign="u" size="2"/&gt;
+&lt;/def&gt;</programlisting>
+
+      <para>The size of the type is specified in bytes. Possible values for the "sign" attribute are "s" (signed) and "u" (unsigned). Both attributes are optional. Using this library, cppcheck prints:</para>
+
+      <programlisting># cppcheck --library=lib.cfg --enable=style unusedvar.cpp 
+Checking unusedvar.cpp...
+[unusedvar.cpp:2]: (style) Unused variable: a</programlisting>
+    </section>
+
+    <section>
       <title>Example configuration for strcpy()</title>
 
       <para>The proper configuration for the standard strcpy() function would
@@ -915,6 +989,10 @@ Checking noreturn.c...
     &lt;summary&gt;SUMMARY&lt;/summary&gt;
   &lt;/message&gt;
 &lt;/rule&gt;</programlisting>
+
+    <para>CDATA can be used to include characters in a pattern that might interfere with XML:</para>
+
+    <programlisting>&lt;![CDATA[some&lt;strange&gt;pattern]]&gt;</programlisting>
 
     <section>
       <title>&lt;tokenlist&gt;</title>

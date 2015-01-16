@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,6 +59,7 @@ private:
         TEST_CASE(nullpointer24); // #5082 fp: chained assignment
         TEST_CASE(nullpointer25); // #5061
         TEST_CASE(nullpointer26); // #3589
+        TEST_CASE(nullpointer27); // #6014
         TEST_CASE(nullpointerSwitch); // #2626
         TEST_CASE(nullpointer_cast); // #4692
         TEST_CASE(nullpointer_castToVoid); // #3771
@@ -1302,6 +1303,36 @@ private:
               "    return 0;\n"
               "}");
         ASSERT_EQUALS("", errout.str());
+    }
+
+    void nullpointer27() { // #6014
+        check("void fgetpos(int x, int y);\n"
+              "void foo() {\n"
+              "    fgetpos(0, x);\n"
+              "    fgetpos(x, 0);\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("void fgetpos(void* x, int y);\n"
+              "void foo() {\n"
+              "    fgetpos(0, x);\n"
+              "    fgetpos(x, 0);\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:3]: (error) Null pointer dereference\n", errout.str());
+
+        check("void fgetpos(int x, void* y);\n"
+              "void foo() {\n"
+              "    fgetpos(0, x);\n"
+              "    fgetpos(x, 0);\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:4]: (error) Null pointer dereference\n", errout.str());
+
+        check("void foo() {\n"
+              "    fgetpos(0, x);\n"
+              "    fgetpos(x, 0);\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:2]: (error) Null pointer dereference\n"
+                      "[test.cpp:3]: (error) Null pointer dereference\n", errout.str());
     }
 
     void nullpointerSwitch() { // #2626
@@ -2575,6 +2606,13 @@ private:
 
         check("void f() { strtok(NULL, 'x');}");
         ASSERT_EQUALS("",errout.str());
+
+        // #6306 "false positive with strxfrm NULL argument"
+        check("void foo(void) { size_t res = strxfrm(NULL, \"foo\", 0); }");
+        ASSERT_EQUALS("",errout.str());
+        check("void foo(void) { size_t res = strxfrm(NULL, \"foo\", 42); }");
+        TODO_ASSERT_EQUALS("[test.cpp:1]: (error) Null pointer dereference\n", "", errout.str());
+
     }
 
     void nullpointerFputc() {
@@ -2658,6 +2696,9 @@ private:
               "  strdup(x);\n"
               "}");
         ASSERT_EQUALS("[test.cpp:4]: (error) Possible null pointer dereference: x\n", errout.str());
+
+        check("DIR* f(){ DIR *dirp = 0; return readdir (dirp);}");
+        ASSERT_EQUALS("[test.cpp:1]: (error) Possible null pointer dereference: dirp\n",errout.str());
     }
 };
 

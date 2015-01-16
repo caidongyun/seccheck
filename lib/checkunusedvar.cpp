@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,12 +40,12 @@ public:
     /** Store information about variable usage */
     class VariableUsage {
     public:
-        VariableUsage(const Variable *var = nullptr,
-                      VariableType type = standard,
-                      bool read = false,
-                      bool write = false,
-                      bool modified = false,
-                      bool allocateMemory = false) :
+        explicit VariableUsage(const Variable *var = nullptr,
+                               VariableType type = standard,
+                               bool read = false,
+                               bool write = false,
+                               bool modified = false,
+                               bool allocateMemory = false) :
             _var(var),
             _lastAccess(var?var->nameToken():0),
             _type(type),
@@ -93,6 +93,9 @@ public:
         }
 
     private:
+        /** No implementation */
+        ScopeGuard& operator=(const ScopeGuard &);
+
         Variables & _guarded;
         bool _insideLoop;
     };
@@ -679,7 +682,7 @@ void CheckUnusedVar::checkFunctionVariableUsage_iterateScopes(const Scope* const
                      i->typeEndToken()->isStandardType() ||
                      isRecordTypeWithoutSideEffects(i->type()) ||
                      (i->isStlType() &&
-                      !Token::Match(i->typeStartToken()->tokAt(2), "lock_guard|unique_lock|shared_ptr|unique_ptr|auto_ptr")))
+                      !Token::Match(i->typeStartToken()->tokAt(2), "lock_guard|unique_lock|shared_ptr|unique_ptr|auto_ptr|shared_lock")))
                 type = Variables::standard;
             if (type == Variables::none || isPartOfClassStructUnion(i->typeStartToken()))
                 continue;

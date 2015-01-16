@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -153,16 +153,60 @@ std::string Token::strValue() const
 
 void Token::deleteNext(unsigned long index)
 {
-    while (_next && index--) {
+    while (_next && index) {
         Token *n = _next;
         _next = n->next();
         delete n;
+        --index;
     }
 
     if (_next)
         _next->previous(this);
     else if (tokensBack)
         *tokensBack = this;
+}
+
+void Token::swapWithNext()
+{
+    if (_next) {
+        Token temp(0);
+
+        temp._str = _next->_str;
+        temp._type = _next->_type;
+        temp._flags = _next->_flags;
+        temp._varId = _next->_varId;
+        temp._fileIndex = _next->_fileIndex;
+        temp._link = _next->_link;
+        temp._scope = _next->_scope;
+        temp._function = _next->_function;
+        temp._originalName = _next->_originalName;
+        temp.values = _next->values;
+        temp._progressValue = _next->_progressValue;
+
+        _next->_str = _str;
+        _next->_type = _type;
+        _next->_flags = _flags;
+        _next->_varId = _varId;
+        _next->_fileIndex = _fileIndex;
+        _next->_link = _link;
+        _next->_scope = _scope;
+        _next->_function = _function;
+        _next->_originalName = _originalName;
+        _next->values = values;
+        _next->_progressValue = _progressValue;
+
+        _str = temp._str;
+        _type = temp._type;
+        _flags = temp._flags;
+        _varId = temp._varId;
+        _fileIndex = temp._fileIndex;
+        _link = temp._link;
+        _scope = temp._scope;
+        _function = temp._function;
+        _originalName = temp._originalName;
+        values = temp.values;
+        _progressValue = temp._progressValue;
+    }
 }
 
 void Token::deleteThis()

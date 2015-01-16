@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1458,7 +1458,14 @@ private:
         // error (pointer)
         check("void f(std::set<int> *s)\n"
               "{\n"
-              "    if (*s.find(12)) { }\n"
+              "    if ((*s).find(12)) { }\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:3]: (warning) Suspicious condition. The result of find() is an iterator, but it is not properly checked.\n", errout.str());
+
+        // error (pointer)
+        check("void f(std::set<int> *s)\n"
+              "{\n"
+              "    if (s->find(12)) { }\n"
               "}");
         ASSERT_EQUALS("[test.cpp:3]: (warning) Suspicious condition. The result of find() is an iterator, but it is not properly checked.\n", errout.str());
 
@@ -1490,6 +1497,13 @@ private:
               "}");
         ASSERT_EQUALS("[test.cpp:3]: (warning) Suspicious condition. The result of find() is an iterator, but it is not properly checked.\n", errout.str());
 
+        // error (assignment)
+        check("void f(std::set<int> s)\n"
+              "{\n"
+              "    if (a || (x = s.find(12))) { }\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:3]: (warning) Suspicious condition. The result of find() is an iterator, but it is not properly checked.\n", errout.str());
+
         // ok (simple)
         check("void f(std::set<int> s)\n"
               "{\n"
@@ -1500,7 +1514,7 @@ private:
         // ok (pointer)
         check("void f(std::set<int> *s)\n"
               "{\n"
-              "    if (*s.find(12) != s.end()) { }\n"
+              "    if ((*s).find(12) != s.end()) { }\n"
               "}");
         ASSERT_EQUALS("", errout.str());
 
@@ -1532,6 +1546,13 @@ private:
               "}");
         ASSERT_EQUALS("", errout.str());
 
+        // ok (assignment)
+        check("void f(std::set<int> s)\n"
+              "{\n"
+              "    if (a || (x = s.find(12)) != s.end()) { }\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
 
         // ---------------------------
         // std::find
@@ -1548,6 +1569,13 @@ private:
         check("void f()\n"
               "{\n"
               "    if (std::find(a,b,c) != c) { }\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        // ok (less than comparison, #6217)
+        check("void f(std::vector<int> s)\n"
+              "{\n"
+              "    if (std::find(a, b, c) < d) { }\n"
               "}");
         ASSERT_EQUALS("", errout.str());
 
@@ -1574,7 +1602,14 @@ private:
         // error (pointer)
         check("void f(const std::string *s)\n"
               "{\n"
-              "    if (*s.find(\"abc\")) { }\n"
+              "    if ((*s).find(\"abc\")) { }\n"
+              "}");
+        ASSERT_EQUALS("[test.cpp:3]: (performance) Inefficient usage of string::find() in condition; string::compare() would be faster.\n", errout.str());
+
+        // error (pointer)
+        check("void f(const std::string *s)\n"
+              "{\n"
+              "    if (s->find(\"abc\")) { }\n"
               "}");
         ASSERT_EQUALS("[test.cpp:3]: (performance) Inefficient usage of string::find() in condition; string::compare() would be faster.\n", errout.str());
 

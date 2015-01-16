@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -240,8 +240,8 @@ unsigned int TemplateSimplifier::templateParameters(const Token *tok)
         if (Token::Match(tok, "& ::| %var%"))
             tok = tok->next();
 
-        // Skip 'typename...' (Ticket #5774)
-        if (Token::simpleMatch(tok, "typename . . .")) {
+        // Skip variadic types (Ticket #5774, #6059, #6172)
+        if (Token::Match(tok, "%type% . . .")) {
             tok = tok->tokAt(4);
             continue;
         }
@@ -721,7 +721,19 @@ void TemplateSimplifier::expandTemplate(
     std::vector<const Token *> &typesUsedInTemplateInstantiation,
     std::list<Token *> &templateInstantiations)
 {
+    bool inTemplateDefinition=false;
+    std::vector<const Token *> localTypeParametersInDeclaration;
     for (const Token *tok3 = tokenlist.front(); tok3; tok3 = tok3 ? tok3->next() : nullptr) {
+        if (tok3->str()=="template") {
+            if (tok3->next() && tok3->next()->str()=="<") {
+                TemplateParametersInDeclaration(tok3->tokAt(2), localTypeParametersInDeclaration);
+                if (localTypeParametersInDeclaration.size() != typeParametersInDeclaration.size())
+                    inTemplateDefinition = false; // Partial specialization
+                else
+                    inTemplateDefinition = true;
+            } else
+                inTemplateDefinition = false; // Only template instantiation
+        }
         if (Token::Match(tok3, "{|(|["))
             tok3 = tok3->link();
 
@@ -731,7 +743,8 @@ void TemplateSimplifier::expandTemplate(
         }
 
         // member function implemented outside class definition
-        else if (TemplateSimplifier::instantiateMatch(tok3, name, typeParametersInDeclaration.size(), ":: ~| %var% (")) {
+        else if (inTemplateDefinition &&
+                 TemplateSimplifier::instantiateMatch(tok3, name, typeParametersInDeclaration.size(), ":: ~| %var% (")) {
             tokenlist.addtoken(newName, tok3->linenr(), tok3->fileIndex());
             while (tok3 && tok3->str() != "::")
                 tok3 = tok3->next();
@@ -1150,6 +1163,17 @@ bool TemplateSimplifier::simplifyCalculations(Token *_tokens)
     return ret;
 }
 
+const Token * TemplateSimplifier::TemplateParametersInDeclaration(
+    const Token * tok,
+    std::vector<const Token *> & typeParametersInDeclaration)
+{
+    typeParametersInDeclaration.clear();
+    for (; tok && tok->str() != ">"; tok = tok->next()) {
+        if (Token::Match(tok, "%var% ,|>"))
+            typeParametersInDeclaration.push_back(tok);
+    }
+    return tok;
+}
 
 bool TemplateSimplifier::simplifyTemplateInstantiations(
     TokenList& tokenlist,
@@ -1165,10 +1189,7 @@ bool TemplateSimplifier::simplifyTemplateInstantiations(
 
     // Contains tokens such as "T"
     std::vector<const Token *> typeParametersInDeclaration;
-    for (tok = tok->tokAt(2); tok && tok->str() != ">"; tok = tok->next()) {
-        if (Token::Match(tok, "%var% ,|>"))
-            typeParametersInDeclaration.push_back(tok);
-    }
+    tok = TemplateParametersInDeclaration(tok->tokAt(2), typeParametersInDeclaration);
 
     // bail out if the end of the file was reached
     if (!tok)
@@ -1294,6 +1315,8 @@ bool TemplateSimplifier::simplifyTemplateInstantiations(
                         ++indentlevel5;
                     else if (indentlevel5 > 0 && Token::Match(tok5, "> [,>]"))
                         --indentlevel5;
+                    else if (indentlevel5 > 0 && tok5->str() == ">>")
+                        indentlevel5 -= 2;
                     else if (indentlevel5 == 0) {
                         if (tok5->str() != ",") {
                             if (!typetok ||

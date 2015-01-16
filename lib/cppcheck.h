@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include "config.h"
 #include "settings.h"
 #include "errorlogger.h"
+#include "check.h"
 
 #include <string>
 #include <list>
@@ -82,12 +83,6 @@ public:
     unsigned int check(const std::string &path, const std::string &content);
 
     /**
-     * @brief Check function usage.
-     * @note Call this after all files has been checked
-     */
-    void checkFunctionUsage();
-
-    /**
      * @brief Get reference to current settings.
      * @return a reference to current settings
      */
@@ -133,6 +128,9 @@ public:
     void dontSimplify() {
         _simplify = false;
     }
+
+    /** analyse whole program, run this after all TUs has been scanned. */
+    void analyseWholeProgram();
 
 private:
 
@@ -210,6 +208,9 @@ private:
 
     /** Simplify code? true by default */
     bool _simplify;
+
+    /** File info used for whole program analysis */
+    std::list<Check::FileInfo*> fileInfo;
 };
 
 /// @}

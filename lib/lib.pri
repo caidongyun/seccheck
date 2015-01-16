@@ -9,7 +9,6 @@ HEADERS += $${BASEPATH}check.h \
            $${BASEPATH}check.h \
            $${BASEPATH}check64bit.h \
            $${BASEPATH}checkassert.h \
-           $${BASEPATH}checkassignif.h \
            $${BASEPATH}checkautovariables.h \
            $${BASEPATH}checkbool.h \
            $${BASEPATH}checkboost.h \
@@ -23,7 +22,7 @@ HEADERS += $${BASEPATH}check.h \
            $${BASEPATH}checkmemoryleak.h \
            $${BASEPATH}checknonreentrantfunctions.h \
            $${BASEPATH}checknullpointer.h \
-           $${BASEPATH}checkobsoletefunctions.h \
+           $${BASEPATH}checkobsolescentfunctions.h \
            $${BASEPATH}checkother.h \
            $${BASEPATH}checkpostfixoperator.h \
            $${BASEPATH}checksizeof.h \
@@ -55,7 +54,6 @@ HEADERS += $${BASEPATH}check.h \
 SOURCES += $${BASEPATH}check.cpp \
            $${BASEPATH}check64bit.cpp \
            $${BASEPATH}checkassert.cpp \
-           $${BASEPATH}checkassignif.cpp \
            $${BASEPATH}checkautovariables.cpp \
            $${BASEPATH}checkbool.cpp \
            $${BASEPATH}checkboost.cpp \
@@ -69,7 +67,7 @@ SOURCES += $${BASEPATH}check.cpp \
            $${BASEPATH}checkmemoryleak.cpp \
            $${BASEPATH}checknonreentrantfunctions.cpp \
            $${BASEPATH}checknullpointer.cpp \
-           $${BASEPATH}checkobsoletefunctions.cpp \
+           $${BASEPATH}checkobsolescentfunctions.cpp \
            $${BASEPATH}checkother.cpp \
            $${BASEPATH}checkpostfixoperator.cpp \
            $${BASEPATH}checksizeof.cpp \

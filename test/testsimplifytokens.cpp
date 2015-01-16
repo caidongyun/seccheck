@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,9 +34,11 @@ public:
 
 private:
     Settings settings_std;
+    Settings settings_windows;
 
     void run() {
         LOAD_LIB_2(settings_std.library, "std.cfg");
+        LOAD_LIB_2(settings_windows.library, "windows.cfg");
 
         // Make sure the Tokenizer::simplifyTokenList works.
         // The order of the simplifications is important. So this test
@@ -298,7 +300,23 @@ private:
         return tokenizer.tokens()->stringifyList(0, !simplify);
     }
 
-    std::string tok(const char code[], const char filename[]) {
+    std::string tokWithWindows(const char code[], bool simplify = true, Settings::PlatformType type = Settings::Unspecified) {
+        errout.str("");
+
+        settings_windows.addEnabled("portability");
+        settings_windows.platform(type);
+        Tokenizer tokenizer(&settings_windows, this);
+
+        std::istringstream istr(code);
+        tokenizer.tokenize(istr, "test.cpp");
+
+        if (simplify)
+            tokenizer.simplifyTokenList2();
+
+        return tokenizer.tokens()->stringifyList(0, !simplify);
+    }
+
+    std::string tok(const char code[], const char filename[], bool simplify = true) {
         errout.str("");
 
         Settings settings;
@@ -306,7 +324,8 @@ private:
 
         std::istringstream istr(code);
         tokenizer.tokenize(istr, filename);
-        tokenizer.simplifyTokenList2();
+        if (simplify)
+            tokenizer.simplifyTokenList2();
 
         return tokenizer.tokens()->stringifyList(0, false);
     }
@@ -897,7 +916,7 @@ private:
         const char code[] = ";INT32 i[10];\n"
                             "sizeof(i[0]);\n";
         ASSERT_EQUALS("; INT32 i [ 10 ] ; sizeof ( i [ 0 ] ) ;", tok(code, true, Settings::Unspecified));
-        ASSERT_EQUALS("; int i [ 10 ] ; 4 ;", tok(code, true, Settings::Win32A));
+        ASSERT_EQUALS("; int i [ 10 ] ; 4 ;", tokWithWindows(code, true, Settings::Win32A));
     }
 
     void sizeof8() {
@@ -1666,68 +1685,71 @@ private:
     }
 
     void not1() {
-        ASSERT_EQUALS("void f ( ) { if ( ! p ) { ; } }", tok("void f() { if (not p); }", false));
-        ASSERT_EQUALS("void f ( ) { if ( p && ! q ) { ; } }", tok("void f() { if (p && not q); }", false));
-        ASSERT_EQUALS("void f ( ) { a = ! ( p && q ) ; }", tok("void f() { a = not(p && q); }", false));
+        ASSERT_EQUALS("void f ( ) { if ( ! p ) { ; } }", tok("void f() { if (not p); }", "test.c", false));
+        ASSERT_EQUALS("void f ( ) { if ( p && ! q ) { ; } }", tok("void f() { if (p && not q); }", "test.c", false));
+        ASSERT_EQUALS("void f ( ) { a = ! ( p && q ) ; }", tok("void f() { a = not(p && q); }", "test.c", false));
         // Don't simplify 'not' or 'compl' if they are defined as a type;
         // in variable declaration and in function declaration/definition
-        ASSERT_EQUALS("struct not { int x ; } ;", tok("struct not { int x; };", false));
-        ASSERT_EQUALS("void f ( ) { not p ; compl c ; }", tok(" void f() { not p; compl c; }", false));
-        ASSERT_EQUALS("void foo ( not i ) ;", tok("void foo(not i);", false));
-        ASSERT_EQUALS("int foo ( not i ) { return g ( i ) ; }", tok("int foo(not i) { return g(i); }", false));
+        ASSERT_EQUALS("struct not { int x ; } ;", tok("struct not { int x; };", "test.c", false));
+        ASSERT_EQUALS("void f ( ) { not p ; compl c ; }", tok(" void f() { not p; compl c; }", "test.c", false));
+        ASSERT_EQUALS("void foo ( not i ) ;", tok("void foo(not i);", "test.c", false));
+        ASSERT_EQUALS("int foo ( not i ) { return g ( i ) ; }", tok("int foo(not i) { return g(i); }", "test.c", false));
     }
 
     void and1() {
         ASSERT_EQUALS("void f ( ) { if ( p && q ) { ; } }",
-                      tok("void f() { if (p and q) ; }", false));
+                      tok("void f() { if (p and q) ; }", "test.c", false));
 
         ASSERT_EQUALS("void f ( ) { if ( foo ( ) && q ) { ; } }",
-                      tok("void f() { if (foo() and q) ; }", false));
+                      tok("void f() { if (foo() and q) ; }", "test.c", false));
 
         ASSERT_EQUALS("void f ( ) { if ( foo ( ) && bar ( ) ) { ; } }",
-                      tok("void f() { if (foo() and bar()) ; }", false));
+                      tok("void f() { if (foo() and bar()) ; }", "test.c", false));
 
         ASSERT_EQUALS("void f ( ) { if ( p && bar ( ) ) { ; } }",
-                      tok("void f() { if (p and bar()) ; }", false));
+                      tok("void f() { if (p and bar()) ; }", "test.c", false));
 
         ASSERT_EQUALS("void f ( ) { if ( p && ! q ) { ; } }",
-                      tok("void f() { if (p and not q) ; }", false));
+                      tok("void f() { if (p and not q) ; }", "test.c", false));
 
         ASSERT_EQUALS("void f ( ) { r = a && b ; }",
-                      tok("void f() { r = a and b; }", false));
+                      tok("void f() { r = a and b; }", "test.c", false));
 
         ASSERT_EQUALS("void f ( ) { r = ( a || b ) && ( c || d ) ; }",
-                      tok("void f() { r = (a || b) and (c || d); }", false));
+                      tok("void f() { r = (a || b) and (c || d); }", "test.c", false));
+
+        ASSERT_EQUALS("void f ( ) { if ( test1 [ i ] == 'A' && test2 [ i ] == 'C' ) { } }",
+                      tok("void f() { if (test1[i] == 'A' and test2[i] == 'C') {} }", "test.c", false));
     }
 
     void or1() {
         ASSERT_EQUALS("void f ( ) { if ( p || q ) { ; } }",
-                      tok("void f() { if (p or q) ; }", false));
+                      tok("void f() { if (p or q) ; }", "test.c", false));
 
         ASSERT_EQUALS("void f ( ) { if ( foo ( ) || q ) { ; } }",
-                      tok("void f() { if (foo() or q) ; }", false));
+                      tok("void f() { if (foo() or q) ; }", "test.c", false));
 
         ASSERT_EQUALS("void f ( ) { if ( foo ( ) || bar ( ) ) { ; } }",
-                      tok("void f() { if (foo() or bar()) ; }", false));
+                      tok("void f() { if (foo() or bar()) ; }", "test.c", false));
 
         ASSERT_EQUALS("void f ( ) { if ( p || bar ( ) ) { ; } }",
-                      tok("void f() { if (p or bar()) ; }", false));
+                      tok("void f() { if (p or bar()) ; }", "test.c", false));
 
         ASSERT_EQUALS("void f ( ) { if ( p || ! q ) { ; } }",
-                      tok("void f() { if (p or not q) ; }", false));
+                      tok("void f() { if (p or not q) ; }", "test.c", false));
 
         ASSERT_EQUALS("void f ( ) { r = a || b ; }",
-                      tok("void f() { r = a or b; }", false));
+                      tok("void f() { r = a or b; }", "test.c", false));
 
         ASSERT_EQUALS("void f ( ) { r = ( a && b ) || ( c && d ) ; }",
-                      tok("void f() { r = (a && b) or (c && d); }", false));
+                      tok("void f() { r = (a && b) or (c && d); }", "test.c", false));
     }
 
     void cAlternativeTokens() {
         ASSERT_EQUALS("void f ( ) { err = err | ( ( r & s ) && ! t ) ; }",
-                      tok("void f() { err or_eq ((r bitand s) and not t); }", false));
+                      tok("void f() { err or_eq ((r bitand s) and not t); }", "test.c", false));
         ASSERT_EQUALS("void f ( ) const { r = f ( a [ 4 ] | 15 , ~ c , ! d ) ; }",
-                      tok("void f() const { r = f(a[4] bitor 0x0F, compl c, not d) ; }", false));
+                      tok("void f() const { r = f(a[4] bitor 0x0F, compl c, not d) ; }", "test.c", false));
 
     }
 
@@ -1905,6 +1927,18 @@ private:
             const char expected[]  = "int foo ( ) "
                                      "{"
                                      " doSomething ( ) ; return 0 ; "
+                                     "}";
+            ASSERT_EQUALS(expected, tok(code));
+        }
+
+        {
+            const char code[] = "int foo ()\n"
+                                "{\n"
+                                "    return a=1, b=2;\n"
+                                "}\n";
+            const char expected[]  = "int foo ( ) "
+                                     "{"
+                                     " a = 1 ; return b = 2 ; "
                                      "}";
             ASSERT_EQUALS(expected, tok(code));
         }
@@ -2375,6 +2409,16 @@ private:
 
         ASSERT_EQUALS("void foo ( ) { exit ( 0 ) ; }",
                       tokWithStdLib("void foo() { do { exit(0); } while (true); }"));
+
+        // #6187
+        tokWithStdLib("void foo() {\n"
+                      "  goto label;\n"
+                      "  for (int i = 0; i < 0; ++i) {\n"
+                      "    ;\n"
+                      "label:\n"
+                      "    ;\n"
+                      "  }\n"
+                      "}");
     }
 
     void strcat1() {

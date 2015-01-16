@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -283,7 +283,7 @@ void ErrorLogger::ErrorMessage::findAndReplace(std::string &source, const std::s
     std::string::size_type index = 0;
     while ((index = source.find(searchFor, index)) != std::string::npos) {
         source.replace(index, searchFor.length(), replaceWith);
-        index += replaceWith.length() - searchFor.length() + 1;
+        index = (std::string::difference_type)index + (std::string::difference_type)replaceWith.length() - (std::string::difference_type)searchFor.length() + 1;
     }
 }
 

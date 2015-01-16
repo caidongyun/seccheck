@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ class CPPCHECKLIB Library {
 public:
     Library();
 
-    enum ErrorCode { OK, FILE_NOT_FOUND, BAD_XML, BAD_ELEMENT, MISSING_ATTRIBUTE, BAD_ATTRIBUTE, BAD_ATTRIBUTE_VALUE, UNSUPPORTED_FORMAT };
+    enum ErrorCode { OK, FILE_NOT_FOUND, BAD_XML, BAD_ELEMENT, MISSING_ATTRIBUTE, BAD_ATTRIBUTE, BAD_ATTRIBUTE_VALUE, UNSUPPORTED_FORMAT, DUPLICATE_PLATFORM_TYPE, PLATFORM_TYPE_REDEFINED };
 
     class Error {
     public:
@@ -330,6 +330,59 @@ public:
         return (it != podtypes.end()) ? &(it->second) : nullptr;
     }
 
+    struct PlatformType {
+        PlatformType()
+            : _signed(false)
+            , _unsigned(false)
+            , _long(false)
+            , _pointer(false)
+            , _ptr_ptr(false)
+            , _const_ptr(false) {
+        }
+        bool operator == (const PlatformType & type) const {
+            return (_type == type._type &&
+                    _signed == type._signed &&
+                    _unsigned == type._unsigned &&
+                    _long == type._long &&
+                    _pointer == type._pointer &&
+                    _ptr_ptr == type._ptr_ptr &&
+                    _const_ptr == type._const_ptr);
+        }
+        bool operator != (const PlatformType & type) const {
+            return !(*this == type);
+        }
+        std::string _type;
+        bool _signed;
+        bool _unsigned;
+        bool _long;
+        bool _pointer;
+        bool _ptr_ptr;
+        bool _const_ptr;
+    };
+
+    struct Platform {
+        const PlatformType *platform_type(const std::string &name) const {
+            const std::map<std::string, struct PlatformType>::const_iterator it = _platform_types.find(name);
+            return (it != _platform_types.end()) ? &(it->second) : nullptr;
+        }
+        std::map<std::string, PlatformType> _platform_types;
+    };
+
+    const PlatformType *platform_type(const std::string &name, const std::string & platform) const {
+        const std::map<std::string, Platform>::const_iterator it = platforms.find(platform);
+
+        if (it != platforms.end()) {
+            const PlatformType * const type = it->second.platform_type(name);
+
+            if (type)
+                return type;
+        }
+
+        const std::map<std::string, PlatformType>::const_iterator it2 = platform_types.find(name);
+
+        return (it2 != platform_types.end()) ? &(it2->second) : nullptr;
+    }
+
 private:
     class ExportedFunctions {
     public:
@@ -401,6 +454,8 @@ private:
     std::map<std::string,int> _reflection; // invocation of reflection
     std::map<std::string, std::pair<bool, bool> > _formatstr; // Parameters for format string checking
     std::map<std::string, struct PodType> podtypes; // pod types
+    std::map<std::string, PlatformType> platform_types; // platform independent typedefs
+    std::map<std::string, Platform> platforms; // platform dependent typedefs
 
     const ArgumentChecks * getarg(const std::string &functionName, int argnr) const;
 

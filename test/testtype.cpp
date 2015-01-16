@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,6 +78,12 @@ private:
         check("int foo(int x) {\n"
               "   return (long long)x << 40;\n"
               "}",&settings);
+        ASSERT_EQUALS("", errout.str());
+
+        check("void foo() {\n"
+              "  QList<int> someList;\n"
+              "  someList << 300;\n"
+              "}", &settings);
         ASSERT_EQUALS("", errout.str());
     }
 

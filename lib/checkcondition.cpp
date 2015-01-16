@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -425,6 +425,11 @@ void CheckCondition::oppositeInnerCondition()
                         break;
                 }
                 if (Token::Match(tok->previous(), "++|--|& %var%"))
+                    break;
+                if (tok->variable() &&
+                    Token::Match(tok, "%var% . %var% (") &&
+                    !tok->variable()->isConst() &&
+                    !(tok->tokAt(2)->function() && tok->tokAt(2)->function()->isConst))
                     break;
                 if (Token::Match(tok->previous(), "[(,] %var% [,)]")) {
                     // is variable unchanged? default is false..

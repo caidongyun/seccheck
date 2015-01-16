@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -147,32 +147,7 @@ private:
         checkMemoryLeak.check();
     }
 
-	void checkDebug(const char code[], const Settings *settings = nullptr) {
-        // Clear the error buffer..
-        errout.str("");
-        settings1.debug = true;
-        settings1.debugwarnings = true;
 
-        if (!settings) {
-            settings = &settings1;
-        }
-
-        // Tokenize..
-        Tokenizer tokenizer(settings, this);
-        std::istringstream istr(code);
-        tokenizer.tokenize(istr, "test.cpp");
-        tokenizer.simplifyTokenList2();
-        tokenizer.printDebugOutput();
-
-        // Check for memory leaks..
-        CheckMemoryLeakInFunction checkMemoryLeak(&tokenizer, settings, this);
-        checkMemoryLeak.checkReallocUsage();
-        checkMemoryLeak.check();
-
-        settings1.debug = false;
-        settings1.debugwarnings = false;
-    }
-	
     void run() {
         LOAD_LIB_2(settings1.library, "std.cfg");
         LOAD_LIB_2(settings1.library, "gtk.cfg");
@@ -267,7 +242,6 @@ private:
 
         TEST_CASE(allocfunc1);
         TEST_CASE(allocfunc2);
-        TEST_CASE(allocfunc2a);
         TEST_CASE(allocfunc3);
         TEST_CASE(allocfunc4);
         TEST_CASE(allocfunc5);
@@ -284,6 +258,7 @@ private:
         TEST_CASE(throw2);
 
         TEST_CASE(linux_list_1);
+        TEST_CASE(linux_list_2);
 
         TEST_CASE(sizeof1);
 
@@ -356,6 +331,7 @@ private:
         TEST_CASE(tmpfile_function);
         TEST_CASE(fcloseall_function);
         TEST_CASE(file_functions);
+        TEST_CASE(posix_rewinddir);
         TEST_CASE(getc_function);
 
         TEST_CASE(open_function);
@@ -391,6 +367,7 @@ private:
 
         // test that the cfg files are configured correctly
         TEST_CASE(posixcfg);
+        TEST_CASE(posixcfg_mmap);
     }
 
     std::string getcode(const char code[], const char varname[], bool classfunc=false) {
@@ -478,7 +455,12 @@ private:
         ASSERT_EQUALS(";;if{}", getcode("char *s; if (a) { }", "s"));
         ASSERT_EQUALS(";;dealloc;ifv{}", getcode("FILE *f; if (fclose(f)) { }", "f"));
         ASSERT_EQUALS(";;if(!var){}else{}", getcode("char *s; if (!s) { } else { }", "s"));
-        ASSERT_EQUALS(";;if{}", getcode("char *s; if (a && s) { }", "s"));
+        TODO_ASSERT_EQUALS(";;ifv{}",";;if{}", getcode("char *s; if (a && s) { }", "s"));
+        ASSERT_EQUALS(";;ifv{}", getcode("char *s; if (s && a) { }", "s"));
+        ASSERT_EQUALS(";;;ifv{}", getcode("char *s; int a; if (a && s) { }", "s"));
+        ASSERT_EQUALS(";;;ifv{}", getcode("char *s; int a; if (s && a) { }", "s"));
+        ASSERT_EQUALS(";;ifv{}", getcode("char *s; if (a || s) { }", "s"));
+        ASSERT_EQUALS(";;ifv{}", getcode("char *s; if (s || a) { }", "s"));
         ASSERT_EQUALS(";;if(!var){}", getcode("char *s; if (a && !s) { }", "s"));
         ASSERT_EQUALS(";;ifv{}", getcode("char *s; if (foo(!s)) { }", "s"));
         ASSERT_EQUALS(";;;if{dealloc;};if{dealloc;return;}assign;returnuse;", getcode("char *buf, *tmp; tmp = realloc(buf, 40); if (!(tmp)) { free(buf); return; } buf = tmp; return buf;", "buf"));
@@ -2506,7 +2488,20 @@ private:
               "}");
         ASSERT_EQUALS("", errout.str());
 
-        
+        check("char *a(char *a)\n"
+              "{\n"
+              "    return realloc(a, 10);\n"
+              "}\n"
+              "static void b()\n"
+              "{\n"
+              "    char *p = a(0);\n"
+              "    char *q = a(p);\n"
+              "    if (q)\n"
+              "        free(q);\n"
+              "    else\n"
+              "        free(p);\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
 
         check("char *a()\n"
               "{\n"
@@ -2528,25 +2523,6 @@ private:
               "    g_free(p);\n"
               "}");
         ASSERT_EQUALS("", errout.str());
-    }
-
-    void allocfunc2a()
-    {
-        check("char *a(char *a)\n"
-              "{\n"
-              "    return realloc(a, 10);\n"
-              "}\n"
-              "static void b()\n"
-              "{\n"
-              "    char *p = a(0);\n"
-              "    char *q = a(p);\n"
-              "    if (q)\n"
-              "        free(q);\n"
-              "    else\n"
-              "        free(p);\n"
-              "}");
-        std::string s = errout.str();
-        ASSERT_EQUALS("", s);
     }
 
     void allocfunc3() {
@@ -2884,6 +2860,14 @@ private:
               "    func(&ab->a);\n"
               "}");
 
+        ASSERT_EQUALS("", errout.str());
+    }
+
+    void linux_list_2() { // #5993
+        check("void foo() {\n"
+              "    struct AB *ab = malloc(sizeof(struct AB));\n"
+              "    list_add_tail(&(ab->list));\n"
+              "}");
         ASSERT_EQUALS("", errout.str());
     }
 
@@ -3699,6 +3683,14 @@ private:
         ASSERT_EQUALS("", errout.str());
     }
 
+    void posix_rewinddir() {
+        Settings settings;
+        settings.standards.posix = true;
+
+        check("void f(DIR *p) { rewinddir(p); }", &settings);
+        ASSERT_EQUALS("", errout.str());
+    }
+
     void exit2() {
         check("void f()\n"
               "{\n"
@@ -4252,7 +4244,6 @@ private:
         ASSERT_EQUALS("[test.cpp:5]: (error) Memory leak: p\n", errout.str());
     }
 
-
     // Test that posix.cfg is configured correctly
     void posixcfg() {
         Settings settings;
@@ -4295,6 +4286,13 @@ private:
               "}", &settings);
         ASSERT_EQUALS("[test.cpp:3]: (error) Resource leak: f\n", errout.str());
 
+        // strdupa allocates on the stack, no free() needed
+        check("void x()\n"
+              "{\n"
+              "    char *s = strdupa(\"Test\");\n"
+              "}", &settings);
+        ASSERT_EQUALS("", errout.str());
+
         LOAD_LIB_2(settings.library, "gtk.cfg");
 
         check("void f(char *a) {\n"
@@ -4304,6 +4302,54 @@ private:
               "    mktemp(s);\n"
               "}", &settings);
         ASSERT_EQUALS("[test.cpp:6]: (error) Memory leak: s\n", errout.str());
+    }
+
+    void posixcfg_mmap() {
+        Settings settings;
+        settings.standards.posix = true;
+        LOAD_LIB_2(settings.library, "posix.cfg");
+
+        // normal mmap
+        check("void f(int fd) {\n"
+              "    char *addr = mmap(NULL, 255, PROT_NONE, MAP_PRIVATE, fd, 0);\n"
+              "    munmap(addr, 255);\n"
+              "}", &settings);
+        ASSERT_EQUALS("", errout.str());
+
+        // mmap64 - large file support
+        check("void f(int fd) {\n"
+              "    char *addr = mmap64(NULL, 255, PROT_NONE, MAP_PRIVATE, fd, 0);\n"
+              "    munmap(addr, 255);\n"
+              "}", &settings);
+        ASSERT_EQUALS("", errout.str());
+
+        // pass in fixed address
+        check("void f(int fd) {\n"
+              "    void *fixed_addr = 123;\n"
+              "    void *mapped_addr = mmap(fixed_addr, 255, PROT_NONE, MAP_PRIVATE, fd, 0);\n"
+              "    munmap(mapped_addr, 255);\n"
+              "}", &settings);
+        ASSERT_EQUALS("", errout.str());
+
+        // no munmap()
+        check("void f(int fd) {\n"
+              "    void *addr = mmap(NULL, 255, PROT_NONE, MAP_PRIVATE, fd, 0);\n"
+              "}", &settings);
+        ASSERT_EQUALS("[test.cpp:3]: (error) Memory leak: addr\n", errout.str());
+
+        // wrong deallocator
+        check("void f(int fd) {\n"
+              "    void *addr = mmap(NULL, 255, PROT_NONE, MAP_PRIVATE, fd, 0);\n"
+              "    free(addr);\n"
+              "}", &settings);
+        ASSERT_EQUALS("[test.cpp:3]: (error) Mismatching allocation and deallocation: addr\n", errout.str());
+
+        // wrong deallocator for mmap64
+        check("void f(int fd) {\n"
+              "    void *addr = mmap64(NULL, 255, PROT_NONE, MAP_PRIVATE, fd, 0);\n"
+              "    free(addr);\n"
+              "}", &settings);
+        ASSERT_EQUALS("[test.cpp:3]: (error) Mismatching allocation and deallocation: addr\n", errout.str());
     }
 };
 

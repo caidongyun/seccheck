@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -427,7 +427,7 @@ struct AST_state {
     unsigned int depth;
     unsigned int inArrayAssignment;
     bool cpp;
-    AST_state(bool cpp_) : depth(0), inArrayAssignment(0), cpp(cpp_) {}
+    explicit AST_state(bool cpp_) : depth(0), inArrayAssignment(0), cpp(cpp_) {}
 };
 
 static bool iscast(const Token *tok)

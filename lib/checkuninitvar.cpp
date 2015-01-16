@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -593,7 +593,7 @@ private:
             }
         }
 
-        if (Token::Match(&tok, "%var% (") && uvarFunctions.find(tok.str()) == uvarFunctions.end()) {
+        if (Token::Match(&tok, "%var% (")) {
             // sizeof/typeof doesn't dereference. A function name that is all uppercase
             // might be an unexpanded macro that uses sizeof/typeof
             if (Token::Match(&tok, "sizeof|typeof ("))
@@ -912,9 +912,6 @@ private:
 
 public:
 
-    /** Functions that don't handle uninitialized variables well */
-    static std::set<std::string> uvarFunctions;
-
     static void analyseFunctions(const Token * const tokens, std::set<std::string> &func) {
         for (const Token *tok = tokens; tok; tok = tok->next()) {
             if (tok->str() == "{") {
@@ -1005,34 +1002,34 @@ public:
     }
 };
 
-/** Functions that don't handle uninitialized variables well */
-std::set<std::string> UninitVar::uvarFunctions;
-
-
 /// @}
 
 
-void CheckUninitVar::analyse(const Token * tokens, std::set<std::string> &func) const
+Check::FileInfo *CheckUninitVar::getFileInfo(const Tokenizer *tokenizer, const Settings *settings) const
 {
-    UninitVar::analyseFunctions(tokens, func);
+    (void)settings;
+    MyFileInfo * mfi = new MyFileInfo;
+    analyseFunctions(tokenizer, mfi->uvarFunctions);
+    // TODO: add suspicious function calls
+    return mfi;
 }
 
-void CheckUninitVar::saveAnalysisData(const std::set<std::string> &data) const
+void CheckUninitVar::analyseWholeProgram(const std::list<Check::FileInfo*> &fileInfo, ErrorLogger &errorLogger)
 {
-    UninitVar::uvarFunctions.insert(data.begin(), data.end());
+    (void)fileInfo;
+    (void)errorLogger;
+}
+
+void CheckUninitVar::analyseFunctions(const Tokenizer *tokenizer, std::set<std::string> &f) const
+{
+    UninitVar::analyseFunctions(tokenizer->tokens(), f);
 }
 
 void CheckUninitVar::executionPaths()
 {
     // check if variable is accessed uninitialized..
-    {
-        // no writing if multiple threads are used (TODO: thread safe analysis?)
-        if (_settings->_jobs == 1)
-            UninitVar::analyseFunctions(_tokenizer->tokens(), UninitVar::uvarFunctions);
-
-        UninitVar c(this, _tokenizer->getSymbolDatabase(), &_settings->library, _tokenizer->isC());
-        checkExecutionPaths(_tokenizer->getSymbolDatabase(), &c);
-    }
+    UninitVar c(this, _tokenizer->getSymbolDatabase(), &_settings->library, _tokenizer->isC());
+    checkExecutionPaths(_tokenizer->getSymbolDatabase(), &c);
 }
 
 
@@ -1516,6 +1513,8 @@ bool CheckUninitVar::checkScopeForVariable(const Scope* scope, const Token *tok,
 bool CheckUninitVar::checkIfForWhileHead(const Token *startparentheses, const Variable& var, bool suppressErrors, bool isuninit, bool alloc, const std::string &membervar)
 {
     const Token * const endpar = startparentheses->link();
+    if (Token::Match(startparentheses, "( ! %var% %oror%") && startparentheses->tokAt(2)->getValue(0))
+        suppressErrors = true;
     for (const Token *tok = startparentheses->next(); tok && tok != endpar; tok = tok->next()) {
         if (tok->varId() == var.declarationId()) {
             if (Token::Match(tok, "%var% . %var%")) {

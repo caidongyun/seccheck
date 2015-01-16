@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@
 
 static BOOL MyIsDirectory(const std::string& path)
 {
-	// See http://msdn.microsoft.com/en-us/library/bb773621(VS.85).aspx
+// See http://msdn.microsoft.com/en-us/library/bb773621(VS.85).aspx
     return PathIsDirectoryA(path.c_str());
 }
 

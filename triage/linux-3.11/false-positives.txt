@@ -1,0 +1,98 @@
+# Tokenizer::setVarId , function declaration in function
+[linux-3.11/arch/frv/kernel/time.c:93]: (error) Uninitialized variable: year
+[linux-3.11/arch/frv/kernel/time.c:93]: (error) Uninitialized variable: mon
+[linux-3.11/arch/frv/kernel/time.c:93]: (error) Uninitialized variable: day
+[linux-3.11/arch/frv/kernel/time.c:93]: (error) Uninitialized variable: hour
+[linux-3.11/arch/frv/kernel/time.c:93]: (error) Uninitialized variable: min
+[linux-3.11/arch/frv/kernel/time.c:93]: (error) Uninitialized variable: sec
+# valueflow,uninitvar,etc must stop for(;;){}
+[linux-3.11/arch/sparc/kernel/pcic.c:694]: (error) Uninitialized variable: irq
+# valueFlowSubFunction, stop at assignment
+[linux-3.11/arch/x86/kernel/machine_kexec_32.c:115]: (error) Possible null pointer dereference: pmd
+
+[linux-3.11/drivers/net/wireless/hostap/hostap_ap.c:3221]: (error) Memory leak: sta
+[linux-3.11/drivers/block/rbd.c:1616]: (error) Possible null pointer dereference: rbd_dev
+[linux-3.11/drivers/crypto/nx/nx-842.c:1030]: (error) Possible null pointer dereference: node
+[linux-3.11/drivers/dma/mmp_pdma.c:461]: (error) Possible null pointer dereference: prev
+[linux-3.11/drivers/edac/i7core_edac.c:1427]: (error) Memory leak: i7core_dev
+[linux-3.11/drivers/edac/sb_edac.c:1198]: (error) Memory leak: sbridge_dev
+[linux-3.11/drivers/gpio/gpio-mcp23s08.c:616]: (error) Uninitialized variable: pdata
+[linux-3.11/drivers/gpu/drm/drm_ioc32.c:359]: (error) Uninitialized variable: s32
+[linux-3.11/drivers/gpu/drm/i915/i915_irq.c:116]: (error) Uninitialized variable: pipe
+[linux-3.11/drivers/gpu/drm/i915/i915_irq.c:132]: (error) Uninitialized variable: pipe
+[linux-3.11/drivers/gpu/drm/i915/i915_irq.c:3037]: (error) Uninitialized variable: pipe
+[linux-3.11/drivers/gpu/drm/i915/i915_irq.c:3248]: (error) Uninitialized variable: pipe
+[linux-3.11/drivers/gpu/drm/i915/i915_irq.c:3487]: (error) Uninitialized variable: pipe
+[linux-3.11/drivers/gpu/drm/i915/i915_irq.c:1918]: (error) Uninitialized variable: pipe
+[linux-3.11/drivers/gpu/drm/i915/intel_ddi.c:983]: (error) Uninitialized variable: pipe
+[linux-3.11/drivers/gpu/drm/i915/intel_ddi.c:989]: (error) Uninitialized variable: pipe
+[linux-3.11/drivers/gpu/drm/i915/intel_display.c:9903]: (error) Uninitialized variable: pipe
+[linux-3.11/drivers/gpu/drm/i915/intel_pm.c:2459]: (error) Uninitialized variable: pipe
+[linux-3.11/drivers/gpu/drm/i915/intel_pm.c:2461]: (error) Uninitialized variable: pipe
+[linux-3.11/drivers/gpu/drm/i915/intel_pm.c:4423]: (error) Uninitialized variable: pipe
+[linux-3.11/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c:186]: (error) Possible null pointer dereference: engine
+[linux-3.11/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c:189]: (error) Possible null pointer dereference: engine
+[linux-3.11/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c:190]: (error) Possible null pointer dereference: engine
+[linux-3.11/drivers/gpu/drm/radeon/radeon_atombios.c:2910]: (error) Uninitialized variable: args
+[linux-3.11/drivers/gpu/drm/radeon/radeon_atombios.c:2919]: (error) Uninitialized variable: args                                                                                               
+[linux-3.11/drivers/hid/hid-wiimote-debug.c:147]: (error) Array 'wiidebug_drmmap[13]' accessed at index 63, which is out of bounds.                                                            
+[linux-3.11/drivers/infiniband/hw/cxgb4/mem.c:532]: (error) Memory leak: page_list                                                                                                             
+[linux-3.11/drivers/iommu/dmar.c:1019]: (error) Uninitialized variable: sts
+[linux-3.11/drivers/iommu/intel-iommu.c:984]: (error) Uninitialized variable: sts
+[linux-3.11/drivers/iommu/intel-iommu.c:1002]: (error) Uninitialized variable: val
+[linux-3.11/drivers/iommu/intel-iommu.c:1226]: (error) Uninitialized variable: sts
+[linux-3.11/drivers/iommu/intel-iommu.c:1243]: (error) Uninitialized variable: sts
+[linux-3.11/drivers/iommu/intel_irq_remapping.c:419]: (error) Uninitialized variable: sts
+[linux-3.11/drivers/iommu/omap-iommu.c:669]: (error) Possible null pointer dereference: fn
+[linux-3.11/drivers/isdn/gigaset/ev-layer.c:475]: (error) Array index -1 is out of bounds.
+[linux-3.11/drivers/isdn/i4l/isdn_ttyfax.c:329]: (error) Uninitialized variable: c
+[linux-3.11/drivers/isdn/icn/icn.c:1579]: (error) Memory leak: card
+[linux-3.11/drivers/isdn/isdnloop/isdnloop.c:1490]: (error) Memory leak: card
+[linux-3.11/drivers/macintosh/windfarm_pm121.c:540]: (error) Possible null pointer dereference: param
+[linux-3.11/drivers/macintosh/windfarm_pm121.c:553]: (error) Possible null pointer dereference: param
+[linux-3.11/drivers/macintosh/windfarm_pm121.c:557]: (error) Possible null pointer dereference: param
+[linux-3.11/drivers/macintosh/windfarm_pm81.c:294]: (error) Possible null pointer dereference: param
+[linux-3.11/drivers/macintosh/windfarm_pm81.c:295]: (error) Possible null pointer dereference: param
+[linux-3.11/drivers/macintosh/windfarm_pm81.c:296]: (error) Possible null pointer dereference: param
+[linux-3.11/drivers/macintosh/windfarm_pm81.c:297]: (error) Possible null pointer dereference: param
+[linux-3.11/drivers/macintosh/windfarm_pm81.c:300]: (error) Possible null pointer dereference: param
+[linux-3.11/drivers/macintosh/windfarm_pm81.c:301]: (error) Possible null pointer dereference: param
+[linux-3.11/drivers/macintosh/windfarm_pm81.c:302]: (error) Possible null pointer dereference: param
+[linux-3.11/drivers/macintosh/windfarm_pm81.c:305]: (error) Possible null pointer dereference: param
+[linux-3.11/drivers/md/dm-mpath.c:1590]: (error) Possible null pointer dereference: bdev
+[linux-3.11/drivers/md/dm-thin-metadata.c:988]: (error) Memory leak: td
+[linux-3.11/drivers/md/dm-thin-metadata.c:1021]: (error) Memory leak: td
+[linux-3.11/drivers/md/dm-thin-metadata.c:1103]: (error) Memory leak: td
+[linux-3.11/drivers/media/i2c/ir-kbd-i2c.c:219]: (error) Uninitialized variable: key
+[linux-3.11/drivers/media/platform/exynos4-is/fimc-capture.c:1224]: (error) Possible null pointer dereference: si
+[linux-3.11/drivers/media/usb/gspca/gspca.c:1608]: (error) Possible null pointer dereference: frame
+[linux-3.11/drivers/misc/sgi-xp/xpc_partition.c:426]: (error) Memory leak: remote_rp_base
+[linux-3.11/drivers/mmc/host/rtsx_pci_sdmmc.c:753]: (error) Uninitialized variable: width
+[linux-3.11/drivers/net/bonding/bond_main.c:4618]: (error) Array 'arp_ip_target[16]' accessed at index 9998, which is out of bounds.
+[linux-3.11/drivers/net/bonding/bond_main.c:4619]: (error) Array 'arp_ip_target[16]' accessed at index 9998, which is out of bounds.
+[linux-3.11/drivers/net/can/sja1000/peak_pci.c:690]: (error) Possible null pointer dereference: chan
+[linux-3.11/drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.c:683]: (error) Memory leak: diff.hi
+[linux-3.11/drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.c:683]: (error) Memory leak: diff.lo
+[linux-3.11/drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.c:903]: (error) Memory leak: diff.hi
+[linux-3.11/drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.c:903]: (error) Memory leak: diff.lo
+[linux-3.11/drivers/net/ethernet/dec/tulip/de4x5.c:5011]: (error) Array 'lp.phy[8]' accessed at index 8, which is out of bounds.
+[linux-3.11/drivers/net/ethernet/dec/tulip/de4x5.c:5012]: (error) Array 'lp.phy[8]' accessed at index 8, which is out of bounds.
+[linux-3.11/drivers/net/ethernet/dec/tulip/de4x5.c:5013]: (error) Array 'lp.phy[8]' accessed at index 8, which is out of bounds.
+[linux-3.11/drivers/net/ethernet/dec/tulip/de4x5.c:5014]: (error) Array 'lp.phy[8]' accessed at index 8, which is out of bounds.
+[linux-3.11/drivers/net/ethernet/dec/tulip/de4x5.c:5015]: (error) Array 'lp.phy[8]' accessed at index 8, which is out of bounds.
+[linux-3.11/drivers/net/ethernet/emulex/benet/be_cmds.c:363]: (error) Uninitialized variable: compl
+[linux-3.11/drivers/net/ethernet/intel/e1000/e1000_hw.c:5617]: (error) Uninitialized variable: phy_data
+[linux-3.11/drivers/net/ethernet/intel/e1000/e1000_hw.c:5664]: (error) Uninitialized variable: phy_data
+[linux-3.11/drivers/net/ethernet/marvell/sky2.c:1173]: (error) Uninitialized variable: re
+[linux-3.11/drivers/net/wireless/ath/ath10k/core.c:132]: (error) Uninitialized variable: ret
+[linux-3.11/drivers/net/wireless/ath/ath10k/core.c:212]: (error) Uninitialized variable: ret
+[linux-3.11/drivers/net/wireless/ath/ath10k/core.c:391]: (error) Uninitialized variable: ret
+
+# Tokenizer::setVarId
+[linux-3.11/net/ax25/ax25_dev.c:37]: (error) Uninitialized variable: ax25_dev
+[linux-3.11/net/ax25/ax25_dev.c:141]: (error) Uninitialized variable: ax25_dev
+
+[linux-3.11/sound/pci/pcxhr/pcxhr.c:729]: (error) Uninitialized struct member: pipe.first_audio
+[linux-3.11/tools/perf/builtin-kmem.c:370]: (error) Uninitialized variable: map
+[linux-3.11/tools/perf/builtin-kmem.c:370]: (error) Uninitialized struct member: map.unmap_ip
+[linux-3.11/virt/kvm/kvm_main.c:2305]: (error) Possible null pointer dereference: ops

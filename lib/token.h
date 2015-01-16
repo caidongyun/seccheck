@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -91,6 +91,11 @@ public:
      * Unlink and delete the next 'index' tokens.
      */
     void deleteNext(unsigned long index = 1);
+
+    /**
+     * Swap the contents of this token with the next token.
+     */
+    void swapWithNext();
 
     /**
      * @return token in given index, related to this token.
@@ -313,6 +318,12 @@ public:
     void isExpandedMacro(bool m) {
         setFlag(fIsExpandedMacro, m);
     }
+    bool isCast() const {
+        return getFlag(fIsCast);
+    }
+    void isCast(bool c) {
+        setFlag(fIsCast, c);
+    }
     bool isAttributeConstructor() const {
         return getFlag(fIsAttributeConstructor);
     }
@@ -348,6 +359,12 @@ public:
     }
     void isAttributeConst(bool value) {
         setFlag(fIsAttributeConst, value);
+    }
+    bool isAttributeNoreturn() const {
+        return getFlag(fIsAttributeNoreturn);
+    }
+    void isAttributeNoreturn(bool value) {
+        setFlag(fIsAttributeNoreturn, value);
     }
     bool isAttributeNothrow() const {
         return getFlag(fIsAttributeNothrow);
@@ -388,6 +405,7 @@ public:
      *
      * @param needle Current token
      * @param haystack e.g. "one|two" or "|one|two"
+     * @param varid optional varid of token
      * @return 1 if needle is found from the haystack
      *         0 if needle was empty string
      *        -1 if needle was not found
@@ -750,14 +768,16 @@ private:
         fIsLong                 = (1 << 3),
         fIsStandardType         = (1 << 4),
         fIsExpandedMacro        = (1 << 5),
-        fIsAttributeConstructor = (1 << 6),  // __attribute__((constructor)) __attribute__((constructor(priority)))
-        fIsAttributeDestructor  = (1 << 7),  // __attribute__((destructor))  __attribute__((destructor(priority)))
-        fIsAttributeUnused      = (1 << 8),  // __attribute__((unused))
-        fIsAttributePure        = (1 << 9),  // __attribute__((pure))
-        fIsAttributeConst       = (1 << 10), // __attribute__((const))
-        fIsAttributeNothrow     = (1 << 11), // __attribute__((nothrow))
-        fIsDeclspecNothrow      = (1 << 12), // __declspec(nothrow)
-        fIsAttributeUsed        = (1 << 13)  // __attribute__((used))
+        fIsCast                 = (1 << 6),
+        fIsAttributeConstructor = (1 << 7),  // __attribute__((constructor)) __attribute__((constructor(priority)))
+        fIsAttributeDestructor  = (1 << 8),  // __attribute__((destructor))  __attribute__((destructor(priority)))
+        fIsAttributeUnused      = (1 << 9),  // __attribute__((unused))
+        fIsAttributePure        = (1 << 10), // __attribute__((pure))
+        fIsAttributeConst       = (1 << 11), // __attribute__((const))
+        fIsAttributeNoreturn    = (1 << 12), // __attribute__((noreturn)) __declspec(noreturn)
+        fIsAttributeNothrow     = (1 << 13), // __attribute__((nothrow))
+        fIsDeclspecNothrow      = (1 << 14), // __declspec(nothrow)
+        fIsAttributeUsed        = (1 << 15)  // __attribute__((used))
     };
 
     unsigned int _flags;

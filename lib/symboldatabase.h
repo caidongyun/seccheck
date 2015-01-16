@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <map>
 
 #include "config.h"
 #include "token.h"
@@ -137,7 +138,7 @@ class CPPCHECKLIB Variable {
         fIsRValueRef = (1 << 8), /** @brief rvalue reference variable */
         fHasDefault  = (1 << 9), /** @brief function argument with default value */
         fIsStlType   = (1 << 10), /** @brief STL type ('std::') */
-        fIsStlString = (1 << 11), /** @brief std::string|wstring|basic_string<T>|u16string|u32string */
+        fIsStlString = (1 << 11), /** @brief std::string|wstring|basic_string&lt;T&gt;|u16string|u32string */
         fIsIntType   = (1 << 12), /** @brief Integral type */
         fIsFloatType = (1 << 13)  /** @brief Floating point type */
     };
@@ -627,6 +628,9 @@ public:
     bool isAttributeConst() const {
         return tokenDef->isAttributeConst();
     }
+    bool isAttributeNoreturn() const {
+        return tokenDef->isAttributeNoreturn();
+    }
     bool isAttributeNothrow() const {
         return tokenDef->isAttributeNothrow();
     }
@@ -689,6 +693,7 @@ public:
     const Token *classStart; // '{' token
     const Token *classEnd;   // '}' token
     std::list<Function> functionList;
+    std::multimap<std::string, const Function *> functionMap;
     std::list<Variable> varlist;
     const Scope *nestedIn;
     std::list<Scope *> nestedList;
@@ -760,6 +765,14 @@ public:
 
     const Function *getDestructor() const;
 
+    void addFunction(const Function & func) {
+        functionList.push_back(func);
+
+        const Function * back = &functionList.back();
+
+        functionMap.insert(make_pair(back->tokenDef->str(), back));
+    }
+
     /**
      * @brief get the number of nested scopes that are not functions
      *
@@ -796,11 +809,14 @@ private:
      * @return true if tok points to a variable declaration, false otherwise
      */
     bool isVariableDeclaration(const Token* tok, const Token*& vartok, const Token*& typetok) const;
+
+    void findFunctionInBase(const std::string & name, size_t args, std::vector<const Function *> & matches) const;
 };
 
 class CPPCHECKLIB SymbolDatabase {
 public:
     SymbolDatabase(const Tokenizer *tokenizer, const Settings *settings, ErrorLogger *errorLogger);
+    ~SymbolDatabase();
 
     /** @brief Information about all namespaces/classes/structrues */
     std::list<Scope> scopeList;

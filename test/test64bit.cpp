@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -98,6 +98,12 @@ private:
 
         check("int f(const char *p) {\n" // #4659
               "    return 6 + p[2] * 256;\n"
+              "}");
+        ASSERT_EQUALS("", errout.str());
+
+        check("int foo(int *p) {\n" // #6096
+              "    bool a = p;\n"
+              "    return a;\n"
               "}");
         ASSERT_EQUALS("", errout.str());
     }

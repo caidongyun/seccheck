@@ -1,6 +1,6 @@
 /*
  * Cppcheck - A tool for static C/C++ code analysis
- * Copyright (C) 2007-2014 Daniel Marjamäki and Cppcheck team.
+ * Copyright (C) 2007-2015 Daniel Marjamäki and Cppcheck team.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -135,6 +135,8 @@ private:
         TEST_CASE(uninitVar25); // ticket #4789
         TEST_CASE(uninitVar26);
         TEST_CASE(uninitVar27); // ticket #5170 - rtl::math::setNan(&d)
+        TEST_CASE(uninitVar28); // ticket #6258
+        TEST_CASE(uninitVar29);
         TEST_CASE(uninitVarEnum);
         TEST_CASE(uninitVarStream);
         TEST_CASE(uninitVarTypedef);
@@ -2108,6 +2110,54 @@ private:
               "    }\n"
               "};");
         ASSERT_EQUALS("", errout.str());
+    }
+
+    void uninitVar28() {
+        check("class Fred {\n"
+              "    int i;\n"
+              "    float f;\n"
+              "public:\n"
+              "    Fred() {\n"
+              "        foo(1);\n"
+              "        foo(1.0f);\n"
+              "    }\n"
+              "    void foo(int a) { i = a; }\n"
+              "    void foo(float a) { f = a; }\n"
+              "};");
+        ASSERT_EQUALS("", errout.str());
+    }
+
+    void uninitVar29() {
+        check("class A {\n"
+              "    int i;\n"
+              "public:\n"
+              "    A() { foo(); }\n"
+              "    void foo() const { };\n"
+              "    void foo() { i = 0; }\n"
+              "};\n"
+              "class B {\n"
+              "    int i;\n"
+              "public:\n"
+              "    B() { foo(); }\n"
+              "    void foo() { i = 0; }\n"
+              "    void foo() const { }\n"
+              "};\n"
+              "class C {\n"
+              "    int i;\n"
+              "public:\n"
+              "    C() { foo(); }\n"
+              "    void foo() const { i = 0; }\n"
+              "    void foo() { }\n"
+              "};\n"
+              "class D {\n"
+              "    int i;\n"
+              "public:\n"
+              "    D() { foo(); }\n"
+              "	void foo() { }\n"
+              "	void foo() const { i = 0; }\n"
+              "};");
+        ASSERT_EQUALS("[test.cpp:18]: (warning) Member variable 'C::i' is not initialized in the constructor.\n"
+                      "[test.cpp:25]: (warning) Member variable 'D::i' is not initialized in the constructor.\n", errout.str());
     }
 
     void uninitVarArray1() {
